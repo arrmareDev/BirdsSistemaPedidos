@@ -1,0 +1,107 @@
+import { createRouter, createWebHistory } from "vue-router";
+
+function requireAuth(_to: any, _from: any, next: any) {
+  const token = localStorage.getItem("brasero_admin_token");
+  if (token) next();
+  else next("/admin/login");
+}
+
+function redirectIfAuth(_to: any, _from: any, next: any) {
+  const token = localStorage.getItem("brasero_admin_token");
+  if (token) next("/admin/dashboard");
+  else next();
+}
+
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior: () => ({ top: 0 }),
+  routes: [
+    // ══ TIENDA PÚBLICA ══
+    {
+      path: "/",
+      component: () => import("@/views/CatalogView.vue"),
+      name: "catalog",
+    },
+    {
+      path: "/checkout",
+      component: () => import("@/views/CheckoutView.vue"),
+      name: "checkout",
+    },
+    {
+      path: "/confirmado",
+      component: () => import("@/views/SuccessView.vue"),
+      name: "success",
+    },
+    {
+      path: "/seguimiento/:id?",
+      component: () => import("@/views/TrackingView.vue"),
+      name: "tracking",
+    },
+
+    // ══ ADMIN ══
+    {
+      path: "/admin/login",
+      component: () => import("@/views/admin/AdminLogin.vue"),
+      name: "admin-login",
+      beforeEnter: redirectIfAuth,
+    },
+    {
+      path: "/admin",
+      component: () => import("@/views/admin/AdminShell.vue"),
+      beforeEnter: requireAuth,
+      children: [
+        { path: "", redirect: "/admin/dashboard" },
+        {
+          path: "dashboard",
+          component: () => import("@/views/admin/DashboardView.vue"),
+          name: "admin-dashboard",
+        },
+        {
+          path: "pedidos",
+          component: () => import("@/views/admin/PedidosView.vue"),
+          name: "admin-pedidos",
+        },
+        {
+          path: "catalogo",
+          component: () => import("@/views/admin/CatalogoView.vue"),
+          name: "admin-catalogo",
+        },
+        {
+          path: "caja",
+          component: () => import("@/views/admin/CajaView.vue"),
+          name: "admin-caja",
+        },
+        {
+          path: "clientes",
+          component: () => import("@/views/admin/ClientesView.vue"),
+          name: "admin-clientes",
+        },
+        {
+          path: "reportes",
+          component: () => import("@/views/admin/ReportesView.vue"),
+          name: "admin-reportes",
+        },
+        {
+          path: "/admin/usuarios",
+          component: () => import("@/views/admin/UsuariosView.vue"),
+          meta: { requiresAuth: true, role: ["super_admin"] },
+        },
+
+        {
+          path: "/admin/delivery-zones",
+          name: "delivery-zones",
+          component: () => import("@/views/admin/DeliveryZonesView.vue"),
+          meta: { auth: true },
+        },
+
+        {
+          path: "/admin/sistema",
+          component: () => import("@/views/admin/SistemaView.vue"),
+          meta: { requiresAuth: true, role: ["sistema"] },
+        },
+      ],
+    },
+  ],
+});
+
+export default router;
