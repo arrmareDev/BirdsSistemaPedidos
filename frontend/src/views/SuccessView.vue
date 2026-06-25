@@ -25,8 +25,7 @@
     </div>
 
     <!-- Banner entrega programada -->
-    <div v-if="order?.entrega_programada && order?.fecha_entrega"
-      class="w-full max-w-xs mb-6 px-4 py-3.5 rounded-2xl bg-pink-50
+    <div v-if="order?.entrega_programada && order?.fecha_entrega" class="w-full max-w-xs mb-6 px-4 py-3.5 rounded-2xl bg-pink-50
              border border-pink-200 flex items-start gap-3 text-left">
       <span class="text-xl shrink-0">📅</span>
       <div>
@@ -39,8 +38,7 @@
     </div>
 
     <!-- WhatsApp -->
-    <button @click="sendWA"
-      class="flex items-center gap-3 px-8 py-4 rounded-2xl border-none
+    <button @click="sendWA" class="flex items-center gap-3 px-8 py-4 rounded-2xl border-none
              cursor-pointer bg-[#25D366] text-white font-black text-[15px]
              mb-3 w-full max-w-xs
              shadow-[0_4px_20px_rgba(37,211,102,0.3)] uppercase tracking-wide
@@ -50,8 +48,7 @@
       Enviar por WhatsApp
     </button>
 
-    <RouterLink to="/seguimiento"
-      class="flex items-center justify-center gap-2 px-6 py-3 rounded-2xl
+    <RouterLink to="/seguimiento" class="flex items-center justify-center gap-2 px-6 py-3 rounded-2xl
              no-underline border-2 border-surface-border text-ink-muted
              font-bold text-[14px] w-full max-w-xs uppercase tracking-wide
              hover:border-brand-red/40 hover:text-brand-red
@@ -84,25 +81,31 @@ import { useOrderStore } from '@/stores/order'
 const orderStore = useOrderStore()
 const order = computed(() => orderStore.currentOrder)
 
+// ── Número de Yape de la florería ─────────────────────────
+// Si está definido en .env (VITE_YAPE_PHONE) se usa ese;
+// si no, cae al número de WhatsApp por defecto.
+const YAPE_PHONE = import.meta.env.VITE_YAPE_PHONE ?? '51984199340'
+const YAPE_TITULAR = import.meta.env.VITE_YAPE_TITULAR ?? 'Florería Birds'
+
 // ── Constantes ────────────────────────────────────────────
 const STEPS = [
   'Enviamos el resumen por WhatsApp',
   'La florería confirma tu pedido',
-  'Preparamos tu arreglo con amor 💐',
+  'Preparamos tu arreglo con amor',
   order.value?.entrega_programada
     ? '¡Entrega en la fecha elegida!'
     : '¡Lo recibes pronto!',
 ]
 
 const METODO_PAGO_LABELS: Record<string, string> = {
-  anticipado:              '💳 Pago anticipado (transferencia / coordinado)',
-  contraentrega_efectivo:  '💵 Pago contraentrega en efectivo',
-  contraentrega_yape:      '📱 Pago contraentrega por Yape/Plin',
+  anticipado: 'Pago anticipado (transferencia / coordinado)',
+  contraentrega_efectivo: 'Pago contraentrega en efectivo',
+  contraentrega_yape: 'Pago contraentrega por Yape/Plin',
 }
 
 const TIPO_LABELS: Record<string, string> = {
-  recoger:  '🏪 Recoger en tienda',
-  delivery: '🚚 Delivery a domicilio',
+  recoger: 'Recoger en tienda',
+  delivery: 'Delivery a domicilio',
 }
 
 const HORARIO_LABELS: Record<string, string> = {
@@ -130,16 +133,16 @@ function formatHora(hora: string): string {
 
 // ── WhatsApp ──────────────────────────────────────────────
 function sendWA() {
-  const rawPhone   = import.meta.env.VITE_WA_PHONE ?? '51969943657'
-  const phone      = rawPhone.replace(/\D/g, '')
-  const numero     = orderStore.orderNumber || '—'
-  const o          = order.value
+  const rawPhone = import.meta.env.VITE_WA_PHONE ?? '51984199340'
+  const phone = rawPhone.replace(/\D/g, '')
+  const numero = orderStore.orderNumber || '—'
+  const o = order.value
   const clientPhone = (o?.client_phone ?? '').replace(/\D/g, '')
 
   const L: string[] = []
 
-  L.push(`💐 *FLORERÍA*`)
-  L.push(`📋 Pedido *#${numero}*`)
+  L.push(`*FLORERÍA BIRDS*`)
+  L.push(`Pedido *#${numero}*`)
   L.push(`━━━━━━━━━━━━━━━━━━━━`)
   L.push(``)
 
@@ -147,9 +150,9 @@ function sendWA() {
 
     // ── Items ─────────────────────────────────────────────
     o.items.forEach((item: any) => {
-      const nombre    = item.name ?? item.product?.name ?? 'Producto'
+      const nombre = item.name ?? item.product?.name ?? 'Producto'
       const basePrice = Number(item.unit_price ?? 0)
-      const subtotal  = Number(item.subtotal   ?? 0)
+      const subtotal = Number(item.subtotal ?? 0)
       const extras: any[] = item.extras ?? []
 
       L.push(`💐 *${item.qty}× ${nombre}*  —  S/ ${basePrice.toFixed(2)}`)
@@ -179,15 +182,15 @@ function sendWA() {
 
     // ── Datos de entrega ───────────────────────────────────
     if (o.type === 'delivery') {
-      if (o.address)   L.push(`📍 Dirección: ${o.address}`)
-      if (o.reference) L.push(`🏷️ Referencia: ${o.reference}`)
+      if (o.address) L.push(`Dirección: ${o.address}`)
+      if (o.reference) L.push(`Referencia: ${o.reference}`)
     }
 
     // ── Entrega programada ─────────────────────────────────
     if (o.entrega_programada && o.fecha_entrega) {
-      L.push(`📅 Fecha de entrega: ${formatFechaEntrega(o.fecha_entrega)}`)
+      L.push(`Fecha de entrega: ${formatFechaEntrega(o.fecha_entrega)}`)
       if (o.hora_entrega) {
-        L.push(`🕐 Hora: ${formatHora(o.hora_entrega)}`)
+        L.push(`Hora: ${formatHora(o.hora_entrega)}`)
       }
     } else {
       L.push(`⚡ Entrega: Lo antes posible`)
@@ -196,7 +199,7 @@ function sendWA() {
     // ── Mensaje de tarjeta ─────────────────────────────────
     if (o.mensaje_tarjeta) {
       L.push(``)
-      L.push(`💌 *Mensaje para la tarjeta:*`)
+      L.push(`*Mensaje para la tarjeta:*`)
       L.push(`"${o.mensaje_tarjeta}"`)
     }
 
@@ -207,7 +210,7 @@ function sendWA() {
     }
 
     // ── Nota adicional ─────────────────────────────────────
-    if (o.note) L.push(`📝 Nota: ${o.note}`)
+    if (o.note) L.push(`Nota: ${o.note}`)
 
     L.push(``)
 
@@ -215,22 +218,30 @@ function sendWA() {
     const subtotalItems = o.items.reduce(
       (s: number, i: any) => s + Number(i.subtotal ?? 0), 0
     )
-    L.push(`💵 Subtotal: S/ ${subtotalItems.toFixed(2)}`)
+    L.push(` Subtotal: S/ ${subtotalItems.toFixed(2)}`)
 
     if (o.type === 'delivery' && o.delivery_fee > 0) {
-      L.push(`🚚 Delivery: S/ ${Number(o.delivery_fee).toFixed(2)}`)
+      L.push(`Delivery: S/ ${Number(o.delivery_fee).toFixed(2)}`)
     }
 
-    L.push(`💰 *TOTAL: S/ ${Number(o.total).toFixed(2)}*`)
+    L.push(`*TOTAL: S/ ${Number(o.total).toFixed(2)}*`)
 
   } else {
     L.push(`Hola, acabo de realizar el pedido *#${numero}* en la web.`)
   }
 
+  // ── Datos de pago por Yape (en TODOS los pedidos) ─────────
   L.push(``)
   L.push(`━━━━━━━━━━━━━━━━━━━━`)
-  L.push(`📦 Seguimiento en tiempo real:`)
-  L.push(`https://catalogo.birds.pe/seguimiento/seguimiento/${numero}?tel=${clientPhone}`)
+  L.push(`*PAGA CON YAPE / PLIN*`)
+  L.push(`Número: *${YAPE_PHONE}*`)
+  L.push(`Titular: ${YAPE_TITULAR}`)
+  L.push(`*_Envía la captura del pago por aquí_*`)
+
+  L.push(``)
+  L.push(`━━━━━━━━━━━━━━━━━━━━`)
+  L.push(`Seguimiento en tiempo real:`)
+  L.push(`https://catalogo.birds.pe/seguimiento/${numero}?tel=${clientPhone}`)
 
   window.open(
     `https://wa.me/${phone}?text=${encodeURIComponent(L.join('\n'))}`,
