@@ -20,7 +20,7 @@
       <div class="relative z-10 text-center px-10">
         <div class="w-24 h-24 rounded-3xl bg-white/10 border border-white/20
                     flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
-          <img src="/logo.jpeg" alt="Mahoma Chicken" class="w-16 h-16 object-contain rounded-2xl"
+          <img src="/images/logobirds.png" alt="Mahoma Chicken" class="w-16 h-16 object-contain rounded-2xl"
             @error="($event.target as HTMLImageElement).style.display = 'none'" />
         </div>
 
@@ -78,7 +78,7 @@
         <div class="flex items-center gap-3 mb-8 lg:hidden">
           <div class="w-11 h-11 rounded-2xl overflow-hidden
                       border-2 border-red-100 shrink-0">
-            <img src="/logo.jpeg" alt="Mahoma" class="w-full h-full object-cover"
+            <img src="/images/logobirds.png" alt="Mahoma" class="w-full h-full object-cover"
               @error="($event.target as HTMLImageElement).style.display = 'none'" />
           </div>
           <div>
