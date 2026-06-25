@@ -230,7 +230,7 @@ function sendWA() {
   L.push(``)
   L.push(`━━━━━━━━━━━━━━━━━━━━`)
   L.push(`📦 Seguimiento en tiempo real:`)
-  L.push(`${import.meta.env.VITE_APP_URL ?? ''}/seguimiento/${numero}?tel=${clientPhone}`)
+  L.push(`https://catalogo.birds.pe/seguimiento/seguimiento/${numero}?tel=${clientPhone}`)
 
   window.open(
     `https://wa.me/${phone}?text=${encodeURIComponent(L.join('\n'))}`,
