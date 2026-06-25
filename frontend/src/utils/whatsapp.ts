@@ -1,6 +1,6 @@
 import type { CartItem, OrderForm } from '@/types'
 
-const PHONE = import.meta.env.VITE_WA_PHONE ?? '51969943657'
+const PHONE = import.meta.env.VITE_WA_PHONE ?? '51984199340'
 
 /**
  * Genera el texto del mensaje de WhatsApp con el resumen del pedido

@@ -697,7 +697,7 @@ function segmentoBadgeClass(c: Client) {
 }
 
 function waLink(c: Client, tipo: 'saludo' | 'promo' | 'reactivar' | 'cumple'): string {
-  const phone = import.meta.env.VITE_WA_PHONE ?? '51969943657'
+  const phone = import.meta.env.VITE_WA_PHONE ?? '51984199340'
   const nombre = c.name.split(' ')[0]
   const crema = c.preferences?.salsas?.[0] ?? 'crema especial'
 

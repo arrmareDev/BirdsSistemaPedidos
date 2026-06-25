@@ -173,11 +173,11 @@ const current = ref(0)
 const paused = ref(false)
 const progress = ref(0)
 
-const waPhone = import.meta.env.VITE_WA_PHONE ?? '51969943657'
+const waPhone = import.meta.env.VITE_WA_PHONE ?? '51984199340'
 const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent('¡Hola! Quisiera hacer un pedido de flores 💐')}`
 
 // ── Pantalla completa en su sección (dvh evita el salto de la barra móvil) ──
-const heroHeight = computed(() => '100dvh')
+const heroHeight = computed(() => '92dvh')
 const progressWidth = computed(() =>
     paused.value ? (progress.value / INTERVAL * 100) : 100
 )
@@ -186,7 +186,7 @@ const progressWidth = computed(() =>
 const SLIDES = [
     {
         id: 1,
-        bgImage: '/images/slider.png',  // ← pon tu foto aquí
+        bgImage: '/images/rosasrojas.png',  // ← pon tu foto aquí
         bg: 'linear-gradient(135deg,#7B1450,#3A0A28,#1A0A14)',
         overlay: 'linear-gradient(110deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.45) 55%, rgba(0,0,0,0.12) 100%)',
         badgeIcon: '🌹',
@@ -209,7 +209,7 @@ const SLIDES = [
     },
     {
         id: 2,
-        bgImage: '/images/arreglo.png',
+        bgImage: '/images/cajarosas.png',
         bg: 'linear-gradient(135deg,#4A1A38,#2A0D20,#1A0A14)',
         overlay: 'linear-gradient(110deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.42) 55%, rgba(0,0,0,0.10) 100%)',
         badgeIcon: '✨',
@@ -233,7 +233,7 @@ const SLIDES = [
     },
     {
         id: 3,
-        bgImage: '/images/delivery.png',
+        bgImage: '/images/delivery.jpeg',
         bg: 'linear-gradient(135deg,#0A2A1A,#08160F,#1A0A14)',
         overlay: 'linear-gradient(110deg, rgba(0,0,0,0.76) 0%, rgba(0,0,0,0.40) 55%, rgba(0,0,0,0.10) 100%)',
         badgeIcon: '🛵',
@@ -255,7 +255,7 @@ const SLIDES = [
     },
     {
         id: 4,
-        bgImage: '/images/ocasiones.png',
+        bgImage: '/images/ocacion.png',
         bg: 'linear-gradient(135deg,#3A0A28,#220618,#1A0A14)',
         overlay: 'linear-gradient(110deg, rgba(0,0,0,0.76) 0%, rgba(0,0,0,0.42) 55%, rgba(0,0,0,0.10) 100%)',
         badgeIcon: '🎁',
@@ -274,28 +274,6 @@ const SLIDES = [
         floatBadges: [
             { icon: '🌸', text: 'Diseños a medida', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
             { icon: '⭐', text: '4.9 estrellas', bg: 'rgba(245,197,24,0.2)', border: 'rgba(245,197,24,0.4)', color: '#F5C518' },
-        ],
-    },
-    {
-        id: 5,
-        bgImage: '/images/atelier.png',
-        bg: 'linear-gradient(135deg,#1A0A2A,#100618,#1A0A14)',
-        overlay: 'linear-gradient(110deg, rgba(0,0,0,0.80) 0%, rgba(0,0,0,0.45) 55%, rgba(0,0,0,0.15) 100%)',
-        badgeIcon: '📞',
-        badge: 'Pedidos al 932 488 837',
-        badgeText: '#93C5FD',
-        badgeBg: 'rgba(59,130,246,0.15)',
-        badgeBorder: 'rgba(59,130,246,0.35)',
-        title: 'Atelier<br><span style="color:#F5C518">Floral</span><br><span style="font-size:0.55em;color:rgba(255,255,255,0.7)">Tu Florería</span>',
-        subtitle: 'Abierto de Lunes a Sábado · 9:00 AM – 8:00 PM · Flores frescas y diseños únicos en Chiclayo, Perú.',
-        priceTag: null,
-        ctaBg: 'rgba(255,255,255,0.12)',
-        ctaColor: '#FFFFFF',
-        cta: 'Ver el catálogo →',
-        ctaWa: 'Contáctanos',
-        floatBadges: [
-            { icon: '🕐', text: '9am – 8pm', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
-            { icon: '📅', text: 'Lun – Sáb', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
         ],
     },
 ]

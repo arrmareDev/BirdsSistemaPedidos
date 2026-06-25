@@ -1,5 +1,5 @@
 <template>
-  <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-xl
+  <header class="sticky top-0 z-50 bg-white backdrop-blur-xl
                  border-b border-gray-100 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
     <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center gap-3 h-16">
@@ -7,26 +7,10 @@
         <!-- ── Logo ── -->
         <RouterLink to="/" class="flex items-center gap-2.5 no-underline shrink-0
                  group transition-opacity duration-150 hover:opacity-90">
-
           <!-- Logo imagen -->
-          <div class="w-10 h-10 rounded-xl overflow-hidden border-2 border-red-100
-                      shadow-sm shrink-0 bg-red-600 flex items-center justify-center">
-            <!-- ← MARCA: alt y fuente del logo -->
-            <img :src="logoUrl" alt="Florería" class="w-full h-full object-cover" @error="logoError = true"
+          <div class="w-[76px] h-[76px] shrink-0 flex items-center justify-center">
+            <img :src="logoUrl" alt="Florería" class="max-w-full max-h-full object-contain" @error="logoError = true"
               v-show="!logoError" />
-            <span v-if="logoError" class="text-white font-black text-[16px]"
-              style="font-family: 'Plus Jakarta Sans', sans-serif;">F</span>
-          </div>
-
-          <!-- Texto logo — ← MARCA -->
-          <div class="leading-none">
-            <p class="font-black text-[16px] text-gray-900 leading-none tracking-tight m-0"
-              style="font-family: 'Plus Jakarta Sans', sans-serif;">
-              FLORERÍA
-            </p>
-            <p class="text-[9px] font-bold text-red-600 tracking-[2px] uppercase mt-0.5 m-0">
-              Flores & Detalles
-            </p>
           </div>
         </RouterLink>
 
@@ -57,8 +41,8 @@
         <button @click="$emit('openCart')" class="relative flex items-center gap-2 px-4 py-2.5 rounded-full
                  font-bold text-[13.5px] cursor-pointer border-2
                  transition-all duration-200" :class="cartStore.count > 0
-                  ? 'bg-red-600 text-white border-red-600 shadow-[0_4px_12px_rgba(196,30,30,0.3)] hover:bg-red-700'
-                  : 'bg-white text-gray-500 border-gray-200 hover:border-red-400 hover:text-red-600'"
+                  ? 'bg-green-600 text-white border-green-600 shadow-[0_4px_12px_rgba(196,30,30,0.3)] hover:bg-green-700'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-green-400 hover:text-green-600'"
           aria-label="Ver carrito">
 
           <span class="text-base leading-none">🛒</span>
@@ -99,7 +83,7 @@
                flex flex-col gap-1">
         <RouterLink v-for="link in NAV_LINKS" :key="link.to" :to="link.to" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px]
                  font-semibold no-underline transition-all duration-150" :class="isActiveLink(link.to)
-                  ? 'bg-red-50 text-red-600'
+                  ? 'bg-red-50 text-green-600'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'">
           <span>{{ link.icon }}</span>
           {{ link.label }}
@@ -135,7 +119,7 @@ const cartStore = useCartStore()
 const logoError = ref(false)
 const mobileMenuOpen = ref(false)
 
-const logoUrl = '/logo.jpeg'
+const logoUrl = '/images/logobirds.png'
 
 // ── Navegación ────────────────────────────────────────────
 const NAV_LINKS = [

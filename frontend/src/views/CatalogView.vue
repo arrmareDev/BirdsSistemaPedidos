@@ -619,7 +619,7 @@ function scrollToMenu() {
 }
 
 .promo-bar {
-  background: linear-gradient(90deg, #C41E1E 0%, #A01010 50%, #C41E1E 100%);
+  background: linear-gradient(90deg, #10461d 0%, #10461d 50%, #10461d 100%);
   background-size: 200% 100%;
   animation: promo-shift 6s ease infinite;
 }

@@ -20,8 +20,9 @@
                         <div class="logo-wrap w-14 h-14 rounded-2xl overflow-hidden shrink-0
                         flex items-center justify-center">
                             <!-- ← MARCA -->
-                            <img :src="logoUrl" alt="Florería" class="w-full h-full object-cover"
+                            <img :src="logoUrl" alt="Florería" class="w-full h-full object-contain"
                                 @error="(e) => (e.target as HTMLImageElement).style.display = 'none'" />
+
                         </div>
                         <div>
                             <!-- ← MARCA: nombre real -->
@@ -54,7 +55,7 @@
                 <div class="flex flex-col gap-4">
                     <p class="section-label">Contacto</p>
 
-                    <a href="tel:+51932488837" class="contact-link flex items-center gap-3 group w-fit">
+                    <a href="tel:+51984199340" class="contact-link flex items-center gap-3 group w-fit">
                         <div class="contact-icon-wrap w-9 h-9 rounded-xl flex items-center
                         justify-center shrink-0 transition-all duration-200
                         group-hover:scale-110">
@@ -64,7 +65,7 @@
                             <p class="text-[13px] text-white/50 m-0 leading-none mb-0.5">Teléfono</p>
                             <p class="text-[15px] font-bold text-white m-0 leading-none
                          group-hover:text-brand-yellow transition-colors">
-                                932 488 837
+                                984199340
                             </p>
                         </div>
                     </a>
@@ -164,12 +165,12 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { PhoneIcon, MapPinIcon } from '@heroicons/vue/24/outline'
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon.vue'
 
-const logoUrl = '/logo.jpeg'
+const logoUrl = '/images/logobirds.png'
 const year = new Date().getFullYear()
 
 // ── WhatsApp ──────────────────────────────────────────────
-const waPhone = (import.meta.env.VITE_WA_PHONE ?? '51969943657').replace(/\D/g, '')
-const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent('Hola 👋 quisiera hacer un pedido de flores 💐')}`
+const waPhone = (import.meta.env.VITE_WA_PHONE ?? '51984199340').replace(/\D/g, '')
+const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent('Hola quisiera hacer un pedido de flores')}`
 
 // ── Horarios (Lun–Sáb 9am–8pm · Dom cerrado) ──────────────
 const HORARIOS = [

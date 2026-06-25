@@ -17,11 +17,12 @@
       <!-- Brand -->
       <div class="flex items-center gap-3 px-4 h-[58px]
                   border-b border-gray-100 shrink-0">
-        <div class="w-8 h-8 rounded-xl overflow-hidden shrink-0 border border-red-100">
-          <!-- ← MARCA: reemplaza alt por el nombre real -->
-          <img src="/logo.jpeg" alt="Florería" class="w-full h-full object-cover"
+
+        <div class="w-20 h-20 shrink-0 flex items-center justify-center">
+          <img src="/images/logobirds.png" alt="Birds Florería" class="w-full h-full object-contain"
             @error="($event.target as HTMLImageElement).style.display = 'none'" />
         </div>
+
         <div class="min-w-0">
           <!-- ← MARCA: nombre real de la florería -->
           <p class="font-black text-[14px] text-gray-900 leading-none m-0 truncate"
@@ -280,7 +281,7 @@ onUnmounted(() => { if (clockTimer) clearInterval(clockTimer) })
 
 // ── Soporte WhatsApp ──────────────────────────────────────
 const supportLink = computed(() => {
-  const phone = (import.meta.env.VITE_WA_PHONE ?? '51969943657').replace(/\D/g, '')
+  const phone = (import.meta.env.VITE_WA_PHONE ?? '51984199340').replace(/\D/g, '')
   const nombre = admin.user?.name ?? 'Admin'
   // ← MARCA: reemplaza el nombre del negocio en el mensaje
   const mensaje = `Hola, soy *${nombre}* (Panel Admin de la Florería). Necesito soporte técnico.`
