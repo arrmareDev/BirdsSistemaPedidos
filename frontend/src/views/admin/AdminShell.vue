@@ -69,13 +69,16 @@
 
       <!-- Usuario + logout -->
       <div class="px-2 py-3 border-t border-gray-100 shrink-0 flex flex-col gap-1">
-        <RouterLink to="/" class="flex items-center gap-2.5 px-3 py-2 rounded-xl no-underline
-                 text-[12.5px] text-gray-500 font-medium
-                 hover:bg-gray-50 hover:text-gray-800
-                 transition-all duration-150 group">
-          <ArrowTopRightOnSquareIcon class="w-4 h-4 text-gray-400 group-hover:text-gray-600 shrink-0" />
-          Ver tienda
+        <RouterLink to="/" custom v-slot="{ href }">
+          <a :href="href" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2.5 px-3 py-2 rounded-xl no-underline
+            text-[12.5px] text-gray-500 font-medium
+            hover:bg-gray-50 hover:text-gray-800
+            transition-all duration-150 group">
+            <ArrowTopRightOnSquareIcon class="w-4 h-4 text-gray-400 group-hover:text-gray-600 shrink-0" />
+            Ver tienda
+          </a>
         </RouterLink>
+
 
         <button @click="handleLogout" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl
                  text-[13px] font-medium text-gray-600 cursor-pointer
