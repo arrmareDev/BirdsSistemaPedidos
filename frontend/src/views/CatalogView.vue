@@ -47,7 +47,7 @@
                      py-3 sm:py-3.5 px-2 rounded-2xl border-2 font-bold
                      text-[11px] sm:text-[12px] cursor-pointer transition-all duration-250"
               :class="productsStore.activeCategory === 'all' ? 'cat-btn--active' : 'cat-btn--idle'">
-              <span class="text-[24px] sm:text-[26px] leading-none cat-icon">💐</span>
+              <span class="text-[24px] sm:text-[26px] leading-none cat-icon"></span>
               <span>Todo</span>
             </button>
 
