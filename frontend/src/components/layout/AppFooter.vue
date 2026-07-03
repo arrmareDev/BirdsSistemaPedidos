@@ -17,7 +17,7 @@
                 <!-- Brand -->
                 <div class="flex flex-col gap-5">
                     <div class="flex items-center gap-3.5">
-                        <div class="logo-wrap w-14 h-14 rounded-2xl overflow-hidden shrink-0
+                        <div class="logo-wrap w-16 h-16 overflow-hidden shrink-0
                         flex items-center justify-center">
                             <!-- ← MARCA -->
                             <img :src="logoUrl" alt="Florería" class="w-full h-full object-contain"
@@ -93,7 +93,7 @@
                         <div>
                             <p class="text-[13px] text-white/50 m-0 leading-none mb-0.5">Ubicación</p>
                             <p class="text-[15px] font-bold text-white m-0 leading-none">
-                                Chiclayo, Perú
+                                Chiclayo, Torres Paz N° 361
                             </p>
                         </div>
                     </div>
@@ -170,15 +170,13 @@ const year = new Date().getFullYear()
 
 // ── WhatsApp ──────────────────────────────────────────────
 const waPhone = (import.meta.env.VITE_WA_PHONE ?? '51984199340').replace(/\D/g, '')
-const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent('Hola quisiera hacer un pedido de flores')}`
+const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent('Hola Birds quisiera hacer un pedido de flores')}`
 
-// ── Horarios (Lun–Sáb 9am–8pm · Dom cerrado) ──────────────
+// Y el array de horarios también:
 const HORARIOS = [
-    { dias: 'Lunes – Viernes', horas: '9:00 am – 8:00 pm' },
-    { dias: 'Sábados', horas: '9:00 am – 8:00 pm' },
+    { dias: 'Lunes – Sábado', horas: '9:00 am – 10:00 pm' },
     { dias: 'Domingos', horas: 'Cerrado' },
 ]
-
 // ── Reloj + estado ────────────────────────────────────────
 const currentTime = ref('')
 let clockTimer: ReturnType<typeof setInterval> | null = null
@@ -190,14 +188,14 @@ function updateTime() {
     })
 }
 
+// Footer.vue — corregir isOpen
 const isOpen = computed(() => {
     const now = new Date()
-    const day = now.getDay() // 0=dom, 6=sáb
+    const day = now.getDay()
     if (day === 0) return false // domingo cerrado
     const h = now.getHours()
-    return h >= 9 && h < 20
+    return h >= 9 && h < 22   // 9am – 10pm
 })
-
 onMounted(() => {
     updateTime()
     clockTimer = setInterval(updateTime, 30_000)
@@ -272,13 +270,6 @@ onUnmounted(() => {
         linear-gradient(rgba(196, 30, 30, 0.04) 1px, transparent 1px),
         linear-gradient(90deg, rgba(196, 30, 30, 0.04) 1px, transparent 1px);
     background-size: 40px 40px;
-}
-
-/* ── Logo ── */
-.logo-wrap {
-    background: linear-gradient(135deg, #C41E1E, #8B0000);
-    border: 2px solid rgba(245, 197, 24, 0.3);
-    box-shadow: 0 4px 20px rgba(196, 30, 30, 0.4);
 }
 
 /* ── Brand sub ── */

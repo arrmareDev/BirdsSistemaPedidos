@@ -133,11 +133,12 @@ function isActiveLink(path: string): boolean {
 }
 
 // ── Estado abierto/cerrado (Lun–Sáb 9am–8pm) ──────────────
+// Footer.vue — corregir isOpen
 const isOpen = computed(() => {
   const now = new Date()
-  const day = now.getDay()        // 0=dom, 6=sáb
+  const day = now.getDay()
+  if (day === 0) return false // domingo cerrado
   const h = now.getHours()
-  if (day === 0) return false      // domingo cerrado
-  return h >= 9 && h < 20
+  return h >= 9 && h < 22   // 9am – 10pm
 })
 </script>

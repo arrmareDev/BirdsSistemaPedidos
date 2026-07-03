@@ -1,106 +1,102 @@
 // ── Productos ─────────────────────────────────────────────
-export type ProductCategory =
-  | "pollos"
-  | "combos"
-  | "parrilla"
-  | "bebidas"
-  | "complementos"
-  | "postres";
-
-export interface SalsaOption {
+export interface CustomizationOption {
+  id: number;
   name: string;
-  icon: string;
 }
 
-export interface SalsaConfig {
-  max: number;
-  per_salsa: number;
-  options: SalsaOption[];
-}
-
-export interface CustomizationConfig {
-  salsas?: SalsaConfig;
-  cremas_per_unit?: number;
-  ensalada?: { options: string[] };
-  papas?: { options: string[] };
-  coccion?: { options: string[]; multiple?: boolean };
-  termino?: { options: string[] };
-  temperatura?: { options: string[] };
-  hielo?: { options: string[] };
-  bebida?: { options: string[] };
-  acompanamiento?: { options: string[] };
-  tipo_pollo?: { options: string[] };
-  nota?: boolean;
-}
-
-export interface ExtraProduct {
-  product_id: number;
+export interface CustomizationSection {
+  id: number;
+  seccion: string;
   label: string;
+  required: boolean;
+  multiple: boolean;
+  options: CustomizationOption[];
+}
+
+export interface ProductExtra {
+  id: number;
+  name: string;
+  price: number;
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  emoji: string | null;
+  sort_order: number;
+  active: boolean;
+  products_count?: number;
 }
 
 export interface Product {
   id: number;
   name: string;
-  description: string;
+  slug: string;
+  description: string | null;
+  emoji: string | null;
+  image_url: string | null;
   price: number;
-  emoji: string;
-  imageUrl?: string | null;
-  image_url?: string | null;
-  category: ProductCategory;
+  popular: boolean;
   available: boolean;
-  popular?: boolean;
-  isNew?: boolean;
-  maxSalsas: number;
-  hasEnsalada: boolean;
-  hasPapas: boolean;
-  sort_order?: number;
-  customizationConfig: CustomizationConfig;
-  extrasAvailable: ExtraProduct[];
-}
-
-// ── Personalización ───────────────────────────────────────
-export interface Salsa {
-  name: string;
-  icon: string;
-  selected?: boolean; // ← nuevo formato (chips)
-  qty?: number; // ← legacy (por si acaso)
-}
-export interface Customization {
-  salsas?: Salsa[];
-  ensalada?: string;
-  papas?: string;
-  coccion?: string[];
-  termino?: string;
-  temperatura?: string;
-  hielo?: string;
-  bebida?: string;
-  acompanamiento?: string;
-  tipo_pollo?: string;
-  nota?: string;
+  ocasion?: string | null;
+  color?: string | null;
+  tamano?: string | null;
+  stock?: number;
+  controla_stock?: boolean;
+  category: Category | null;
+  customization_sections: CustomizationSection[];
+  extras: ProductExtra[];
 }
 
 // ── Carrito ───────────────────────────────────────────────
+export interface CartSelection {
+  option_id: number;
+  name: string;
+}
+
+export interface CartCustomization {
+  section_id: number;
+  seccion: string;
+  label: string;
+  selections: CartSelection[];
+}
+
+export interface CartExtra {
+  extra_id: number;
+  name: string;
+  price: number;
+  qty: number;
+}
+
 export interface CartItem {
   _uid: string;
   productId: number;
   name: string;
-  emoji: string;
-  imageUrl?: string | null;
+  emoji: string | null;
+  imageUrl: string | null;
+  basePrice: number;
+  extrasPrice: number;
   price: number;
   qty: number;
-  customization: Customization;
-  customSummary: string;
+  customization: CartCustomization[];
+  extras: CartExtra[];
 }
 
-// ── Pedidos ───────────────────────────────────────────────
-export type OrderType = "llevar" | "local" | "delivery";
+// ── Checkout ──────────────────────────────────────────────
+export type MetodoPago =
+  | "anticipado"
+  | "contraentrega_efectivo"
+  | "contraentrega_yape";
 
 export interface OrderForm {
   name: string;
   phone: string;
-  type: OrderType;
   address: string;
   district: string;
-  mesa: string;
+  reference: string;
   note: string;
+  metodo_pago: MetodoPago;
+  lat: number | null;
+  lng: number | null;
 }

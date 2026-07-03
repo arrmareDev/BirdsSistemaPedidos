@@ -23,6 +23,11 @@ const router = createRouter({
       name: "catalog",
     },
     {
+      path: "/producto/:slug",
+      component: () => import("@/views/ProductDetailView.vue"),
+      name: "product-detail",
+    },
+    {
       path: "/checkout",
       component: () => import("@/views/CheckoutView.vue"),
       name: "checkout",
