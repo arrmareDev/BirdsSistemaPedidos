@@ -433,10 +433,21 @@ import { ref, inject, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductsStore } from '@/stores/products'
 import { useCartStore } from '@/stores/cart'
+import { useHead } from '@vueuse/head'
 import HeroCarousel from '@/components/layout/HeroCarousel.vue'
 import type { Product } from '@/stores/products'
 import type { CartItem } from '@/stores/cart'
 import { PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
+
+useHead({
+  title: 'Birds Perú - Florería',
+  meta: [
+    { name: 'description', content: 'Las flores más frescas de Chiclayo. Diseños que emocionan para cada ocasión especial.' },
+  ],
+  link: [
+    { rel: 'canonical', href: 'https://catalogo.birds.pe' },
+  ],
+})
 
 const router = useRouter()
 const productsStore = useProductsStore()
