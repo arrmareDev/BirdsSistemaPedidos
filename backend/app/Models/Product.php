@@ -5,12 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
     protected $fillable = [
         'category_id',
         'name',
+        'slug',
         'description',
         'emoji',
         'ocasion',
@@ -34,6 +36,37 @@ class Product extends Model
 
     protected $appends = ['image_url'];
 
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (Product $product) {
+            if (empty($product->slug)) {
+                $product->slug = self::generateUniqueSlug($product->name);
+            }
+        });
+
+        static::updating(function (Product $product) {
+            if ($product->isDirty('name') && empty($product->slug)) {
+                $product->slug = self::generateUniqueSlug($product->name);
+            }
+        });
+    }
+
+    protected static function generateUniqueSlug(string $name): string
+    {
+        $baseSlug = Str::slug($name);
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (self::where('slug', $slug)->exists()) {
+            $slug = "{$baseSlug}-{$counter}";
+            $counter++;
+        }
+
+        return $slug;
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
@@ -51,7 +84,6 @@ class Product extends Model
             ->orderBy('sort_order');
     }
 
-    // Reducir stock al crear un item
     public function reducirStock(int $cantidad): void
     {
         if ($this->controla_stock && $this->stock >= $cantidad) {
@@ -59,7 +91,6 @@ class Product extends Model
         }
     }
 
-    // Verificar disponibilidad
     public function tieneStock(int $cantidad = 1): bool
     {
         if (!$this->controla_stock) return true;
