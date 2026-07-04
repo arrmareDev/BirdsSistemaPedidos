@@ -930,7 +930,7 @@
             Cancelar pedido
           </button>
 
-          <button v-if="selected.status === 'cancelado'" @click="askDelete(selected)" class="w-full py-2 rounded-xl font-semibold text-[12px] text-gray-400 bg-transparent
+          <button v-if="selected.status === 'cancelado' || selected.status === 'entregado'" @click="askDelete(selected)" class="w-full py-2 rounded-xl font-semibold text-[12px] text-gray-400 bg-transparent
                    border border-gray-100 cursor-pointer hover:bg-red-50 hover:text-red-500
                    hover:border-red-200 transition-all duration-150 flex items-center justify-center gap-1.5">
             <TrashIcon class="w-3.5 h-3.5" />
