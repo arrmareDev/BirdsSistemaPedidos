@@ -4,41 +4,35 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: {
-          red: "#C41E1E",
-          red2: "#9B0000",
-          red3: "#E03030",
-          yellow: "#F5C518",
-          gold: "#D4A017",
-          dark: "#6B0000",
-          bg: "#FFFAF5",
+       brand: {
+          green: "#163020",      
+          green2: "#102418",
+          green3: "#1C3B27",
+          accent: "#E6D5C3",    
+          terracotta: "#9A6B56", 
+          dark: "#0F1A13",
+          bg: "#F8F5F0",        
         },
         surface: {
-          DEFAULT: "#FFFAF5",
+          DEFAULT: "#F9FAF9",
           card: "#FFFFFF",
-          warm: "#FFF5EE",
-          border: "#F0E8DC",
-          border2: "#E8D8C8",
+          warm: "#F3F5F3",
+          border: "#E0E5E1",
+          border2: "#C2CCC4",
         },
         ink: {
-          DEFAULT: "#1A0800",
-          soft: "#3D1A08",
-          mid: "#7A5A48",
-          muted: "#A88870",
-          faint: "#C8B8A8",
+          DEFAULT: "#0F1A13",
+          soft: "#1A2E22",
+          mid: "#3D5C4A",
+          muted: "#7A9987",
+          faint: "#A8BFB3",
         },
-        // ── Aliases para el HeroCarousel ──
-        fire: {
-          DEFAULT: "#C41E1E",
-          deep: "#9B0000",
-          glow: "#E03030",
-          light: "rgba(196,30,30,0.10)",
-        },
-        gold: {
-          DEFAULT: "#F5C518",
-          deep: "#D4A017",
-          light: "rgba(245,197,24,0.12)",
-          mid: "rgba(245,197,24,0.25)",
+        // ── Aliases para componentes ──
+        birds: {
+          DEFAULT: "#0C542C",
+          deep: "#083B1E",
+          glow: "#126B38",
+          light: "rgba(12,84,44,0.10)",
         },
         cream: {
           DEFAULT: "#FFFAF5",
@@ -53,15 +47,11 @@ export default {
         body: ['"Plus Jakarta Sans"', "sans-serif"],
       },
       boxShadow: {
-        card: "0 1px 4px rgba(26,8,0,0.06), 0 2px 8px rgba(26,8,0,0.04)",
-        "card-lg": "0 4px 20px rgba(26,8,0,0.10)",
-        "red-sm": "0 2px 12px rgba(196,30,30,0.25)",
-        "red-md": "0 4px 24px rgba(196,30,30,0.35)",
-        "red-lg": "0 8px 40px rgba(196,30,30,0.45)",
-        "gold-sm": "0 2px 12px rgba(245,197,24,0.30)",
-        "fire-sm": "0 2px 12px rgba(196,30,30,0.25)",
-        "fire-md": "0 4px 24px rgba(196,30,30,0.35)",
-        "fire-lg": "0 8px 40px rgba(196,30,30,0.45)",
+        card: "0 1px 4px rgba(12,84,44,0.06), 0 2px 8px rgba(12,84,44,0.04)",
+        "card-lg": "0 4px 20px rgba(12,84,44,0.10)",
+        "green-sm": "0 2px 12px rgba(12,84,44,0.25)",
+        "green-md": "0 4px 24px rgba(12,84,44,0.35)",
+        "green-lg": "0 8px 40px rgba(12,84,44,0.45)",
       },
       borderRadius: {
         "4xl": "2rem",
