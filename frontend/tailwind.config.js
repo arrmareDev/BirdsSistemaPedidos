@@ -4,14 +4,14 @@ export default {
   theme: {
     extend: {
       colors: {
-       brand: {
-          green: "#163020",      
+        brand: {
+          green: "#163020",
           green2: "#102418",
           green3: "#1C3B27",
-          accent: "#E6D5C3",    
-          terracotta: "#9A6B56", 
+          accent: "#E6D5C3",
+          terracotta: "#9A6B56",
           dark: "#0F1A13",
-          bg: "#F8F5F0",        
+          bg: "#F8F5F0",
         },
         surface: {
           DEFAULT: "#F9FAF9",
@@ -41,6 +41,12 @@ export default {
           border: "#F0E8DC",
           strong: "#E8D8C8",
         },
+        // ── Rojo de marca (POS / catálogo florería) ──
+        "brand-red": {
+          DEFAULT: "#C41E1E",
+          dark: "#9B1717",
+          light: "#FDEDED",
+        },
       },
       fontFamily: {
         display: ['"Playfair Display"', "serif"],
@@ -52,6 +58,8 @@ export default {
         "green-sm": "0 2px 12px rgba(12,84,44,0.25)",
         "green-md": "0 4px 24px rgba(12,84,44,0.35)",
         "green-lg": "0 8px 40px rgba(12,84,44,0.45)",
+        "red-sm": "0 2px 12px rgba(196,30,30,0.25)",
+        "red-md": "0 4px 24px rgba(196,30,30,0.35)",
       },
       borderRadius: {
         "4xl": "2rem",
