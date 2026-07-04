@@ -84,7 +84,7 @@
                 <div v-else class="w-full h-full flex items-center justify-center popular-emoji-bg">
                   <span class="text-[40px] sm:text-[48px] leading-none transition-transform
                                duration-300 group-hover:scale-115 group-hover:-rotate-6">
-                    {{ product.emoji || '💐' }}
+                    {{ product.emoji || '' }}
                   </span>
                 </div>
                 <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
@@ -119,7 +119,6 @@
         <div class="px-4 md:px-8 pb-32 lg:pb-10">
           <div class="flex items-center justify-between mb-4 sm:mb-5">
             <div class="flex items-center gap-2 sm:gap-3">
-              <div class="section-pill">💐</div>
               <h2 class="font-black text-[18px] sm:text-[20px] text-ink m-0 tracking-tight"
                 style="font-family:'Plus Jakarta Sans',sans-serif;">
                 {{ categoryLabel }}
@@ -515,8 +514,9 @@ function getSectionEmoji(seccion: string): string {
 const categoryLabel = computed(() => {
   if (productsStore.activeCategory === 'all') return 'Catálogo completo'
   const cat = productsStore.categories.find(c => c.slug === productsStore.activeCategory)
-  return cat ? `${cat.emoji} ${cat.name}` : '💐 Catálogo'
+  return cat && cat.name ? `${cat.emoji || ''} ${cat.name}` : 'Catálogo'
 })
+
 
 // ── Lifecycle ─────────────────────────────────────────────
 onMounted(() => productsStore.fetch())
