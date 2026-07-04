@@ -1,6 +1,5 @@
 <template>
-    <section class="relative overflow-hidden bg-[#1A0A14] select-none" :style="{ height: heroHeight }">
-
+        <section class="relative overflow-hidden bg-brand-dark select-none h-[75dvh] md:h-[90dvh]">
         <!-- ══ SLIDES ══ -->
         <div class="absolute inset-0">
             <TransitionGroup name="slide-fade" tag="div" class="relative w-full h-full">
@@ -22,13 +21,13 @@
 
                     <!-- Pattern decorativo -->
                     <div class="absolute inset-0 z-[2] opacity-[0.04]" style="background-image: repeating-conic-gradient(
-              rgba(245,197,24,0.6) 0deg, transparent 4deg,
-              transparent 14deg, rgba(245,197,24,0.6) 18deg
+              rgba(212,175,55,0.6) 0deg, transparent 4deg,
+              transparent 14deg, rgba(212,175,55,0.6) 18deg
             );" />
 
                     <!-- Gradiente inferior -->
                     <div class="absolute bottom-0 inset-x-0 h-40 z-[3]"
-                        style="background: linear-gradient(to top, #1A0A14 0%, transparent 100%)" />
+                        style="background: linear-gradient(to top, #052211 0%, transparent 100%)" />
 
                     <!-- ── Contenido ── -->
                     <div class="relative z-[4] w-full max-w-[1400px] mx-auto
@@ -51,15 +50,14 @@
 
                         <!-- Título -->
                         <Transition name="slide-up-delay" appear>
-                            <h2 v-if="current === i" class="font-black leading-[0.92] tracking-tight text-white m-0 mb-4
-                       text-[40px] sm:text-[52px] md:text-[64px] lg:text-[72px]
-                       uppercase max-w-3xl" style="font-family:'Plus Jakarta Sans',sans-serif;
-                       text-shadow: 0 4px 32px rgba(0,0,0,0.5);" v-html="slide.title" />
+                            <h2 v-if="current === i" class="font-display font-bold leading-tight tracking-tight text-white m-0 mb-4
+                       text-4xl sm:text-[52px] md:text-[64px] lg:text-[72px]
+                       uppercase max-w-3xl" style="text-shadow: 0 4px 32px rgba(0,0,0,0.5);" v-html="slide.title" />
                         </Transition>
 
                         <!-- Subtítulo -->
                         <Transition name="slide-up-delay2" appear>
-                            <p v-if="current === i" class="text-[15px] md:text-[16px] text-white/80 leading-relaxed
+                            <p v-if="current === i" class="font-body text-sm md:text-base md:text-[16px] text-white/80 leading-relaxed
                        mb-6 max-w-lg m-0" style="text-shadow: 0 2px 12px rgba(0,0,0,0.5);">
                                 {{ slide.subtitle }}
                             </p>
@@ -71,11 +69,10 @@
                                 <div v-if="slide.oldPrice" class="text-[20px] font-bold text-white/40 line-through">
                                     S/ {{ slide.oldPrice }}
                                 </div>
-                                <div class="font-black text-[52px] md:text-[64px] text-brand-yellow
-                            leading-none drop-shadow-[0_4px_20px_rgba(245,197,24,0.4)]"
-                                    style="font-family:'Plus Jakarta Sans',sans-serif;">
-                                    S/ {{ slide.priceTag }}
-                                </div>
+                            <div class="font-display font-black text-5xl md:text-[64px] text-brand-accent
+                             leading-none drop-shadow-[0_4px_20px_rgba(230,213,195,0.4)]">
+                            S/ {{ slide.priceTag }}
+                            </div>
                                 <div v-if="slide.priceSub" class="text-[13px] text-white/60 font-medium
                          max-w-[80px] leading-snug">
                                     {{ slide.priceSub }}
@@ -85,14 +82,14 @@
 
                         <!-- CTAs -->
                         <Transition name="slide-up-delay3" appear>
-                            <div v-if="current === i" class="flex flex-wrap gap-3">
-                                <button @click="$emit('scrollToMenu')" class="px-7 py-3.5 rounded-2xl font-black text-[14px]
+                            <div v-if="current === i" class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto pr-4">
+                                <button @click="$emit('scrollToMenu')" class="font-body px-7 py-3.5 rounded-2xl font-black text-[14px]
                          border-none cursor-pointer transition-all duration-200
                          uppercase tracking-wide hover:-translate-y-0.5
                          hover:shadow-lg active:scale-95" :style="{
                             background: slide.ctaBg,
                             color: slide.ctaColor,
-                        }" style="font-family:'Plus Jakarta Sans',sans-serif;">
+                        }">
                                     {{ slide.cta }}
                                 </button>
                                 <a v-if="slide.ctaWa" :href="waLink" target="_blank" class="flex items-center gap-2 px-7 py-3.5 rounded-2xl
@@ -106,9 +103,8 @@
                             </div>
                         </Transition>
 
-                        <!-- Floating badges — esquina derecha abajo -->
-                        <div v-if="slide.floatBadges" class="absolute bottom-16 right-6 md:right-12
-                     flex flex-col gap-2 items-end">
+                        <!-- Floating badges -->
+                        <div v-if="slide.floatBadges" class="hidden md:flex absolute bottom-16 right-12 flex-col gap-2 items-end">
                             <Transition name="slide-up-delay3" appear>
                                 <div v-if="current === i" class="flex flex-col gap-2">
                                     <div v-for="fb in slide.floatBadges" :key="fb.text" class="flex items-center gap-2 px-3.5 py-2 rounded-xl
@@ -133,7 +129,7 @@
                 flex items-center gap-2">
             <button v-for="(_, i) in SLIDES" :key="i" @click="goTo(i)"
                 class="rounded-full transition-all duration-400 cursor-pointer border-none" :class="current === i
-                    ? 'bg-brand-yellow w-8 h-2.5'
+                    ? 'bg-brand-accent w-8 h-2.5'
                     : 'bg-white/30 hover:bg-white/60 w-2.5 h-2.5'" />
         </div>
 
@@ -155,14 +151,14 @@
 
         <!-- ══ BARRA DE PROGRESO ══ -->
         <div class="absolute bottom-0 inset-x-0 h-0.5 bg-white/10 z-30">
-            <div class="h-full bg-brand-yellow transition-none" :style="{
+            <div class="h-full bg-brand-accent transition-none" :style="{
                 width: progressWidth + '%',
                 transition: paused ? 'none' : `width ${INTERVAL}ms linear`,
             }" />
         </div>
     </section>
 </template>
-
+f
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 
@@ -176,29 +172,28 @@ const progress = ref(0)
 const waPhone = import.meta.env.VITE_WA_PHONE ?? '51984199340'
 const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent('¡Hola! Quisiera hacer un pedido de flores 💐')}`
 
-// ── Pantalla completa en su sección (dvh evita el salto de la barra móvil) ──
-const heroHeight = computed(() => '92dvh')
+
 const progressWidth = computed(() =>
     paused.value ? (progress.value / INTERVAL * 100) : 100
 )
 
-// ── Slides — reemplaza bgImage con tus fotos reales ───────
+// ── Slides actualizados con la paleta de Birds ───────
 const SLIDES = [
     {
         id: 1,
-        bgImage: '/images/rosasrojas.png',  // ← pon tu foto aquí
-        bg: 'linear-gradient(135deg,#7B1450,#3A0A28,#1A0A14)',
+        bgImage: '/images/rosasrojas.png',
+        bg: 'linear-gradient(135deg,#0C542C,#083B1E,#052211)',
         overlay: 'linear-gradient(110deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.45) 55%, rgba(0,0,0,0.12) 100%)',
         badgeIcon: '🌹',
         badge: 'Selección del día',
-        badgeText: '#F5C518',
-        badgeBg: 'rgba(245,197,24,0.15)',
-        badgeBorder: 'rgba(245,197,24,0.35)',
-        title: 'Ramo de 12<br><span style="color:#F5C518">Rosas Rojas</span>',
+        badgeText: '#D4AF37',
+        badgeBg: 'rgba(212,175,55,0.15)',
+        badgeBorder: 'rgba(212,175,55,0.35)',
+        title: 'Ramo de 12<br><span style="color:#E6D5C3">Rosas Rojas</span>',
         subtitle: 'Rosas frescas seleccionadas a mano, envueltas con papel premium y lazo de seda. El detalle que dice todo.',
         priceTag: '89',
         priceSub: 'precio especial hoy',
-        ctaBg: '#C41E1E',
+        ctaBg: '#0C542C',
         ctaColor: '#FFFFFF',
         cta: 'Pedir ahora →',
         ctaWa: 'Pedir por WhatsApp',
@@ -210,41 +205,41 @@ const SLIDES = [
     {
         id: 2,
         bgImage: '/images/cajarosas.png',
-        bg: 'linear-gradient(135deg,#4A1A38,#2A0D20,#1A0A14)',
+        bg: 'linear-gradient(135deg,#126B38,#0C542C,#052211)',
         overlay: 'linear-gradient(110deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.42) 55%, rgba(0,0,0,0.10) 100%)',
         badgeIcon: '✨',
         badge: 'Diseño estrella',
         badgeText: '#FFFFFF',
-        badgeBg: 'rgba(196,30,30,0.3)',
-        badgeBorder: 'rgba(196,30,30,0.5)',
-        title: 'Arreglo<br><span style="color:#F5C518">en Caja</span>',
+        badgeBg: 'rgba(12,84,44,0.3)',
+        badgeBorder: 'rgba(12,84,44,0.5)',
+        title: 'Arreglo<br><span style="color:#E6D5C3">en Caja</span>',
         subtitle: 'Composición de rosas, eucalipto y flores de temporada en caja sombrero. Incluye tarjeta dedicatoria.',
         priceTag: '129',
         oldPrice: '159',
         priceSub: 'incluye tarjeta',
-        ctaBg: '#F5C518',
-        ctaColor: '#6B1240',
+        ctaBg: '#D4AF37',
+        ctaColor: '#052211',
         cta: 'Ver arreglo →',
         ctaWa: null,
         floatBadges: [
-            { icon: '💌', text: 'Tarjeta incluida', bg: 'rgba(245,197,24,0.2)', border: 'rgba(245,197,24,0.4)', color: '#F5C518' },
+            { icon: '💌', text: 'Tarjeta incluida', bg: 'rgba(212,175,55,0.2)', border: 'rgba(212,175,55,0.4)', color: '#D4AF37' },
             { icon: '📦', text: 'Caja sombrero', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
         ],
     },
     {
         id: 3,
         bgImage: '/images/delivery.jpeg',
-        bg: 'linear-gradient(135deg,#0A2A1A,#08160F,#1A0A14)',
+        bg: 'linear-gradient(135deg,#0C542C,#083B1E,#052211)',
         overlay: 'linear-gradient(110deg, rgba(0,0,0,0.76) 0%, rgba(0,0,0,0.40) 55%, rgba(0,0,0,0.10) 100%)',
         badgeIcon: '🛵',
         badge: 'Delivery disponible',
         badgeText: '#FFFFFF',
-        badgeBg: 'rgba(34,197,94,0.15)',
-        badgeBorder: 'rgba(34,197,94,0.35)',
-        title: 'Entrega<br><span style="color: #F5C518">a Chiclayo</span>',
+        badgeBg: 'rgba(12,84,44,0.3)',
+        badgeBorder: 'rgba(12,84,44,0.5)',
+        title: 'Entrega<br><span style="color: #E6D5C3">a Chiclayo</span>',
         subtitle: 'Llevamos tu detalle a domicilio con entrega programada. Chiclayo, J.L.O., La Victoria, Pimentel y San José.',
         priceTag: null,
-        ctaBg: '#25D366',
+        ctaBg: '#0C542C',
         ctaColor: '#FFFFFF',
         cta: 'Pedir con delivery →',
         ctaWa: null,
@@ -256,24 +251,24 @@ const SLIDES = [
     {
         id: 4,
         bgImage: '/images/ocacion.png',
-        bg: 'linear-gradient(135deg,#3A0A28,#220618,#1A0A14)',
+        bg: 'linear-gradient(135deg,#126B38,#0C542C,#052211)',
         overlay: 'linear-gradient(110deg, rgba(0,0,0,0.76) 0%, rgba(0,0,0,0.42) 55%, rgba(0,0,0,0.10) 100%)',
         badgeIcon: '🎁',
         badge: 'Para cada ocasión',
-        badgeText: '#FDA4AF',
-        badgeBg: 'rgba(251,113,133,0.15)',
-        badgeBorder: 'rgba(251,113,133,0.3)',
-        title: 'Flores para<br><span style="color:#F5C518">toda Ocasión</span>',
+        badgeText: '#D4AF37',
+        badgeBg: 'rgba(212,175,55,0.15)',
+        badgeBorder: 'rgba(212,175,55,0.3)',
+        title: 'Flores para<br><span style="color:#E6D5C3">toda Ocasión</span>',
         subtitle: 'Cumpleaños, aniversarios, condolencias, graduaciones. Diseños personalizados para cada momento especial.',
         priceTag: '45',
         priceSub: 'desde',
-        ctaBg: '#C41E1E',
+        ctaBg: '#0C542C',
         ctaColor: '#FFFFFF',
         cta: 'Ver catálogo →',
         ctaWa: null,
         floatBadges: [
             { icon: '🌸', text: 'Diseños a medida', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
-            { icon: '⭐', text: '4.9 estrellas', bg: 'rgba(245,197,24,0.2)', border: 'rgba(245,197,24,0.4)', color: '#F5C518' },
+            { icon: '⭐', text: '4.9 estrellas', bg: 'rgba(212,175,55,0.2)', border: 'rgba(212,175,55,0.4)', color: '#D4AF37' },
         ],
     },
 ]
