@@ -58,7 +58,7 @@
                       <label class="block text-[10.5px] font-black uppercase tracking-widest text-gray-400 mb-2">
                         Tipo de pedido
                       </label>
-                      <div class="grid grid-cols-2 gap-2">
+                      <div class="grid grid-cols-3 gap-2">
                         <button v-for="t in ORDER_TYPES" :key="t.id" @click="form.type = t.id as any" class="flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2
                                  text-[11.5px] font-bold cursor-pointer transition-all duration-150" :class="form.type === t.id
                                   ? 'border-brand-red bg-red-50 text-brand-red shadow-sm'
@@ -84,6 +84,18 @@
                         <input v-model="form.client_phone" placeholder="987 654 321" type="tel" class="modal-input" />
                       </div>
                     </div>
+
+                    <!-- Campo mesa (solo local) -->
+                    <Transition enter-active-class="transition-all duration-200"
+                      enter-from-class="opacity-0 -translate-y-1" leave-active-class="transition-all duration-150"
+                      leave-to-class="opacity-0">
+                      <div v-if="form.type === 'local'">
+                        <label class="block text-[10.5px] font-black uppercase tracking-widest text-gray-400 mb-1.5">
+                          Número de mesa *
+                        </label>
+                        <input v-model="form.mesa" placeholder="Ej: 4" class="modal-input" />
+                      </div>
+                    </Transition>
 
                     <!-- Campos delivery -->
                     <Transition enter-active-class="transition-all duration-200"
@@ -656,6 +668,10 @@
                              bg-gray-100 text-gray-500 shrink-0 border border-gray-200">
                   {{ typeLabel(o.type) }}
                 </span>
+                <span v-if="o.type === 'local' && o.mesa" class="hidden sm:inline text-[10.5px] font-bold px-2 py-0.5 rounded-full
+                             bg-blue-50 text-blue-700 shrink-0 border border-blue-200">
+                  Mesa {{ o.mesa }}
+                </span>
                 <span v-if="o.metodo_pago" :class="metodoPagoCls(o.metodo_pago)"
                   class="hidden sm:inline text-[10.5px] font-bold px-2 py-0.5 rounded-full shrink-0 border">
                   {{ metodoPagoLabel(o.metodo_pago) }}
@@ -680,20 +696,20 @@
 
             <!-- Timeline -->
             <div class="flex items-center mb-3.5">
-              <div v-for="(step, i) in STEPS" :key="step.value"
+              <div v-for="(step, i) in stepsFor(o.type)" :key="step.value"
                 class="flex-1 flex flex-col items-center gap-1 relative text-[9.5px]"
-                :class="getStepIdx(o.status) > i ? 'text-brand-red' : getStepIdx(o.status) === i ? 'text-brand-red font-bold' : 'text-gray-300'">
-                <div v-if="i < STEPS.length - 1"
+                :class="getStepIdx(o.status, o.type) > i ? 'text-brand-red' : getStepIdx(o.status, o.type) === i ? 'text-brand-red font-bold' : 'text-gray-300'">
+                <div v-if="i < stepsFor(o.type).length - 1"
                   class="absolute top-[11px] left-[calc(50%+11px)] h-0.5 w-[calc(100%-22px)] transition-colors duration-300"
-                  :class="getStepIdx(o.status) > i ? 'bg-brand-red' : 'bg-gray-100'" />
+                  :class="getStepIdx(o.status, o.type) > i ? 'bg-brand-red' : 'bg-gray-100'" />
                 <div
                   class="w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center text-[10px] z-10 transition-all duration-200"
                   :class="{
-                    'bg-brand-red border-brand-red text-white': getStepIdx(o.status) > i,
-                    'bg-red-50 border-brand-red text-brand-red': getStepIdx(o.status) === i,
-                    'bg-white border-gray-200 text-gray-300': getStepIdx(o.status) < i,
+                    'bg-brand-red border-brand-red text-white': getStepIdx(o.status, o.type) > i,
+                    'bg-red-50 border-brand-red text-brand-red': getStepIdx(o.status, o.type) === i,
+                    'bg-white border-gray-200 text-gray-300': getStepIdx(o.status, o.type) < i,
                   }">
-                  <CheckIcon v-if="getStepIdx(o.status) > i" class="w-3 h-3" />
+                  <CheckIcon v-if="getStepIdx(o.status, o.type) > i" class="w-3 h-3" />
                 </div>
                 <span class="text-center leading-tight hidden sm:block">{{ step.label }}</span>
               </div>
@@ -731,7 +747,7 @@
                 <button v-else-if="o.status !== 'entregado' && o.status !== 'cancelado'" @click.stop="advanceOrder(o)"
                   class="px-3 py-1.5 rounded-xl text-[12px] font-bold border border-gray-200 bg-white
                          text-gray-600 cursor-pointer hover:border-brand-red hover:text-brand-red transition-all duration-150">
-                  {{ nextStatusLabel(o.status) }} →
+                  {{ nextStatusLabel(o.status, o.type) }} →
                 </button>
 
                 <!-- Cancelar -->
@@ -809,6 +825,10 @@
               {{ selected.address }}
               <span v-if="selected.district" class="text-gray-300">·</span>
               {{ selected.district }}
+            </p>
+            <p v-if="selected.type === 'local' && selected.mesa" class="text-[11.5px] text-blue-700 m-0 flex items-center gap-1.5 font-semibold">
+              <BuildingStorefrontIcon class="w-3.5 h-3.5 shrink-0" />
+              Mesa {{ selected.mesa }}
             </p>
             <!-- Entrega programada en detalle -->
             <div v-if="selected.entrega_programada && selected.fecha_entrega"
@@ -912,7 +932,7 @@
                    cursor-pointer shadow-sm hover:bg-red-700 transition-all duration-150
                    flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
             <ArrowRightCircleIcon class="w-4 h-4" />
-            {{ nextStatusLabel(selected.status) }}
+            {{ nextStatusLabel(selected.status, selected.type) }}
           </button>
 
           <button @click="sendWA(selected)" class="w-full py-2.5 rounded-xl font-semibold text-[13px] text-white bg-[#25D366]
@@ -969,7 +989,7 @@ import {
   CheckCircleIcon, ArrowRightCircleIcon,
   MapPinIcon, ClipboardDocumentListIcon, XCircleIcon,
   ShoppingCartIcon, TagIcon, TruckIcon,
-  ShoppingBagIcon,
+  ShoppingBagIcon, BuildingStorefrontIcon,
 } from '@heroicons/vue/24/outline'
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon.vue'
 import CustomizerModal from '@/components/catalog/CustomizerModal.vue'
@@ -1022,7 +1042,8 @@ const yaTengoModal = reactive({
 const form = reactive({
   client_name: '',
   client_phone: '',
-  type: 'delivery' as 'recoger' | 'delivery',
+  type: 'delivery' as 'local' | 'recoger' | 'delivery',
+  mesa: '',
   address: '',
   reference: '',
   district: '',
@@ -1056,7 +1077,17 @@ const STEPS = [
 
 const FLOW = ['nuevo', 'confirmado', 'preparando', 'listo', 'en_camino', 'entregado']
 
+// ── Flujo dinámico: local/recoger saltan "en_camino" (no hay motorizado) ──
+function flowFor(type: string): string[] {
+  return type === 'delivery' ? FLOW : FLOW.filter(s => s !== 'en_camino')
+}
+
+function stepsFor(type: string) {
+  return type === 'delivery' ? STEPS : STEPS.filter(s => s.value !== 'en_camino')
+}
+
 const ORDER_TYPES = [
+  { id: 'local', icon: BuildingStorefrontIcon, label: 'Local' },
   { id: 'recoger', icon: ShoppingBagIcon, label: 'Recoger' },
   { id: 'delivery', icon: TruckIcon, label: 'Delivery' },
 ]
@@ -1095,6 +1126,7 @@ const canSubmit = computed(() =>
   form.client_name.trim() &&
   form.client_phone.trim() &&
   cartItems.value.length > 0 &&
+  (form.type !== 'local' || !!form.mesa.trim()) &&
   (!form.entrega_programada || !!form.fecha_entrega)
 )
 
@@ -1170,7 +1202,7 @@ function closeModal() {
 
 function resetForm() {
   Object.assign(form, {
-    client_name: '', client_phone: '', type: 'delivery',
+    client_name: '', client_phone: '', type: 'delivery', mesa: '',
     address: '', reference: '', district: '', note: '',
     mensaje_tarjeta: '', fecha_entrega: '', hora_entrega: '', entrega_programada: false,
   })
@@ -1189,6 +1221,7 @@ async function submitOrder() {
       client_name: form.client_name,
       client_phone: form.client_phone,
       type: form.type,
+      mesa: form.mesa || null,
       address: form.address || null,
       reference: form.reference || null,
       district: form.district || null,
@@ -1252,9 +1285,10 @@ async function confirmarYaTengo() {
 async function selectOrder(o: any) { selected.value = await ordersStore.getOne(o.id) }
 
 async function advanceOrder(o: any) {
-  const idx = FLOW.indexOf(o.status)
-  if (idx >= FLOW.length - 1) return
-  const updated = await ordersStore.updateStatus(o.id, FLOW[idx + 1])
+  const flow = flowFor(o.type)
+  const idx = flow.indexOf(o.status)
+  if (idx >= flow.length - 1) return
+  const updated = await ordersStore.updateStatus(o.id, flow[idx + 1])
   if (selected.value?.id === o.id && updated) {
     selected.value = { ...selected.value, status: updated.status }
   }
@@ -1307,12 +1341,13 @@ function sendWA(o: any) {
 }
 
 // ── Helpers ───────────────────────────────────────────────
-function getStepIdx(s: string): number { return FLOW.indexOf(s) }
+function getStepIdx(s: string, type: string = 'delivery'): number { return flowFor(type).indexOf(s) }
 
-function nextStatusLabel(s: string): string {
+function nextStatusLabel(s: string, type: string = 'delivery'): string {
   const labels: Record<string, string> = {
     nuevo: 'Confirmar', confirmado: 'Preparando',
-    preparando: 'Listo', listo: 'En camino', en_camino: 'Entregado',
+    preparando: 'Listo', listo: type === 'delivery' ? 'En camino' : 'Entregado',
+    en_camino: 'Entregado',
   }
   return labels[s] ?? 'Completado'
 }
@@ -1323,7 +1358,7 @@ function formatDate(d: string): string {
 }
 
 function typeLabel(t: string): string {
-  return { recoger: '🏪 Recoger', delivery: '🚚 Delivery' }[t] ?? t
+  return { local: '🪑 Local', recoger: '🏪 Recoger', delivery: '🚚 Delivery' }[t] ?? t
 }
 
 function statusLabel(s: string): string {

@@ -104,6 +104,7 @@ const METODO_PAGO_LABELS: Record<string, string> = {
 }
 
 const TIPO_LABELS: Record<string, string> = {
+  local: 'Consumo en local',
   recoger: 'Recoger en tienda',
   delivery: 'Delivery a domicilio',
 }
@@ -179,6 +180,11 @@ function sendWA() {
 
     // ── Tipo de pedido ─────────────────────────────────────
     L.push(TIPO_LABELS[o.type] ?? o.type)
+
+    // ── Mesa (consumo en local) ─────────────────────────────
+    if (o.type === 'local' && o.mesa) {
+      L.push(`Mesa: ${o.mesa}`)
+    }
 
     // ── Datos de entrega ───────────────────────────────────
     if (o.type === 'delivery') {

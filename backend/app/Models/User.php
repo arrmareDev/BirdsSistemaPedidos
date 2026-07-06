@@ -29,17 +29,24 @@ class User extends Authenticatable
     ];
 
     // ── Roles válidos ─────────────────────────────────────
-    const ROLES = ['cajero', 'admin', 'sistema'];
+    const ROLES = ['super_admin', 'admin', 'cajero', 'sistema'];
 
     // ── Helpers de rol ────────────────────────────────────
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'super_admin';
+    }
+
     public function isSistema(): bool
     {
         return $this->role === 'sistema';
     }
+
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
     }
+
     public function isCajero(): bool
     {
         return $this->role === 'cajero';
@@ -51,68 +58,70 @@ class User extends Authenticatable
     }
 
     // ── Permisos por módulo ───────────────────────────────
+    // super_admin tiene acceso a todo lo que tiene admin, más
+    // capacidades exclusivas (gestión de usuarios sistema, etc.)
 
-    // Dashboard — todos lo ven
     public function canViewDashboard(): bool
     {
-        return $this->hasRole(['cajero', 'admin', 'sistema']);
+        return $this->hasRole(['cajero', 'admin', 'sistema', 'super_admin']);
     }
 
-    // Catálogo — cajero y admin modifican, sistema solo ve
     public function canViewCatalog(): bool
     {
-        return $this->hasRole(['cajero', 'admin', 'sistema']);
+        return $this->hasRole(['cajero', 'admin', 'sistema', 'super_admin']);
     }
 
     public function canManageCatalog(): bool
     {
-        return $this->hasRole(['admin', 'sistema']);
+        return $this->hasRole(['admin', 'sistema', 'super_admin']);
     }
 
-    // Pedidos — todos
     public function canManageOrders(): bool
     {
-        return $this->hasRole(['cajero', 'admin', 'sistema']);
+        return $this->hasRole(['cajero', 'admin', 'sistema', 'super_admin']);
     }
 
-    // Caja — todos, sistema solo ve
     public function canManageCaja(): bool
     {
-        return $this->hasRole(['cajero', 'admin', 'sistema']);
+        return $this->hasRole(['cajero', 'admin', 'sistema', 'super_admin']);
     }
 
-    // Clientes — todos
     public function canViewClients(): bool
     {
-        return $this->hasRole(['cajero', 'admin', 'sistema']);
+        return $this->hasRole(['cajero', 'admin', 'sistema', 'super_admin']);
     }
 
-    // Reportes — admin y sistema
     public function canViewReports(): bool
     {
-        return $this->hasRole(['admin', 'sistema']);
+        return $this->hasRole(['admin', 'sistema', 'super_admin']);
     }
 
-    // Usuarios — admin crea/edita/elimina, sistema solo ve y resetea
     public function canViewUsers(): bool
     {
-        return $this->hasRole(['admin', 'sistema']);
+        return $this->hasRole(['admin', 'sistema', 'super_admin']);
     }
 
     public function canManageUsers(): bool
     {
-        return $this->hasRole(['admin', 'sistema']);
+        return $this->hasRole(['admin', 'sistema', 'super_admin']);
     }
 
-    // Sistema — solo sistema
+    public function canDelete(User $target): bool
+    {
+        if (!$this->hasRole(['admin', 'sistema', 'super_admin'])) {
+            return false;
+        }
+
+        return $this->id !== $target->id; // nadie puede borrarse a sí mismo
+    }
+
     public function canAccessSistema(): bool
     {
-        return $this->isSistema();
+        return $this->isSistema() || $this->isSuperAdmin();
     }
 
-    // Sistema puede ver módulo sistema en readonly
     public function canViewSistema(): bool
     {
-        return $this->isSistema();
+        return $this->isSistema() || $this->isSuperAdmin();
     }
 }

@@ -22,7 +22,8 @@
       <label class="block text-[10.5px] font-black uppercase tracking-wider text-brand-red mb-3">
         ¿Cómo lo recibes?
       </label>
-      <div class="grid grid-cols-2 gap-3">
+      <!-- grid-cols-3 ahora que son 3 opciones ← NUEVO -->
+      <div class="grid grid-cols-3 gap-3">
         <button v-for="t in ORDER_TYPES" :key="t.id" @click="form.type = t.id as any" class="flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2
                  font-bold text-[12px] cursor-pointer transition-all duration-200 uppercase" :class="form.type === t.id
                   ? 'border-brand-red bg-brand-red/8 text-brand-red shadow-red-sm'
@@ -56,6 +57,28 @@
           <input v-model="form.phone" type="tel" placeholder="987654321"
             @input="form.phone = form.phone.replace(/\D/g, '').slice(0, 9)" maxlength="9" class="checkout-input" />
         </div>
+
+        <!-- ══ SECCIÓN LOCAL (nueva) ══ ← NUEVO -->
+        <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0 -translate-y-1"
+          leave-active-class="transition-all duration-150" leave-to-class="opacity-0">
+          <div v-if="form.type === 'local'" class="flex flex-col gap-3">
+            <div class="px-4 py-3.5 rounded-2xl bg-blue-50 border border-blue-200 flex items-start gap-3">
+              <span class="text-xl shrink-0">🪑</span>
+              <div>
+                <p class="font-bold text-[13px] text-blue-800 m-0">Consumo en el local</p>
+                <p class="text-[11.5px] text-blue-600 m-0 mt-0.5">
+                  Indícanos el número de tu mesa para llevarte el pedido.
+                </p>
+              </div>
+            </div>
+            <div>
+              <label class="block text-[10.5px] font-black uppercase tracking-wider text-brand-red mb-2">
+                Número de mesa *
+              </label>
+              <input v-model="form.mesa" placeholder="Ej: 4" class="checkout-input" />
+            </div>
+          </div>
+        </Transition>
 
         <!-- ══ SECCIÓN DELIVERY ══ -->
         <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0 -translate-y-1"
@@ -246,7 +269,7 @@
             <div>
               <p class="font-bold text-[13px] text-green-800 m-0">Recoger en tienda</p>
               <p class="text-[11.5px] text-green-600 m-0 mt-0.5">
-                Te avisaremos por WhatsApp cuando tu arreglo esté listo para recoger.
+                Te avisaremos por WhatsApp cuando tu pedido esté listo para recoger.
               </p>
             </div>
           </div>
@@ -301,15 +324,15 @@
           <div class="flex items-start gap-2.5 px-3.5 py-3 rounded-2xl bg-pink-50 border border-pink-200">
             <span class="text-pink-500 shrink-0">💐</span>
             <p class="text-[12px] text-pink-700 m-0 leading-relaxed">
-              Nos aseguraremos de que tu arreglo esté fresco y listo para la fecha elegida.
+              Nos aseguraremos de que tu pedido esté listo para la fecha elegida.
             </p>
           </div>
         </div>
       </Transition>
     </div>
 
-    <!-- ══ MENSAJE PARA LA TARJETA ══ -->
-    <div class="bg-white rounded-3xl border border-surface-border shadow-card p-6 mb-6">
+    <!-- ══ MENSAJE PARA LA TARJETA (solo si el carrito tiene productos de florería) ══ ← NUEVO -->
+    <div v-if="cartStore.hasFloreria" class="bg-white rounded-3xl border border-surface-border shadow-card p-6 mb-6">
       <h2 class="font-black text-[15px] text-ink mb-2 m-0 uppercase tracking-wide">
         Mensaje para la tarjeta
       </h2>
@@ -375,9 +398,9 @@
     <!-- ══ NOTA ESPECIAL ══ -->
     <div class="mb-6">
       <label class="block text-[10.5px] font-black uppercase tracking-wider text-brand-red mb-2">
-        Nota adicional (opcional)
+        Nota adicional
       </label>
-      <textarea v-model="form.note" placeholder="Indicaciones adicionales para la florería..." rows="2" class="w-full px-4 py-3 rounded-xl border-2 border-surface-border
+      <textarea v-model="form.note" placeholder="Indicaciones adicionales para tu pedido..." rows="2" class="w-full px-4 py-3 rounded-xl border-2 border-surface-border
                bg-white text-[14px] text-ink outline-none resize-none
                placeholder:text-ink-faint focus:border-brand-red transition-all duration-200" />
     </div>
@@ -439,9 +462,11 @@ interface DeliveryZone { id: number; nombre: string; precio: number }
 const CHICLAYO_LAT = -6.7741
 const CHICLAYO_LNG = -79.8409
 
+// Orden: local, recoger, delivery — coincide con App\Enums\SaleChannel ← NUEVO
 const ORDER_TYPES = [
-  { id: 'recoger', icon: '🏪', label: 'Recoger en tienda' },
-  { id: 'delivery', icon: '🚚', label: 'Delivery a domicilio' },
+  { id: 'local', icon: '🪑', label: 'Consumo en local' },
+  { id: 'recoger', icon: '🏪', label: 'Para llevar' },
+  { id: 'delivery', icon: '🚚', label: 'Delivery' },
 ] as const
 
 const HORARIOS = [
@@ -459,7 +484,8 @@ const HORARIOS = [
 const form = reactive({
   name: '',
   phone: '',
-  type: 'delivery' as 'recoger' | 'delivery',
+  type: 'recoger' as 'local' | 'recoger' | 'delivery', // ← NUEVO tipo agregado
+  mesa: '', // ← NUEVO
   address: '',
   reference: '',
   delivery_zone_id: 0,
@@ -514,12 +540,19 @@ const totalConDelivery = computed(() => {
 
 const canSubmit = computed(() => {
   if (!form.name.trim() || !form.phone.trim() || cartStore.isEmpty) return false
+
+  if (form.type === 'local') { // ← NUEVO
+    return !!form.mesa.trim()
+  }
+
   if (form.type === 'delivery') {
     return !!form.delivery_zone_id
       && !!form.address.trim()
       && !!form.reference.trim()
       && !!form.metodo_pago
   }
+
+  // recoger
   if (form.entrega_programada && !form.fecha_entrega) return false
   return true
 })
@@ -537,6 +570,10 @@ watch(() => form.type, async (val) => {
     zoneNotFound.value = false
     form.delivery_zone_id = 0
     gpsError.value = ''
+  }
+
+  if (val !== 'local') { // ← NUEVO — limpia mesa al salir de "local"
+    form.mesa = ''
   }
 })
 
@@ -686,6 +723,11 @@ async function handleOrder() {
 
   if (cartStore.isEmpty) { errorMsg.value = 'Tu carrito está vacío'; return }
 
+  if (form.type === 'local' && !form.mesa.trim()) { // ← NUEVO
+    errorMsg.value = 'Indica el número de mesa'
+    return
+  }
+
   if (form.type === 'delivery') {
     if (!form.delivery_zone_id) {
       errorMsg.value = 'Marca tu ubicación en el mapa para detectar el costo de delivery'
@@ -705,6 +747,7 @@ async function handleOrder() {
     client_name: form.name.trim(),
     client_phone: form.phone.trim(),
     type: form.type,
+    mesa: form.mesa || undefined, // ← NUEVO
     address: form.address || undefined,
     reference: form.reference || undefined,
     delivery_zone_id: form.delivery_zone_id || undefined,

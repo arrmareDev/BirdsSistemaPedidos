@@ -271,6 +271,49 @@
                         </div>
                     </div>
 
+                    <!-- ── EXTRAS COMPARTIDOS (cafetería/menú) ── -->
+                    <div v-if="product.extras_compartidos.length > 0" class="flex flex-col gap-3">
+                        <div class="flex items-center gap-2">
+                            <p class="text-[11px] font-black text-gray-400 uppercase tracking-widest m-0">
+                                Extras
+                            </p>
+                            <span class="text-[10.5px] text-gray-300 font-medium">opcional</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div v-for="extra in product.extras_compartidos" :key="'shared-' + extra.id" class="flex items-center justify-between px-4 py-3.5 rounded-2xl
+                                       border-2 transition-all duration-150" :class="getSharedExtraQty(extra.id) > 0
+                                        ? 'border-brand-red bg-red-50/60'
+                                        : 'border-gray-100 bg-gray-50'">
+                                <div class="min-w-0 mr-3">
+                                    <p class="font-semibold text-[13.5px] text-gray-900 m-0 truncate">
+                                        {{ extra.name }}
+                                    </p>
+                                    <p class="text-[12px] font-black text-green-600 m-0 mt-0.5">
+                                        +S/ {{ extra.price.toFixed(2) }}
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <button v-if="getSharedExtraQty(extra.id) > 0"
+                                        @click="decrementSharedExtra(extra.id)" class="w-8 h-8 rounded-xl flex items-center justify-center
+                                               border-2 border-brand-red text-brand-red font-bold
+                                               cursor-pointer bg-white hover:bg-red-50 transition-all">
+                                        <MinusIcon class="w-3.5 h-3.5" />
+                                    </button>
+                                    <span v-if="getSharedExtraQty(extra.id) > 0"
+                                        class="w-5 text-center font-black text-[13px]">
+                                        {{ getSharedExtraQty(extra.id) }}
+                                    </span>
+                                    <button @click="incrementSharedExtra(extra)" class="w-8 h-8 rounded-xl flex items-center justify-center
+                                               border-2 border-brand-red bg-brand-red text-white font-bold
+                                               cursor-pointer hover:bg-red-700 transition-all">
+                                        <PlusIcon class="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- ── EXTRAS ── -->
                     <div v-if="product.extras.length > 0" class="flex flex-col gap-3">
                         <div class="flex items-center gap-2">
@@ -476,6 +519,7 @@ const added = ref(false)
 const qty = ref(1)
 const selections = ref<Map<number, CartCustomization>>(new Map())
 const extrasMap = ref<Map<number, CartExtra>>(new Map())
+const sharedExtrasMap = ref<Map<number, CartExtra>>(new Map()) // ← extras_compartidos
 const errors = ref<Record<number, string>>({})
 
 onMounted(async () => {
@@ -503,18 +547,29 @@ const stockBajo = computed(() =>
 const maxQty = computed(() =>
     product.value?.controla_stock ? Math.max(1, product.value.stock ?? 1) : 99
 )
+const modifiersTotal = computed(() => {
+    let sum = 0
+    selections.value.forEach(sec =>
+        sec.selections.forEach(s => { sum += s.price_modifier ?? 0 })
+    )
+    return sum
+})
 const extrasTotal = computed(() => {
     let sum = 0
     extrasMap.value.forEach(e => { sum += e.price * e.qty })
+    sharedExtrasMap.value.forEach(e => { sum += e.price * e.qty })
     return sum
 })
 const totalPrice = computed(() =>
-    ((product.value?.price ?? 0) + extrasTotal.value) * qty.value
+    ((product.value?.price ?? 0) + modifiersTotal.value + extrasTotal.value) * qty.value
 )
 const summaryText = computed(() => {
     const parts: string[] = []
     selections.value.forEach(sec => sec.selections.forEach(s => parts.push(s.name)))
     extrasMap.value.forEach(e => {
+        if (e.qty > 0) parts.push(e.qty > 1 ? `${e.name} ×${e.qty}` : `+ ${e.name}`)
+    })
+    sharedExtrasMap.value.forEach(e => {
         if (e.qty > 0) parts.push(e.qty > 1 ? `${e.name} ×${e.qty}` : `+ ${e.name}`)
     })
     return parts.join(' · ')
@@ -539,12 +594,12 @@ function toggleMultiple(sectionId: number, opt: CustomizationOption) {
             current.selections.splice(idx, 1)
             if (current.selections.length === 0) selections.value.delete(sectionId)
         } else {
-            current.selections.push({ option_id: opt.id, name: opt.name })
+            current.selections.push({ option_id: opt.id, name: opt.name, price_modifier: opt.price_modifier ?? 0 })
         }
     } else {
         selections.value.set(sectionId, {
             section_id: sectionId, seccion: section.seccion, label: section.label,
-            selections: [{ option_id: opt.id, name: opt.name }],
+            selections: [{ option_id: opt.id, name: opt.name, price_modifier: opt.price_modifier ?? 0 }],
         })
     }
     selections.value = new Map(selections.value)
@@ -560,7 +615,7 @@ function selectSingle(sectionId: number, opt: CustomizationOption) {
     } else {
         selections.value.set(sectionId, {
             section_id: sectionId, seccion: section.seccion, label: section.label,
-            selections: [{ option_id: opt.id, name: opt.name }],
+            selections: [{ option_id: opt.id, name: opt.name, price_modifier: opt.price_modifier ?? 0 }],
         })
     }
     selections.value = new Map(selections.value)
@@ -594,6 +649,30 @@ function decrementExtra(extraId: number) {
     extrasMap.value = new Map(extrasMap.value)
 }
 
+// ── Extras compartidos (cafetería/menú) ──────────────────
+function getSharedExtraQty(extraId: number): number {
+    return sharedExtrasMap.value.get(extraId)?.qty ?? 0
+}
+
+function incrementSharedExtra(extra: ProductExtra) {
+    const current = sharedExtrasMap.value.get(extra.id)
+    if (current) { current.qty++ }
+    else {
+        sharedExtrasMap.value.set(extra.id, {
+            extra_id: extra.id, name: extra.name, price: extra.price, qty: 1,
+        })
+    }
+    sharedExtrasMap.value = new Map(sharedExtrasMap.value)
+}
+
+function decrementSharedExtra(extraId: number) {
+    const current = sharedExtrasMap.value.get(extraId)
+    if (!current) return
+    if (current.qty <= 1) sharedExtrasMap.value.delete(extraId)
+    else current.qty--
+    sharedExtrasMap.value = new Map(sharedExtrasMap.value)
+}
+
 // ── Cantidad ──────────────────────────────────────────────
 function incrementQty() { qty.value = Math.min(maxQty.value, qty.value + 1) }
 function decrementQty() { qty.value = Math.max(1, qty.value - 1) }
@@ -615,7 +694,10 @@ function addToCart() {
     if (!valid) return
 
     const customization = Array.from(selections.value.values())
-    const extras = Array.from(extrasMap.value.values()).filter(e => e.qty > 0)
+    const extras = [
+        ...Array.from(extrasMap.value.values()),
+        ...Array.from(sharedExtrasMap.value.values()),
+    ].filter(e => e.qty > 0)
 
     for (let i = 0; i < qty.value; i++) {
         cartStore.add(product.value, customization, extras)

@@ -16,8 +16,11 @@ class OrderResource extends JsonResource
             'client_phone' => $this->client_phone,
 
             // ── Tipo y estado ─────────────────────────────────────
-            'type'   => $this->type,   // recoger | delivery
+            'type'   => $this->type?->value ?? $this->type, // local | recoger | delivery
             'status' => $this->status,
+
+            // ── Local ─────────────────────────────────────────────
+            'mesa' => $this->mesa,
 
             // ── Delivery ──────────────────────────────────────────
             'address'          => $this->address,
@@ -62,6 +65,7 @@ class OrderResource extends JsonResource
                     'unit_price'     => (float) $item->unit_price,
                     'subtotal'       => (float) $item->subtotal,
                     'customization'  => $item->customization,
+                    'extras'         => $item->extras,
                     'custom_summary' => $item->custom_summary,
                 ])
             ),

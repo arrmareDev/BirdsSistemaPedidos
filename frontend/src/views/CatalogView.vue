@@ -32,6 +32,20 @@
 
       <div class="flex-1 min-w-0" id="menu">
 
+        <!-- ── Línea de negocio (Florería / Cafetería / Menú) ── -->
+        <div class="px-4 md:px-8 pt-6">
+          <div class="flex gap-2 sm:gap-2.5 overflow-x-auto scrollbar-none pb-1">
+            <button v-for="line in BUSINESS_LINES" :key="line.value" @click="changeLine(line.value)" class="flex items-center gap-2 px-4 py-2.5 rounded-full border-2
+             font-bold text-[12.5px] cursor-pointer transition-all duration-200
+             uppercase tracking-wide shrink-0" :class="productsStore.activeLine === line.value
+              ? 'border-brand-red bg-brand-red text-white shadow-red-sm'
+              : 'border-surface-border bg-white text-ink-muted hover:border-brand-red/40 hover:text-brand-red'">
+              <span class="text-[16px] leading-none">{{ line.icon }}</span>
+              {{ line.label }}
+            </button>
+          </div>
+        </div>
+
         <!-- ── Categorías ── -->
         <div class="px-4 md:px-8 pt-8 pb-6">
           <div class="flex items-center gap-3 mb-5">
@@ -51,7 +65,7 @@
               <span>Todo</span>
             </button>
 
-            <button v-for="cat in productsStore.categories" :key="cat.id" @click="productsStore.setCategory(cat.slug)"
+            <button v-for="cat in categoriesForActiveLine" :key="cat.id" @click="productsStore.setCategory(cat.slug)"
               class="cat-btn flex flex-col items-center gap-1.5 sm:gap-2
                      py-3 sm:py-3.5 px-2 rounded-2xl border-2 font-bold
                      text-[11px] sm:text-[12px] cursor-pointer transition-all duration-250"
@@ -451,6 +465,20 @@ useHead({
 const router = useRouter()
 const productsStore = useProductsStore()
 const cartStore = useCartStore()
+
+// ── Líneas de negocio ─────────────────────────────────────
+const BUSINESS_LINES = [
+  { value: 'all', icon: '🛍️', label: 'Todo' },
+  { value: 'floreria', icon: '💐', label: 'Florería' },
+  { value: 'cafeteria', icon: '☕', label: 'Cafetería' },
+  { value: 'menu', icon: '🍽️', label: 'Menú' },
+] as const
+
+function changeLine(line: string) {
+  productsStore.setLine(line)
+  productsStore.fetch(line === 'all' ? undefined : line)
+}
+
 const cartOpen = inject<any>('cartOpen')
 const customizer = inject<any>('customizer')
 
@@ -512,14 +540,22 @@ function getSectionEmoji(seccion: string): string {
 
 // ── Computed ──────────────────────────────────────────────
 const categoryLabel = computed(() => {
-  if (productsStore.activeCategory === 'all') return 'Catálogo completo'
-  const cat = productsStore.categories.find(c => c.slug === productsStore.activeCategory)
-  return cat && cat.name ? `${cat.emoji || ''} ${cat.name}` : 'Catálogo'
+  if (productsStore.activeCategory !== 'all') {
+    const cat = productsStore.categories.find(c => c.slug === productsStore.activeCategory)
+    return cat && cat.name ? `${cat.emoji || ''} ${cat.name}` : 'Catálogo'
+  }
+  const line = BUSINESS_LINES.find(l => l.value === productsStore.activeLine)
+  return line && line.value !== 'all' ? `${line.icon} ${line.label}` : 'Catálogo completo'
 })
 
+const categoriesForActiveLine = computed(() =>
+  productsStore.categoriesByLine(productsStore.activeLine)
+)
 
 // ── Lifecycle ─────────────────────────────────────────────
-onMounted(() => productsStore.fetch())
+onMounted(() => productsStore.fetch(
+  productsStore.activeLine !== 'all' ? productsStore.activeLine : undefined
+))
 
 function scrollToMenu() {
   document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' })

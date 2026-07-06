@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\SaleChannel;
 use App\Models\Caja;
 use App\Models\CajaMovimiento;
 use App\Models\Client;
@@ -25,6 +26,17 @@ class OrderService
     {
         return DB::transaction(function () use ($data) {
 
+            $channel = SaleChannel::from($data['type']);
+
+            // ── 0. Validar requisitos según canal ─────────────────
+            if ($channel->requiresMesa() && empty($data['mesa'])) {
+                throw new \Exception('Debes indicar el número de mesa para pedidos en local.');
+            }
+
+            if ($channel->requiresAddress() && empty($data['address'])) {
+                throw new \Exception('Debes indicar la dirección para pedidos delivery.');
+            }
+
             // ── 1. Calcular subtotal ──────────────────────────────
             $items    = $data['items'] ?? [];
             $subtotal = collect($items)->sum(
@@ -44,13 +56,14 @@ class OrderService
                 }
             }
 
-            // ── 3. Resolver delivery fee ──────────────────────────
-            $deliveryFee = $this->resolveDeliveryFee(
-                type: $data['type'],
-                zoneId: $data['delivery_zone_id'] ?? null,
-                deliveryFee: $data['delivery_fee']     ?? null,
-                district: $data['district']         ?? null,
-            );
+            // ── 3. Resolver delivery fee (solo si el canal lo requiere) ──
+            $deliveryFee = $channel->requiresDeliveryFee()
+                ? $this->resolveDeliveryFee(
+                    zoneId: $data['delivery_zone_id'] ?? null,
+                    deliveryFee: $data['delivery_fee'] ?? null,
+                    district: $data['district'] ?? null,
+                )
+                : 0.0;
 
             // ── 4. Resolver cliente ───────────────────────────────
             $phone  = preg_replace('/\D/', '', $data['client_phone']);
@@ -74,7 +87,7 @@ class OrderService
                 'client_id'          => $client->id,
                 'client_name'        => $data['client_name'],
                 'client_phone'       => $data['client_phone'],
-                'type'               => $data['type'],
+                'type'               => $channel->value,
                 'status'             => 'nuevo',
                 'address'            => $data['address']          ?? null,
                 'reference'          => $data['reference']        ?? null,
@@ -113,7 +126,6 @@ class OrderService
                     'custom_summary' => $item['custom_summary'] ?? null,
                 ]);
 
-                // Descontar stock dentro de la transacción
                 $product->reducirStock($qty);
             }
 
@@ -125,9 +137,10 @@ class OrderService
             }
 
             Log::info('Order created', [
-                'order_id'  => $order->id,
+                'order_id' => $order->id,
                 'client_id' => $client->id,
-                'zone_id'   => $data['delivery_zone_id'] ?? null,
+                'channel'  => $channel->value,
+                'zone_id'  => $data['delivery_zone_id'] ?? null,
             ]);
 
             return $order->load('items.product');
@@ -151,7 +164,6 @@ class OrderService
         return $order->fresh(['items.product']);
     }
 
-    // ── Registrar venta en caja ───────────────────────────────
     private function registrarVentaEnCaja(Order $order): void
     {
         try {
@@ -180,7 +192,6 @@ class OrderService
         }
     }
 
-    // ── Registrar comisión del sistema ────────────────────────
     private function registrarComision(Order $order): void
     {
         try {
@@ -209,15 +220,11 @@ class OrderService
         }
     }
 
-    // ── Resolver delivery fee ─────────────────────────────────
     private function resolveDeliveryFee(
-        string  $type,
         ?int    $zoneId,
         ?float  $deliveryFee,
         ?string $district,
     ): float {
-        if ($type !== 'delivery') return 0.0;
-
         if ($zoneId) {
             $zone = DeliveryZone::find($zoneId);
             if ($zone && $zone->activo) {

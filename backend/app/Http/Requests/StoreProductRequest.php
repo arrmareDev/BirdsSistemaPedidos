@@ -35,8 +35,9 @@ class StoreProductRequest extends FormRequest
             'stock'          => 'nullable|integer|min:0',
 
             // ── JSON strings desde FormData ──
-            'sections' => 'nullable|string',
-            'extras'   => 'nullable|string',
+            'sections'  => 'nullable|string',
+            'extras'    => 'nullable|string',
+            'extra_ids' => 'nullable|string', // JSON array de IDs de Extra compartidos
         ];
     }
 

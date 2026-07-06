@@ -26,6 +26,7 @@ class OrderController extends Controller
                 'date'      => $request->get('date'),
                 'date_from' => $request->get('date_from'),
                 'date_to'   => $request->get('date_to'),
+                'type'      => $request->get('type'),
             ],
             perPage: $request->integer('per_page', 10)
         );
@@ -77,7 +78,10 @@ class OrderController extends Controller
             'client_phone' => 'required|string|max:20',
 
             // ── Tipo ──────────────────────────────────────────────
-            'type' => 'required|in:recoger,delivery',
+            'type' => 'required|in:local,recoger,delivery',
+
+            // ── Local ─────────────────────────────────────────────
+            'mesa' => 'nullable|string|max:20',
 
             // ── Delivery ──────────────────────────────────────────
             'address'          => 'nullable|string|max:255',
@@ -165,6 +169,7 @@ class OrderController extends Controller
             'client_name'        => $order->client_name,
             'client_phone'       => $order->client_phone,
             'type'               => $order->type,
+            'mesa'               => $order->mesa,
             'total'              => (float) $order->total,
             'subtotal'           => (float) $order->subtotal,
             'delivery_fee'       => (float) $order->delivery_fee,
@@ -191,7 +196,7 @@ class OrderController extends Controller
                 'extras'         => $i->extras         ?? [],
                 'custom_summary' => $i->custom_summary,
             ])->toArray(),
-            'status_history' => $this->buildStatusHistory($order->status),
+            'status_history' => $this->buildStatusHistory($order->status, $order->type->value),
         ]);
     }
 
@@ -223,16 +228,22 @@ class OrderController extends Controller
     }
 
     // ── Historia de estados ───────────────────────────────────
-    private function buildStatusHistory(string $currentStatus): array
+    // $type: 'local' | 'recoger' | 'delivery' — los pedidos que no son
+    // delivery nunca pasan por "en_camino" (no hay motorizado de por medio).
+    private function buildStatusHistory(string $currentStatus, string $type = 'delivery'): array
     {
         $flow = [
-            'nuevo'      => ['label' => 'Pedido recibido',    'icon' => '📝'],
-            'confirmado' => ['label' => 'Confirmado',         'icon' => '✅'],
-            'preparando' => ['label' => 'Preparando arreglo', 'icon' => '💐'],
-            'listo'      => ['label' => 'Listo para entrega', 'icon' => '🎉'],
-            'en_camino'  => ['label' => 'En camino',          'icon' => '🛵'],
-            'entregado'  => ['label' => 'Entregado',          'icon' => '🏠'],
+            'nuevo'      => ['label' => 'Pedido recibido',  'icon' => '📝'],
+            'confirmado' => ['label' => 'Confirmado',       'icon' => '✅'],
+            'preparando' => ['label' => 'Preparando',       'icon' => '👨‍🍳'],
+            'listo'      => ['label' => $type === 'delivery' ? 'Listo para entrega' : 'Listo para recoger', 'icon' => '🎉'],
         ];
+
+        if ($type === 'delivery') {
+            $flow['en_camino'] = ['label' => 'En camino', 'icon' => '🛵'];
+        }
+
+        $flow['entregado'] = ['label' => 'Entregado', 'icon' => '🏠'];
 
         $statuses   = array_keys($flow);
         $currentIdx = array_search($currentStatus, $statuses);

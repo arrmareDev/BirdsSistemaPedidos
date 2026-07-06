@@ -19,11 +19,12 @@ class ProductResource extends JsonResource
             'popular'     => $this->popular,
             'available'   => $this->available,
             'category'    => $this->whenLoaded('category', fn() => [
-                'id'   => $this->category->id,
-                'name' => $this->category->name,
-                'slug' => $this->category->slug,
+                'id'            => $this->category->id,
+                'name'          => $this->category->name,
+                'slug'          => $this->category->slug,
+                'business_line' => $this->category->business_line?->value,
             ]),
-            // Secciones de personalización (sin precio)
+            // Secciones de personalización (con modificador de precio, ej: tamaños)
             'customization_sections' => $this->whenLoaded(
                 'customizationSections',
                 fn() => $this->customizationSections->map(fn($s) => [
@@ -33,15 +34,25 @@ class ProductResource extends JsonResource
                     'required' => $s->required,
                     'multiple' => $s->multiple,
                     'options'  => $s->options->map(fn($o) => [
-                        'id'   => $o->id,
-                        'name' => $o->name,
+                        'id'             => $o->id,
+                        'name'           => $o->name,
+                        'price_modifier' => (float) $o->price_modifier,
                     ]),
                 ])
             ),
-            // Extras con precio
+            // Extras únicos por producto (florería)
             'extras' => $this->whenLoaded(
                 'extras',
                 fn() => $this->extras->map(fn($e) => [
+                    'id'    => $e->id,
+                    'name'  => $e->name,
+                    'price' => (float) $e->price,
+                ])
+            ),
+            // Extras compartidos/reutilizables (cafetería, menú)
+            'extras_compartidos' => $this->whenLoaded(
+                'extrasCompartidos',
+                fn() => $this->extrasCompartidos->map(fn($e) => [
                     'id'    => $e->id,
                     'name'  => $e->name,
                     'price' => (float) $e->price,

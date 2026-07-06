@@ -29,12 +29,21 @@
               <div class="grid grid-cols-[1fr_auto] gap-3">
                 <div class="flex flex-col gap-1.5">
                   <label class="field-label">Nombre *</label>
-                  <input v-model="catForm.name" placeholder="Ej: Ramos" class="modal-input" />
+                  <input v-model="catForm.name" placeholder="Ej: Ramos" class="modal-input w-full" />
                 </div>
                 <div class="flex flex-col gap-1.5">
                   <label class="field-label">Emoji</label>
                   <input v-model="catForm.emoji" placeholder="💐" class="modal-input w-20 text-center text-[20px]" />
                 </div>
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label class="field-label">Línea de negocio *</label>
+                <select v-model="catForm.business_line" class="modal-input w-full cursor-pointer">
+                  <option value="floreria">💐 Florería</option>
+                  <option value="cafeteria">☕ Cafetería</option>
+                  <option value="menu">🍽️ Menú</option>
+                </select>
               </div>
 
               <div class="flex flex-col gap-1.5">
@@ -178,7 +187,7 @@
                   <div class="grid grid-cols-[1fr_auto] gap-3">
                     <div class="flex flex-col gap-1.5">
                       <label class="field-label">Nombre *</label>
-                      <input v-model="form.name" placeholder="Ej: Ramo de 12 Rosas Rojas" class="modal-input" />
+                      <input v-model="form.name" placeholder="Ej: Ramo de 12 Rosas Rojas" class="modal-input w-full" />
                     </div>
                     <div class="flex flex-col gap-1.5">
                       <label class="field-label">Emoji</label>
@@ -189,12 +198,12 @@
                   <div class="flex flex-col gap-1.5">
                     <label class="field-label">Descripción</label>
                     <textarea v-model="form.description" placeholder="Breve descripción..." rows="2"
-                      class="modal-input resize-none" />
+                      class="modal-input w-full resize-none" />
                   </div>
 
                   <div class="flex flex-col gap-1.5">
                     <label class="field-label">Categoría *</label>
-                    <select v-model="form.category_id" class="modal-input">
+                    <select v-model="form.category_id" class="modal-input w-full">
                       <option value="">Seleccionar categoría...</option>
                       <option v-for="cat in categories" :key="cat.id" :value="cat.id">
                         {{ cat.emoji }} {{ cat.name }}
@@ -205,21 +214,22 @@
                   <div class="flex flex-col gap-1.5">
                     <label class="field-label">Precio (S/) *</label>
                     <input v-model.number="form.price" type="number" step="0.50" min="0" placeholder="0.00"
-                      class="modal-input font-bold" />
+                      class="modal-input w-full font-bold" />
                   </div>
 
                   <div class="grid grid-cols-2 gap-3">
                     <div class="flex flex-col gap-1.5">
                       <label class="field-label">Ocasión</label>
                       <input v-model="form.ocasion" list="ocasiones-list" placeholder="Ej: Cumpleaños"
-                        class="modal-input" />
+                        class="modal-input w-full" />
                       <datalist id="ocasiones-list">
                         <option v-for="o in OCASIONES_SUGERIDAS" :key="o" :value="o" />
                       </datalist>
                     </div>
                     <div class="flex flex-col gap-1.5">
                       <label class="field-label">Tamaño</label>
-                      <input v-model="form.tamano" list="tamanos-list" placeholder="Ej: Mediano" class="modal-input" />
+                      <input v-model="form.tamano" list="tamanos-list" placeholder="Ej: Mediano"
+                        class="modal-input w-full" />
                       <datalist id="tamanos-list">
                         <option v-for="t in TAMANOS_SUGERIDOS" :key="t" :value="t" />
                       </datalist>
@@ -370,7 +380,9 @@
                     </div>
                     <div class="p-4 flex flex-col gap-2">
                       <div v-for="(opt, oi) in section.options" :key="oi" class="flex items-center gap-2">
-                        <input v-model="opt.name" placeholder="Ej: Papel kraft" class="modal-input flex-1 py-2" />
+                        <input v-model="opt.name" placeholder="Ej: Grande" class="modal-input flex-1 py-2" />
+                        <input v-model.number="opt.price_modifier" type="number" step="0.5" placeholder="0.00"
+                          title="Modificador de precio (+/-)" class="modal-input w-24 py-2 text-right" />
                         <button @click="removeOption(si, oi)" class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400
                                  cursor-pointer border-none bg-white hover:bg-red-50 hover:text-red-500
                                  transition-all duration-150 shrink-0">
@@ -425,6 +437,31 @@
                   <p v-if="form.extras.length > 0" class="text-[11px] text-gray-400 m-0">
                     El cliente verá estos extras en el modal y puede agregarlos al pedido.
                   </p>
+
+                  <div class="flex flex-col gap-2 mt-2 pt-4 border-t border-gray-100">
+                    <div class="flex items-center justify-between">
+                      <p class="field-label m-0">Extras compartidos (reutilizables entre productos)</p>
+                      <button type="button" @click="openExtrasManager" class="flex items-center gap-1.5 text-[11.5px] font-bold text-brand-red
+                               cursor-pointer border-none bg-transparent hover:underline">
+                        <PencilSquareIcon class="w-3.5 h-3.5" />
+                        Gestionar
+                      </button>
+                    </div>
+                    <div v-if="availableExtras.length === 0" class="text-[12px] text-gray-400">
+                      Sin extras compartidos creados aún.
+                    </div>
+                    <div v-else class="grid grid-cols-2 gap-2">
+                      <label v-for="extra in availableExtras" :key="extra.id"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl border-2 cursor-pointer transition-all"
+                        :class="form.extra_ids.includes(extra.id) ? 'border-brand-red bg-red-50' : 'border-gray-200'">
+                        <input type="checkbox" :value="extra.id" v-model="form.extra_ids" class="accent-brand-red" />
+                        <span class="text-[12.5px] font-semibold text-gray-700 truncate">{{ extra.name }}</span>
+                        <span class="text-[11px] text-green-600 font-bold ml-auto shrink-0">
+                          +S/{{ extra.price.toFixed(2) }}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Error -->
@@ -540,6 +577,10 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
                   <p class="font-bold text-[13.5px] text-gray-900 m-0 truncate">{{ cat.name }}</p>
+                  <span class="text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded-full
+                           bg-red-50 text-brand-red shrink-0">
+                    {{ BUSINESS_LINE_LABELS[cat.business_line] ?? cat.business_line }}
+                  </span>
                   <span v-if="!cat.active" class="text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded-full
                            bg-gray-100 text-gray-500 shrink-0">
                     Inactiva
@@ -663,7 +704,12 @@
 
         <div class="p-3.5 flex flex-col gap-1 flex-1">
           <p class="font-bold text-[13.5px] text-gray-900 m-0 leading-snug line-clamp-2">{{ product.name }}</p>
-          <p class="text-[11px] text-gray-400 m-0 line-clamp-1">{{ product.category?.name ?? '—' }}</p>
+          <p class="text-[11px] text-gray-400 m-0 line-clamp-1">
+            {{ product.category?.name ?? '—' }}
+            <span v-if="product.category?.business_line" class="text-brand-red font-semibold">
+              · {{ BUSINESS_LINE_LABELS[product.category.business_line] ?? '' }}
+            </span>
+          </p>
 
           <div class="flex flex-wrap gap-1 mt-1">
             <span v-if="product.ocasion"
@@ -729,6 +775,95 @@
         </span>
       </button>
     </div>
+
+    <!-- ══ MODAL: GESTIONAR EXTRAS COMPARTIDOS ══ -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition-opacity duration-200"
+        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
+        <div v-if="showExtrasManager" class="fixed inset-0 z-[500] bg-black/50 backdrop-blur-sm
+                 flex items-center justify-center p-4" @click.self="showExtrasManager = false">
+          <Transition appear enter-active-class="transition-all duration-200" enter-from-class="opacity-0 scale-95"
+            leave-active-class="transition-all duration-150" leave-to-class="opacity-0 scale-95">
+            <div v-if="showExtrasManager" class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh]
+                     flex flex-col overflow-hidden">
+
+              <!-- Header -->
+              <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0">
+                <div>
+                  <h2 class="font-black text-[17px] text-gray-900 m-0">Extras compartidos</h2>
+                  <p class="text-[12px] text-gray-400 m-0 mt-0.5">Crea, edita o elimina extras reutilizables</p>
+                </div>
+                <button @click="showExtrasManager = false" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400
+                         cursor-pointer border-none bg-gray-50 hover:bg-gray-100 transition-all">
+                  <XMarkIcon class="w-4 h-4" />
+                </button>
+              </div>
+
+              <!-- Nuevo extra -->
+              <div class="px-6 py-4 border-b border-gray-100 shrink-0 bg-gray-50/50">
+                <div class="grid grid-cols-[1fr_90px_110px_auto] gap-2 items-end">
+                  <div>
+                    <label class="field-label">Nombre</label>
+                    <input v-model="newExtra.name" placeholder="Ej: Leche de almendra" class="modal-input w-full" />
+                  </div>
+                  <div>
+                    <label class="field-label">Precio</label>
+                    <input v-model.number="newExtra.price" type="number" step="0.5" placeholder="0.00"
+                      class="modal-input w-full" />
+                  </div>
+                  <div>
+                    <label class="field-label">Línea</label>
+                    <select v-model="newExtra.business_line" class="modal-input w-full cursor-pointer">
+                      <option value="floreria">💐 Florería</option>
+                      <option value="cafeteria">☕ Cafetería</option>
+                      <option value="menu">🍽️ Menú</option>
+                    </select>
+                  </div>
+                  <button @click="createExtra" :disabled="!newExtra.name.trim() || savingExtra" class="h-[42px] px-4 rounded-xl bg-brand-red text-white font-bold text-[13px]
+                           cursor-pointer border-none hover:bg-red-700 transition-all
+                           disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5">
+                    <PlusIcon class="w-4 h-4" />
+                    Crear
+                  </button>
+                </div>
+                <p v-if="extrasError" class="text-[11.5px] text-red-600 mt-2 m-0">{{ extrasError }}</p>
+              </div>
+
+              <!-- Lista editable -->
+              <div class="flex-1 overflow-y-auto px-6 py-4">
+                <div v-if="availableExtras.length === 0" class="text-center py-10 text-[13px] text-gray-400">
+                  Aún no has creado ningún extra compartido.
+                </div>
+                <div v-else class="flex flex-col gap-2.5">
+                  <div v-for="extra in availableExtras" :key="extra.id" class="grid grid-cols-[1fr_90px_110px_auto] gap-2 items-center
+                           px-3 py-2.5 rounded-xl border border-gray-100 bg-white">
+                    <input v-model="extra.name" class="modal-input w-full py-1.5" />
+                    <input v-model.number="extra.price" type="number" step="0.5" class="modal-input w-full py-1.5" />
+                    <select v-model="extra.business_line"
+                      class="modal-input w-full py-1.5 cursor-pointer text-[11.5px]">
+                      <option value="floreria">💐 Florería</option>
+                      <option value="cafeteria">☕ Cafetería</option>
+                      <option value="menu">🍽️ Menú</option>
+                    </select>
+                    <div class="flex items-center gap-1.5">
+                      <button @click="saveExtra(extra)" title="Guardar cambios" class="w-8 h-8 rounded-lg flex items-center justify-center text-green-600
+                               cursor-pointer border-none bg-green-50 hover:bg-green-100 transition-all shrink-0">
+                        <CheckIcon class="w-4 h-4" />
+                      </button>
+                      <button @click="deleteExtra(extra.id)" title="Eliminar" class="w-8 h-8 rounded-lg flex items-center justify-center text-red-500
+                               cursor-pointer border-none bg-red-50 hover:bg-red-100 transition-all shrink-0">
+                        <TrashIcon class="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </Transition>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -739,6 +874,7 @@ import {
   MagnifyingGlassIcon, PhotoIcon, CheckIcon,
   CheckCircleIcon, ExclamationCircleIcon, TagIcon,
   PlusCircleIcon, ArchiveBoxIcon, FolderIcon, ChevronDownIcon,
+  PencilSquareIcon,
 } from '@heroicons/vue/24/outline'
 import { useProductsStore } from '@/stores/products'
 import type { Product, Category } from '@/stores/products'
@@ -774,9 +910,16 @@ const catError = ref('')
 const catForm = reactive({
   name: '',
   emoji: '',
+  business_line: 'floreria' as 'floreria' | 'cafeteria' | 'menu',
   sort_order: 0,
   active: true,
 })
+
+const BUSINESS_LINE_LABELS: Record<string, string> = {
+  floreria: 'Florería',
+  cafeteria: 'Cafetería',
+  menu: 'Menú',
+}
 
 // ── Constantes ────────────────────────────────────────────
 const MODAL_TABS = [
@@ -817,12 +960,13 @@ function capitalize(s: string): string {
 }
 
 // ── Form producto ─────────────────────────────────────────
-interface FormOption { name: string }
+interface FormOption { name: string; price_modifier: number }
 interface FormSection {
   seccion: string; label: string; required: boolean
   multiple: boolean; sort_order: number; options: FormOption[]
 }
 interface FormExtra { name: string; price: number }
+interface AvailableExtra { id: number; name: string; price: number; business_line: string }
 
 const form = reactive({
   name: '', description: '', emoji: '',
@@ -832,7 +976,10 @@ const form = reactive({
   available: true, popular: false,
   sections: [] as FormSection[],
   extras: [] as FormExtra[],
+  extra_ids: [] as number[], // ← extras compartidos seleccionados
 })
+
+const availableExtras = ref<AvailableExtra[]>([])
 
 // ── Computed ──────────────────────────────────────────────
 const categoriesSorted = computed(() =>
@@ -857,6 +1004,7 @@ const filteredProducts = computed(() => {
 onMounted(async () => {
   await productsStore.fetchAdmin()
   await loadCategories()
+  await loadAvailableExtras()
 })
 
 async function loadCategories() {
@@ -864,12 +1012,92 @@ async function loadCategories() {
   categories.value = data.data
 }
 
+async function loadAvailableExtras() {
+  try {
+    const { data } = await api.get('/admin/extras')
+
+    availableExtras.value = (data.data ?? []).map((extra: any) => ({
+      ...extra,
+      id: Number(extra.id),
+      price: Number(extra.price),
+    }))
+  } catch (error) {
+    console.error(error)
+    availableExtras.value = []
+  }
+}
+
+// ══ GESTIÓN DE EXTRAS COMPARTIDOS ═══════════════════════════
+
+const showExtrasManager = ref(false)
+const extrasError = ref('')
+const savingExtra = ref(false)
+const newExtra = reactive({
+  name: '',
+  price: 0,
+  business_line: 'floreria' as 'floreria' | 'cafeteria' | 'menu',
+})
+
+function openExtrasManager() {
+  extrasError.value = ''
+  showExtrasManager.value = true
+}
+
+async function createExtra() {
+  if (!newExtra.name.trim()) return
+  extrasError.value = ''
+  savingExtra.value = true
+  try {
+    const { data } = await api.post('/admin/extras', {
+      name: newExtra.name.trim(),
+      price: newExtra.price || 0,
+      business_line: newExtra.business_line,
+    })
+    availableExtras.value.push(data.data)
+    newExtra.name = ''
+    newExtra.price = 0
+  } catch (e: any) {
+    extrasError.value = e?.response?.data?.message ?? 'No se pudo crear el extra'
+  } finally {
+    savingExtra.value = false
+  }
+}
+
+async function saveExtra(extra: AvailableExtra) {
+  extrasError.value = ''
+  try {
+    await api.put(`/admin/extras/${extra.id}`, {
+      name: extra.name,
+      price: extra.price,
+      business_line: extra.business_line,
+    })
+  } catch (e: any) {
+    extrasError.value = e?.response?.data?.message ?? 'No se pudo guardar el extra'
+    await loadAvailableExtras() // revertir a lo que hay en el servidor
+  }
+}
+
+async function deleteExtra(id: number) {
+  if (!confirm('¿Eliminar este extra? Se quitará de todos los productos que lo tengan.')) return
+  extrasError.value = ''
+  try {
+    await api.delete(`/admin/extras/${id}`)
+    availableExtras.value = availableExtras.value.filter(e => e.id !== id)
+    form.extra_ids = form.extra_ids.filter(id2 => id2 !== id)
+  } catch (e: any) {
+    extrasError.value = e?.response?.data?.message ?? 'No se pudo eliminar el extra'
+  }
+}
+
 // ══ CRUD CATEGORÍAS ═══════════════════════════════════════
 
 function openCreateCat() {
   editingCat.value = null
   catError.value = ''
-  Object.assign(catForm, { name: '', emoji: '', sort_order: categories.value.length, active: true })
+  Object.assign(catForm, {
+    name: '', emoji: '', business_line: 'floreria',
+    sort_order: categories.value.length, active: true,
+  })
   showCatModal.value = true
 }
 
@@ -879,6 +1107,7 @@ function openEditCat(cat: Category) {
   Object.assign(catForm, {
     name: cat.name,
     emoji: cat.emoji ?? '',
+    business_line: cat.business_line,
     sort_order: cat.sort_order,
     active: cat.active,
   })
@@ -953,7 +1182,7 @@ function openCreate() {
     name: '', description: '', emoji: '', category_id: '',
     price: 0, ocasion: '', color: '', tamano: '',
     stock: 0, controla_stock: false, available: true, popular: false,
-    sections: [], extras: [],
+    sections: [], extras: [], extra_ids: [],
   })
   showProductModal.value = true
 }
@@ -974,9 +1203,10 @@ function openEdit(p: Product) {
     sections: (p.customization_sections ?? []).map(s => ({
       seccion: s.seccion, label: s.label, required: s.required,
       multiple: s.multiple, sort_order: 0,
-      options: s.options.map(o => ({ name: o.name })),
+      options: s.options.map(o => ({ name: o.name, price_modifier: o.price_modifier ?? 0 })),
     })),
     extras: (p.extras ?? []).map(e => ({ name: e.name, price: e.price })),
+    extra_ids: (p.extras_compartidos ?? []).map(e => e.id),
   })
   showProductModal.value = true
 }
@@ -1006,7 +1236,7 @@ function addSection(sec: { value: string; label: string }) {
 }
 
 function removeSection(i: number) { form.sections.splice(i, 1) }
-function addOption(si: number) { form.sections[si].options.push({ name: '' }) }
+function addOption(si: number) { form.sections[si].options.push({ name: '', price_modifier: 0 }) }
 function removeOption(si: number, oi: number) { form.sections[si].options.splice(oi, 1) }
 function addExtra() { form.extras.push({ name: '', price: 0 }) }
 function removeExtra(i: number) { form.extras.splice(i, 1) }
@@ -1038,7 +1268,9 @@ async function saveProduct() {
         form.sections.map((s, i) => ({
           seccion: s.seccion, label: s.label, required: s.required,
           multiple: s.multiple, sort_order: i,
-          options: s.options.map((o, j) => ({ name: o.name, sort_order: j })),
+          options: s.options.map((o, j) => ({
+            name: o.name, price_modifier: o.price_modifier || 0, sort_order: j,
+          })),
         }))
       ))
     }
@@ -1047,6 +1279,7 @@ async function saveProduct() {
         name: e.name.trim(), price: e.price, sort_order: i,
       }))
     ))
+    fd.append('extra_ids', JSON.stringify(form.extra_ids))
     if (imageFile.value) fd.append('image', imageFile.value)
 
     const url = editingProduct.value
@@ -1086,7 +1319,6 @@ async function confirmDelete() {
 
 <style scoped>
 .modal-input {
-  width: 100%;
   padding: 0.55rem 0.875rem;
   border-radius: 0.75rem;
   border: 2px solid #f3f4f6;

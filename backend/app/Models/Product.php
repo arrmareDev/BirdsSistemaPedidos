@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -27,11 +28,11 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'price'           => 'decimal:2',
-        'available'       => 'boolean',
-        'popular'         => 'boolean',
-        'controla_stock'  => 'boolean',
-        'stock'           => 'integer',
+        'price'          => 'decimal:2',
+        'available'      => 'boolean',
+        'popular'        => 'boolean',
+        'controla_stock' => 'boolean',
+        'stock'          => 'integer',
     ];
 
     protected $appends = ['image_url'];
@@ -78,9 +79,18 @@ class Product extends Model
             ->orderBy('sort_order');
     }
 
+    // ── Extras viejos (1 extra = 1 producto, florería) ────────
     public function extras(): HasMany
     {
         return $this->hasMany(ProductExtra::class)
+            ->orderBy('sort_order');
+    }
+
+    // ── Extras compartidos (nuevo, cafetería/menú) ────────────
+    public function extrasCompartidos(): BelongsToMany
+    {
+        return $this->belongsToMany(Extra::class, 'extra_product')
+            ->where('active', true)
             ->orderBy('sort_order');
     }
 

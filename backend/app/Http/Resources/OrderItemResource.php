@@ -17,6 +17,7 @@ class OrderItemResource extends JsonResource
             'unit_price'     => (float) $this->unit_price,
             'subtotal'       => (float) $this->subtotal,
             'customization'  => $this->customization ?? [],
+            'extras'         => $this->extras ?? [],
             'custom_summary' => $this->custom_summary,
         ];
     }

@@ -12,11 +12,13 @@ class ProductCustomizationOption extends Model
     protected $fillable = [
         'section_id',
         'name',
+        'price_modifier',
         'sort_order',
     ];
 
     protected $casts = [
-        'sort_order' => 'integer',
+        'price_modifier' => 'decimal:2',
+        'sort_order'      => 'integer',
     ];
 
     public function section(): BelongsTo

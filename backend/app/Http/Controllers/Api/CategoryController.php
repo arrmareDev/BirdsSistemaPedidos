@@ -2,42 +2,47 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\BusinessLine;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
-    // GET /api/v1/categories — público
-    public function index(): JsonResponse
+    // GET /api/v1/categories?linea=cafeteria — público
+    public function index(Request $request): JsonResponse
     {
-        $categories = Category::where('active', true)
-            ->orderBy('sort_order')
-            ->get();
+        $query = Category::where('active', true)
+            ->orderBy('sort_order');
 
-        return $this->success(CategoryResource::collection($categories));
+        $this->applyBusinessLineFilter($query, $request);
+
+        return $this->success(CategoryResource::collection($query->get()));
     }
 
-    // GET /api/v1/admin/categories — admin
-    public function adminIndex(): JsonResponse
+    // GET /api/v1/admin/categories?linea=cafeteria — admin
+    public function adminIndex(Request $request): JsonResponse
     {
-        $categories = Category::withCount('products')
-            ->orderBy('sort_order')
-            ->get();
+        $query = Category::withCount('products')
+            ->orderBy('sort_order');
 
-        return $this->success(CategoryResource::collection($categories));
+        $this->applyBusinessLineFilter($query, $request);
+
+        return $this->success(CategoryResource::collection($query->get()));
     }
 
     // POST /api/v1/admin/categories
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'       => 'required|string|max:100',
-            'emoji'      => 'nullable|string|max:10',
-            'sort_order' => 'nullable|integer',
-            'active'     => 'nullable|boolean',
+            'name'          => 'required|string|max:100',
+            'business_line' => ['required', Rule::enum(BusinessLine::class)],
+            'emoji'         => 'nullable|string|max:10',
+            'sort_order'    => 'nullable|integer',
+            'active'        => 'nullable|boolean',
         ]);
 
         $data['slug'] = Str::slug($data['name']);
@@ -53,10 +58,11 @@ class CategoryController extends Controller
         $category = Category::findOrFail($id);
 
         $data = $request->validate([
-            'name'       => 'sometimes|string|max:100',
-            'emoji'      => 'nullable|string|max:10',
-            'sort_order' => 'nullable|integer',
-            'active'     => 'nullable|boolean',
+            'name'          => 'sometimes|string|max:100',
+            'business_line' => ['sometimes', Rule::enum(BusinessLine::class)],
+            'emoji'         => 'nullable|string|max:10',
+            'sort_order'    => 'nullable|integer',
+            'active'        => 'nullable|boolean',
         ]);
 
         if (isset($data['name'])) {
@@ -83,5 +89,15 @@ class CategoryController extends Controller
         $category->delete();
 
         return $this->success(null, 'Categoría eliminada');
+    }
+
+    // ── Helpers ───────────────────────────────────────────
+    private function applyBusinessLineFilter($query, Request $request): void
+    {
+        $linea = $request->get('linea');
+
+        if ($linea && in_array($linea, array_column(BusinessLine::cases(), 'value'))) {
+            $query->where('business_line', $linea);
+        }
     }
 }

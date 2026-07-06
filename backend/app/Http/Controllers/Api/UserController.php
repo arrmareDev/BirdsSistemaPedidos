@@ -135,17 +135,13 @@ class UserController extends Controller
     }
 
     // DELETE /admin/users/{id} — solo super_admin
-    public function destroy(int $id): JsonResponse
+    public function destroy(User $user)
     {
-        $user = User::findOrFail($id);
-
-        if ($user->id === auth()->id()) {
-            return $this->error('No puedes eliminarte a ti mismo', 422);
+        if (!auth()->user()->canDelete($user)) {
+            abort(403, 'No puedes eliminar este usuario.');
         }
 
-        $user->tokens()->delete();
         $user->delete();
-
-        return $this->success(null, 'Usuario eliminado');
+        return response()->noContent();
     }
 }

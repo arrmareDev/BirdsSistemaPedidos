@@ -6,7 +6,7 @@ export interface AdminUser {
   id: number;
   name: string;
   email: string;
-  role: "cajero" | "admin" | "sistema";
+  role: "cajero" | "admin" | "sistema" | "super_admin"; // ← actualizado
   permissions: {
     dashboard: boolean;
     catalog: boolean;
@@ -30,14 +30,13 @@ export const useAdminStore = defineStore("admin", () => {
   );
   const loading = ref(false);
 
-  // ── Computed ──────────────────────────────────────────
   const isAuth = computed(() => !!token.value);
   const role = computed(() => user.value?.role ?? null);
   const isSistema = computed(() => role.value === "sistema");
   const isAdmin = computed(() => role.value === "admin");
   const isCajero = computed(() => role.value === "cajero");
+  const isSuperAdmin = computed(() => role.value === "super_admin"); // ← NUEVO
 
-  // Permisos de navegación
   const can = computed(() => ({
     dashboard: user.value?.permissions.dashboard ?? false,
     catalog: user.value?.permissions.catalog ?? false,
@@ -51,11 +50,9 @@ export const useAdminStore = defineStore("admin", () => {
     manageUsers: user.value?.permissions.can_manage_users ?? false,
     cobrar: user.value?.permissions.can_cobrar ?? false,
     delete: user.value?.permissions.can_delete ?? false,
-    // ← CORREGIDO: .value para leer el computed
-    zones: isAdmin.value || isSistema.value,
+    zones: isAdmin.value || isSistema.value || isSuperAdmin.value,
   }));
 
-  // Ruta de inicio según rol
   const homeRoute = computed(() => {
     switch (role.value) {
       case "cajero":
@@ -67,7 +64,6 @@ export const useAdminStore = defineStore("admin", () => {
     }
   });
 
-  // ── Actions ───────────────────────────────────────────
   async function login(email: string, password: string): Promise<boolean> {
     loading.value = true;
     try {
@@ -116,6 +112,7 @@ export const useAdminStore = defineStore("admin", () => {
     isSistema,
     isAdmin,
     isCajero,
+    isSuperAdmin,
     can,
     homeRoute,
     login,

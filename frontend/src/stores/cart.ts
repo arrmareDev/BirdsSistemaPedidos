@@ -9,6 +9,7 @@ export interface CartCustomization {
   selections: Array<{
     option_id: number;
     name: string;
+    price_modifier: number; // ← NUEVO — necesario para tamaños con precio distinto
   }>;
 }
 
@@ -25,7 +26,9 @@ export interface CartItem {
   name: string;
   emoji: string | null;
   imageUrl: string | null;
+  businessLine: string | null; // ← NUEVO — 'floreria' | 'cafeteria' | 'menu'
   basePrice: number;
+  modifiersPrice: number; // ← NUEVO — suma de price_modifier de la personalización
   extrasPrice: number;
   price: number;
   qty: number;
@@ -43,11 +46,29 @@ export const useCartStore = defineStore("cart", () => {
   );
   const isEmpty = computed(() => items.value.length === 0);
 
+  // ── Detecta si el carrito tiene productos de florería ──────
+  // (para mostrar/ocultar el campo de "mensaje para la tarjeta" en checkout)
+  const hasFloreria = computed(() =>
+    items.value.some(
+      (i) => i.businessLine === "floreria" || i.businessLine === null,
+    ),
+  );
+
+  function calcModifiersPrice(customization: CartCustomization[]): number {
+    return customization.reduce(
+      (sum, sec) =>
+        sum +
+        sec.selections.reduce((s, sel) => s + (sel.price_modifier ?? 0), 0),
+      0,
+    );
+  }
+
   function add(
     product: Product,
     customization: CartCustomization[],
     extras: CartExtra[],
   ) {
+    const modifiersPrice = calcModifiersPrice(customization);
     const extrasPrice = extras.reduce((sum, e) => sum + e.price * e.qty, 0);
     const summary = buildSummary(customization, extras);
 
@@ -57,9 +78,11 @@ export const useCartStore = defineStore("cart", () => {
       name: product.name,
       emoji: product.emoji,
       imageUrl: product.image_url,
+      businessLine: product.category?.business_line ?? null,
       basePrice: product.price,
+      modifiersPrice,
       extrasPrice,
-      price: product.price + extrasPrice,
+      price: product.price + modifiersPrice + extrasPrice,
       qty: 1,
       customization,
       extras,
@@ -77,12 +100,14 @@ export const useCartStore = defineStore("cart", () => {
     const item = items.value.find((i) => i._uid === uid);
     if (!item) return;
 
+    const modifiersPrice = calcModifiersPrice(customization);
     const extrasPrice = extras.reduce((sum, e) => sum + e.price * e.qty, 0);
 
     item.customization = customization;
     item.extras = extras;
+    item.modifiersPrice = modifiersPrice;
     item.extrasPrice = extrasPrice;
-    item.price = item.basePrice + extrasPrice;
+    item.price = item.basePrice + modifiersPrice + extrasPrice;
     item.qty = qty;
     item.customSummary = buildSummary(customization, extras);
   }
@@ -124,6 +149,7 @@ export const useCartStore = defineStore("cart", () => {
     count,
     total,
     isEmpty,
+    hasFloreria,
     add,
     updateItem,
     incrementQty,

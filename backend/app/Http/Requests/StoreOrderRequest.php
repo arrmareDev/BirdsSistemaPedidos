@@ -18,8 +18,11 @@ class StoreOrderRequest extends FormRequest
             'client_name'  => 'required|string|max:150',
             'client_phone' => 'required|string|max:20',
 
-            // ── Tipo de pedido — solo recoger o delivery ──────────
-            'type' => 'required|in:recoger,delivery',
+            // ── Tipo de pedido ─────────────────────────────────────
+            'type' => 'required|in:local,recoger,delivery',
+
+            // ── Local ──────────────────────────────────────────────
+            'mesa' => 'nullable|string|max:20',
 
             // ── Delivery ──────────────────────────────────────────
             'address'          => 'nullable|string|max:255',
@@ -62,7 +65,7 @@ class StoreOrderRequest extends FormRequest
             'client_name.required'         => 'El nombre del cliente es requerido',
             'client_phone.required'        => 'El teléfono es requerido',
             'type.required'                => 'El tipo de pedido es requerido',
-            'type.in'                      => 'El tipo debe ser "recoger" o "delivery"',
+            'type.in'                      => 'El tipo debe ser "local", "recoger" o "delivery"',
             'delivery_zone_id.exists'      => 'La zona de delivery seleccionada no existe',
             'items.required'               => 'El pedido debe tener al menos un producto',
             'items.min'                    => 'El pedido debe tener al menos un producto',

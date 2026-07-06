@@ -17,10 +17,10 @@ class ProductController extends Controller
 {
     private function withRelations(): array
     {
-        return ['category', 'customizationSections.options', 'extras'];
+        return ['category', 'customizationSections.options', 'extras', 'extrasCompartidos'];
     }
 
-    // GET /api/v1/products — público
+    // GET /api/v1/products?linea=cafeteria — público
     public function index(Request $request): JsonResponse
     {
         $products = Product::with($this->withRelations())
@@ -32,19 +32,33 @@ class ProductController extends Controller
                     fn($c) => $c->where('slug', $cat)
                 )
             )
+            ->when(
+                $request->get('linea'),
+                fn($q, $linea) => $q->whereHas(
+                    'category',
+                    fn($c) => $c->where('business_line', $linea)
+                )
+            )
             ->orderBy('id')
             ->get();
 
         return $this->success(ProductResource::collection($products));
     }
 
-    // GET /api/v1/admin/products — admin
+    // GET /api/v1/admin/products?linea=cafeteria — admin
     public function adminIndex(Request $request): JsonResponse
     {
         $products = Product::with($this->withRelations())
             ->when(
                 $request->get('category_id'),
                 fn($q, $id) => $q->where('category_id', $id)
+            )
+            ->when(
+                $request->get('linea'),
+                fn($q, $linea) => $q->whereHas(
+                    'category',
+                    fn($c) => $c->where('business_line', $linea)
+                )
             )
             ->orderBy('id')
             ->get();
@@ -79,13 +93,15 @@ class ProductController extends Controller
         $popular   = $this->parseBool($request->input('popular', '0'));
         $sections  = $this->parseJson($request->input('sections'));
         $extras    = $this->parseJson($request->input('extras'));
+        $extraIds  = $this->parseJson($request->input('extra_ids'));
 
         return DB::transaction(function () use (
             $request,
             $available,
             $popular,
             $sections,
-            $extras
+            $extras,
+            $extraIds
         ) {
             $imagePath = null;
             if ($request->hasFile('image')) {
@@ -109,6 +125,7 @@ class ProductController extends Controller
 
             $this->syncSections($product, $sections);
             $this->syncExtras($product, $extras);
+            $this->syncExtrasCompartidos($product, $extraIds);
 
             $product->load($this->withRelations());
             return $this->created(new ProductResource($product), 'Producto creado');
@@ -141,6 +158,7 @@ class ProductController extends Controller
         );
         $sections = $this->parseJson($request->input('sections'));
         $extras   = $this->parseJson($request->input('extras'));
+        $extraIds = $this->parseJson($request->input('extra_ids'));
 
         return DB::transaction(function () use (
             $request,
@@ -148,7 +166,8 @@ class ProductController extends Controller
             $available,
             $popular,
             $sections,
-            $extras
+            $extras,
+            $extraIds
         ) {
             $imagePath = $product->image;
             if ($request->hasFile('image')) {
@@ -177,6 +196,9 @@ class ProductController extends Controller
             }
             if ($request->has('extras')) {
                 $this->syncExtras($product, $extras);
+            }
+            if ($request->has('extra_ids')) {
+                $this->syncExtrasCompartidos($product, $extraIds);
             }
 
             $product->load($this->withRelations());
@@ -263,20 +285,21 @@ class ProductController extends Controller
             if (empty($sec['seccion'])) continue;
 
             $section = ProductCustomizationSection::create([
-                'product_id'  => $product->id,
-                'seccion'     => $sec['seccion'],
-                'label'       => $sec['label']      ?? $sec['seccion'],
-                'required'    => $sec['required']   ?? false,
-                'multiple'    => $sec['multiple']   ?? false,
-                'sort_order'  => $sec['sort_order'] ?? $i,
+                'product_id' => $product->id,
+                'seccion'    => $sec['seccion'],
+                'label'      => $sec['label']    ?? $sec['seccion'],
+                'required'   => $sec['required'] ?? false,
+                'multiple'   => $sec['multiple'] ?? false,
+                'sort_order' => $sec['sort_order'] ?? $i,
             ]);
 
             foreach ($sec['options'] ?? [] as $j => $opt) {
                 if (empty($opt['name'])) continue;
                 ProductCustomizationOption::create([
-                    'section_id'  => $section->id,
-                    'name'        => $opt['name'],
-                    'sort_order'  => $opt['sort_order'] ?? $j,
+                    'section_id'     => $section->id,
+                    'name'           => $opt['name'],
+                    'price_modifier' => $opt['price_modifier'] ?? 0,
+                    'sort_order'     => $opt['sort_order'] ?? $j,
                 ]);
             }
         }
@@ -289,11 +312,23 @@ class ProductController extends Controller
         foreach ($extras as $i => $extra) {
             if (empty($extra['name'])) continue;
             ProductExtra::create([
-                'product_id'  => $product->id,
-                'name'        => $extra['name'],
-                'price'       => $extra['price']      ?? 0,
-                'sort_order'  => $extra['sort_order'] ?? $i,
+                'product_id' => $product->id,
+                'name'       => $extra['name'],
+                'price'      => $extra['price']     ?? 0,
+                'sort_order' => $extra['sort_order'] ?? $i,
             ]);
         }
+    }
+
+    /**
+     * Sincroniza extras compartidos/reutilizables (tabla Extra + pivote extra_product).
+     * Se usan para cafetería/menú donde un mismo extra (ej: "leche de almendra")
+     * aplica a múltiples productos a la vez.
+     *
+     * $extraIds es un array simple de IDs: [1, 3, 7]
+     */
+    private function syncExtrasCompartidos(Product $product, array $extraIds): void
+    {
+        $product->extrasCompartidos()->sync($extraIds);
     }
 }
