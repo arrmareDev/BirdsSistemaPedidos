@@ -468,7 +468,7 @@ const cartStore = useCartStore()
 
 // ── Líneas de negocio ─────────────────────────────────────
 const BUSINESS_LINES = [
-  { value: 'all', icon: '🛍️', label: 'Todo' },
+  // { value: 'all', icon: '🛍️', label: 'Todo' },
   { value: 'floreria', icon: '💐', label: 'Florería' },
   { value: 'cafeteria', icon: '☕', label: 'Cafetería' },
   { value: 'menu', icon: '🍽️', label: 'Menú' },
