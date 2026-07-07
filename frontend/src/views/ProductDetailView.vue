@@ -148,7 +148,7 @@
                         <span v-if="product.category" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
                                    text-[11.5px] font-bold" style="background:rgba(196,30,30,0.07);color:#C41E1E;
                                    border:1.5px solid rgba(196,30,30,0.15);">
-                            {{ product.category.emoji }} {{ product.category.name }}
+                            {{ product?.category?.emoji }} {{ product?.category?.name }}
                         </span>
                         <span v-if="product.ocasion" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
                                    text-[11.5px] font-bold bg-rose-50 text-rose-600 border border-rose-100">
@@ -457,6 +457,24 @@
                     </div>
                 </div>
             </div>
+            <!-- ── PRODUCTOS QUE TE PUEDAN INTERESAR ── -->
+            <div v-if="relatedProducts.length > 0" class="mt-20 pt-12 border-t border-gray-100">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="font-black text-[22px] sm:text-[28px] text-gray-900 m-0" 
+                        style="font-family:'Plus Jakarta Sans',sans-serif;">
+                        También te puede interesar
+                    </h2>
+                </div>
+                
+                <!-- Cuadrícula responsive de tarjetas -->
+                    <div class="flex sm:grid sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 
+                            overflow-x-auto snap-x snap-mandatory pb-4 hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+                    <div v-for="item in relatedProducts" :key="item.id" 
+                         class="w-[70vw] sm:w-auto shrink-0 snap-center sm:snap-align-none">
+                        <ProductCard :product="item" />
+                    </div>
+                </div>
+            </div>
         </main>
 
         <!-- ══ BOTTOM BAR MOBILE — único botón en mobile ══ -->
@@ -493,12 +511,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProductsStore } from '@/stores/products'
 import { useCartStore } from '@/stores/cart'
 import type { Product, CustomizationOption, ProductExtra } from '@/stores/products'
 import type { CartCustomization, CartExtra } from '@/stores/cart'
+import ProductCard from '@/components/catalog/ProductCard.vue'
 import {
     ChevronLeftIcon, ChevronRightIcon, ArrowRightIcon,
     SparklesIcon, ArrowsPointingOutIcon, CheckIcon,
@@ -522,8 +541,8 @@ const extrasMap = ref<Map<number, CartExtra>>(new Map())
 const sharedExtrasMap = ref<Map<number, CartExtra>>(new Map()) // ← extras_compartidos
 const errors = ref<Record<number, string>>({})
 
-onMounted(async () => {
-    const slug = route.params.slug as string
+// ── Carga de Producto y Vigilancia de Rutas ────────────────
+async function loadProduct(slug: string) {
     let found = productsStore.products.find(p => p.slug === slug)
     if (!found) {
         loading.value = true
@@ -532,8 +551,38 @@ onMounted(async () => {
         loading.value = false
     }
     product.value = found ?? null
-    if (product.value?.image_url) selectedImage.value = product.value.image_url
+    if (product.value?.image_url) {
+        selectedImage.value = product.value.image_url
+    } else {
+        selectedImage.value = null
+    }
+
+    // ¡Importante! Resetear los valores cuando cambiamos a un producto nuevo
+    qty.value = 1
+    added.value = false
+    errors.value = {}
+    selections.value.clear()
+    extrasMap.value.clear()
+    sharedExtrasMap.value.clear()
+    
+    // Subir el scroll de la página al inicio suavemente
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// Cargar cuando entramos a la página por primera vez
+onMounted(() => {
+    loadProduct(route.params.slug as string)
 })
+
+// Recargar cuando le damos clic a un producto de "También te puede interesar"
+watch(
+    () => route.params.slug,
+    (newSlug) => {
+        if (newSlug) {
+            loadProduct(newSlug as string)
+        }
+    }
+)
 
 // ── Computed ──────────────────────────────────────────────
 const agotado = computed(() =>
@@ -705,10 +754,13 @@ function addToCart() {
 
     added.value = true
 
-    // Feedback breve y luego volver al catálogo
+    // En lugar de redirigir, solo quitamos el mensaje de "¡Agregado!" 
+    // después de 2 segundos para que puedan seguir comprando
     setTimeout(() => {
-        router.push('/')
-    }, 800)
+        added.value = false
+        // Opcional: Si quieres que la cantidad vuelva a 1 tras agregar
+        // qty.value = 1 
+    }, 2000)
 }
 
 // ── Helpers ───────────────────────────────────────────────
@@ -731,9 +783,36 @@ function sectionEmoji(seccion: string): string {
     }
     return map[seccion] ?? '🌸'
 }
+
+// ── Productos Relacionados ────────────────────────────────
+const relatedProducts = computed(() => {
+    if (!productsStore.products.length || !product.value) return []
+    
+    // Filtramos todos los productos quitando el que estamos viendo actualmente
+    const otherProducts = productsStore.products.filter(p => p.id !== product.value?.id)
+    
+    // Intentamos buscar productos de la misma categoría
+const sameCategory = otherProducts.filter(p => p.category?.id === product.value?.category?.id)    
+    // Si hay suficientes de la misma categoría, mostramos esos (máximo 4)
+    // Si no, simplemente devolvemos 4 productos aleatorios/recientes
+    return sameCategory.length >= 4 
+        ? sameCategory.slice(0, 4) 
+        : otherProducts.slice(0, 4)
+})
+
+
+
 </script>
 
 <style scoped>
+/* Ocultar la barra de scroll en el carrusel de recomendados */
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.hide-scrollbar {
+    -ms-overflow-style: none; /* IE y Edge */
+    scrollbar-width: none; /* Firefox */
+}
 @keyframes float {
 
     0%,

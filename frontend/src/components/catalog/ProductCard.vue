@@ -1,12 +1,16 @@
 <template>
   <article class="group relative rounded-[1.75rem] overflow-hidden cursor-pointer
-           transition-all duration-300 outline-none select-none" :style="[
-            !product.available
-              ? 'opacity: 0.55; cursor: not-allowed;'
-              : 'background: #EDE8E0; box-shadow: 8px 8px 16px #C8C3BB, -8px -8px 16px #F8F4EF;',
-          ]" :tabindex="product.available ? 0 : -1" role="button" @click="product.available && emit('add', product)"
-    @keydown.enter="product.available && emit('add', product)" @mousedown="isPressed = true"
-    @mouseup="isPressed = false" @mouseleave="isPressed = false">
+             transition-all duration-300 outline-none select-none" :style="[
+              !product.available
+                ? 'opacity: 0.55; cursor: not-allowed;'
+                : 'background: #EDE8E0; box-shadow: 8px 8px 16px #C8C3BB, -8px -8px 16px #F8F4EF;',
+            ]" :tabindex="product.available ? 0 : -1" role="button" 
+    @click="product.available && goToDetail()"
+    @keydown.enter="product.available && goToDetail()" 
+    @mousedown="isPressed = true"
+    @mouseup="isPressed = false" 
+    @mouseleave="isPressed = false">
+    
     <!-- Imagen del producto -->
     <div class="relative overflow-hidden"
       :class="layout === 'grid' ? 'h-44 sm:h-48' : 'w-28 h-full min-h-[120px] shrink-0'">
@@ -27,7 +31,7 @@
 
       <!-- Overlay suave en hover -->
       <div class="absolute inset-0 bg-fire/0 group-hover:bg-fire/5
-                  transition-all duration-300" />
+                 transition-all duration-300" />
 
       <!-- Badge popular -->
       <div v-if="product.popular" class="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full
@@ -82,13 +86,13 @@
         </div>
 
         <!-- Botón agregar neumórfico -->
-        <button v-if="product.available" @click.stop="emit('add', product)" class="flex items-center justify-center rounded-full border-none cursor-pointer
+        <button v-if="product.available" @click.stop.prevent="goToDetail" class="flex items-center justify-center rounded-full border-none cursor-pointer
                  text-white font-black text-xl leading-none transition-all duration-150
                  active:scale-95" :class="layout === 'grid' ? 'w-10 h-10' : 'w-9 h-9'"
           :style="isPressed
             ? 'background: #C03E0D; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3);'
             : 'background: linear-gradient(135deg, #FF6B35, #C03E0D); box-shadow: 4px 4px 10px rgba(232,82,26,0.4), -2px -2px 6px rgba(255,107,53,0.2);'"
-          :aria-label="'Agregar ' + product.name">+</button>
+          :aria-label="'Ver personalización de ' + product.name">+</button>
       </div>
     </div>
   </article>
@@ -96,6 +100,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import type { Product } from '@/types'
 
 const props = withDefaults(defineProps<{
@@ -105,7 +110,17 @@ const props = withDefaults(defineProps<{
   layout: 'grid',
 })
 
+// Mantenemos el emit por si se usa en otro lado, aunque ahora priorizamos la redirección
 const emit = defineEmits<{ add: [product: Product] }>()
+
 const imgError = ref(false)
 const isPressed = ref(false)
+const router = useRouter()
+
+// Función que redirige a la vista de detalles
+function goToDetail() {
+  if (props.product && props.product.slug) {
+    router.push(`/producto/${props.product.slug}`)
+  }
+}
 </script>
