@@ -4,65 +4,52 @@
     <!-- ══ PANEL IZQUIERDO ══ -->
     <div class="hidden lg:flex w-[45%] flex-col items-center justify-center
                 relative overflow-hidden"
-      style="background: linear-gradient(160deg, #8B0000 0%, #C41E1E 45%, #A01010 100%);">
+      style="background: linear-gradient(160deg, #0B2A1D 0%, #1B4B36 50%, #0F3527 100%);">
 
-      <!-- Patrón -->
-      <div class="absolute inset-0 opacity-[0.07]" style="background-image: repeating-conic-gradient(
-          rgba(245,197,24,0.8) 0deg, transparent 5deg,
-          transparent 15deg, rgba(245,197,24,0.8) 20deg
-        );" />
+      <!-- Glow suave detrás del logo, en vez del patrón de rayos -->
+      <div class="absolute top-[18%] left-1/2 -translate-x-1/2 w-[420px] h-[420px]
+                  rounded-full opacity-[0.18] blur-3xl pointer-events-none"
+        style="background: radial-gradient(circle, #F5C518 0%, transparent 70%);" />
+
+      <!-- Textura sutil de puntos (muy discreta, no compite con el contenido) -->
+      <div class="absolute inset-0 opacity-[0.04] pointer-events-none" style="background-image: radial-gradient(rgba(255,255,255,0.9) 1px, transparent 1px);
+               background-size: 22px 22px;" />
 
       <!-- Gradiente inferior -->
-      <div class="absolute bottom-0 inset-x-0 h-48"
-        style="background: linear-gradient(to top, rgba(139,0,0,0.8), transparent)" />
+      <div class="absolute bottom-0 inset-x-0 h-56 pointer-events-none"
+        style="background: linear-gradient(to top, rgba(11,42,29,0.9), transparent)" />
 
       <!-- Contenido -->
       <div class="relative z-10 text-center px-10">
-        <div class="w-24 h-24 rounded-3xl bg-white/10 border border-white/20
-                    flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
-          <img src="/images/logobirds.png" alt="Mahoma Chicken" class="w-16 h-16 object-contain rounded-2xl"
+        <div class="w-28 h-28 rounded-[28px] bg-white
+                    flex items-center justify-center mx-auto mb-7
+                    shadow-[0_12px_40px_rgba(0,0,0,0.35)] ring-1 ring-white/20 p-3">
+          <img src="/images/logobirds.png" alt="Birds" class="w-full h-full object-contain"
             @error="($event.target as HTMLImageElement).style.display = 'none'" />
         </div>
 
-        <h1 class="font-black text-white text-[36px] leading-tight m-0 mb-3
+        <h1 class="font-black text-white text-[34px] leading-tight m-0 mb-3
                    uppercase tracking-tight" style="font-family:'Plus Jakarta Sans',sans-serif;
                  text-shadow: 0 4px 24px rgba(0,0,0,0.3);">
-          Mahoma<br>Chicken
+          Birds
         </h1>
+        <p class="text-white/55 text-[13px] font-semibold uppercase tracking-[0.2em] m-0 mb-1">
+          Florería · Cafetería · Menú
+        </p>
 
-        <p class="text-white/60 text-[15px] m-0 mb-10">
+        <p class="text-white/40 text-[14px] m-0 mb-10">
           Sistema de gestión de pedidos
         </p>
 
-        <!-- Stats decorativos -->
-        <div class="flex gap-8 justify-center">
-          <div v-for="stat in STATS" :key="stat.label" class="flex flex-col items-center gap-1.5">
-            <span class="font-black text-[22px] leading-none"
-              style="color:#F5C518; font-family:'Plus Jakarta Sans',sans-serif;">
-              {{ stat.value }}
-            </span>
-            <span class="text-white/50 text-[11px] font-medium uppercase tracking-wider">
+        <!-- Líneas de negocio -->
+        <div class="flex gap-4 justify-center">
+          <div v-for="stat in STATS" :key="stat.label" class="flex flex-col items-center gap-2 px-4 py-3 rounded-2xl
+                      bg-white/[0.06] border border-white/10 backdrop-blur-sm w-[92px]">
+            <component :is="stat.icon" class="w-5 h-5 text-[#F5C518]" />
+            <span class="text-white/70 text-[11px] font-semibold">
               {{ stat.label }}
             </span>
           </div>
-        </div>
-      </div>
-
-      <!-- Emoji decorativo flotante -->
-      <div class="absolute bottom-8 right-8 text-[80px] opacity-10
-                  select-none floating-emoji">
-        🍗
-      </div>
-
-      <!-- Roles disponibles -->
-      <div class="absolute bottom-6 left-6 flex flex-col gap-1.5">
-        <div v-for="rol in ROLES_INFO" :key="rol.label" class="flex items-center gap-2 px-3 py-1.5 rounded-xl
-                 bg-white/8 border border-white/10 backdrop-blur-sm w-fit">
-          <component :is="rol.icon" class="w-3.5 h-3.5 shrink-0" :class="rol.color" />
-          <span class="text-[11px] font-semibold text-white/70">
-            {{ rol.label }}
-          </span>
-          <span class="text-[10px] text-white/40">{{ rol.desc }}</span>
         </div>
       </div>
     </div>
@@ -76,15 +63,15 @@
 
         <!-- Logo móvil -->
         <div class="flex items-center gap-3 mb-8 lg:hidden">
-          <div class="w-11 h-11 rounded-2xl overflow-hidden
-                      border-2 border-red-100 shrink-0">
-            <img src="/images/logobirds.png" alt="Mahoma" class="w-full h-full object-cover"
+          <div class="w-11 h-11 rounded-2xl overflow-hidden bg-white
+                      border-2 border-emerald-100 shrink-0 p-1">
+            <img src="/images/logobirds.png" alt="Birds" class="w-full h-full object-contain"
               @error="($event.target as HTMLImageElement).style.display = 'none'" />
           </div>
           <div>
             <p class="font-black text-gray-900 text-[17px] m-0 leading-none"
               style="font-family:'Plus Jakarta Sans',sans-serif;">
-              Mahoma Chicken
+              Birds
             </p>
             <p class="text-[12px] text-gray-400 m-0 mt-0.5">
               Panel de administración
@@ -114,14 +101,14 @@
             <div class="relative">
               <EnvelopeIcon class="absolute left-3.5 top-1/2 -translate-y-1/2
                        w-4 h-4 text-gray-400 pointer-events-none" />
-              <input id="email" v-model.trim="email" type="email" placeholder="admin@mahoma.pe" autocomplete="email"
+              <input id="email" v-model.trim="email" type="email" placeholder="admin@birds.pe" autocomplete="email"
                 required :class="[
                   'w-full pl-10 pr-4 py-3.5 rounded-2xl border-2 text-[14px]',
                   'text-gray-900 font-medium outline-none bg-gray-50',
                   'placeholder:text-gray-300 transition-all duration-200',
                   fieldError.email
                     ? 'border-red-300 bg-red-50/30 focus:border-red-400 focus:shadow-[0_0_0_4px_rgba(196,30,30,0.08)]'
-                    : 'border-gray-100 focus:border-brand-red focus:bg-white focus:shadow-[0_0_0_4px_rgba(196,30,30,0.08)]',
+                    : 'border-gray-100 focus:border-brand-green focus:bg-white focus:shadow-[0_0_0_4px_rgba(27,75,54,0.10)]',
                 ]" @input="clearFieldError('email')" />
             </div>
             <Transition enter-active-class="transition-all duration-150" enter-from-class="opacity-0 -translate-y-1"
@@ -149,7 +136,7 @@
                   'placeholder:text-gray-300 transition-all duration-200',
                   fieldError.password
                     ? 'border-red-300 bg-red-50/30 focus:border-red-400 focus:shadow-[0_0_0_4px_rgba(196,30,30,0.08)]'
-                    : 'border-gray-100 focus:border-brand-red focus:bg-white focus:shadow-[0_0_0_4px_rgba(196,30,30,0.08)]',
+                    : 'border-gray-100 focus:border-brand-green focus:bg-white focus:shadow-[0_0_0_4px_rgba(27,75,54,0.10)]',
                 ]" @input="clearFieldError('password')" />
               <button type="button" @click="showPass = !showPass" class="absolute right-3.5 top-1/2 -translate-y-1/2
                        w-7 h-7 flex items-center justify-center
@@ -186,10 +173,10 @@
           <!-- Botón submit -->
           <button type="submit" :disabled="loading" class="w-full py-4 rounded-2xl border-none cursor-pointer
                    font-black text-[15px] text-white uppercase tracking-wide
-                   bg-brand-red mt-1
-                   shadow-[0_6px_24px_rgba(196,30,30,0.30)]
-                   hover:bg-red-700 hover:-translate-y-0.5
-                   hover:shadow-[0_10px_32px_rgba(196,30,30,0.38)]
+                   mt-1 bg-brand-green
+                   shadow-[0_6px_24px_rgba(27,75,54,0.30)]
+                   hover:bg-brand-green-dark hover:-translate-y-0.5
+                   hover:shadow-[0_10px_32px_rgba(27,75,54,0.38)]
                    active:scale-[0.98] active:translate-y-0
                    disabled:opacity-50 disabled:cursor-not-allowed
                    disabled:hover:translate-y-0 disabled:hover:shadow-none
@@ -214,7 +201,7 @@
             Volver a la tienda
           </RouterLink>
           <span class="text-[12px] text-gray-300 select-none">
-            v1.0 · Mahoma
+            v1.0 · Birds
           </span>
         </div>
       </div>
@@ -236,9 +223,11 @@ import {
   ArrowRightEndOnRectangleIcon,
   ArrowLeftIcon,
   StarIcon,
-  FireIcon,
-  BanknotesIcon,
   CpuChipIcon,
+  BanknotesIcon,
+  SparklesIcon,
+  BeakerIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -252,18 +241,13 @@ const loading = ref(false)
 const globalError = ref('')
 const fieldError = reactive({ email: '', password: '' })
 
-// ── Panel izquierdo ───────────────────────────────────────
+// ── Panel izquierdo: líneas de negocio (íconos Heroicons) ─
 const STATS = [
-  { value: '100%', label: 'Leña natural' },
-  { value: '4.9⭐', label: 'Calificación' },
-  { value: 'Diario', label: 'Servicio' },
+  { label: 'Florería', icon: SparklesIcon },
+  { label: 'Cafetería', icon: BeakerIcon },
+  { label: 'Menú', icon: ClipboardDocumentListIcon },
 ]
 
-const ROLES_INFO = [
-  { label: 'Super Admin', desc: 'Acceso total', icon: StarIcon, color: 'text-yellow-400' },
-  { label: 'Admin', desc: 'Gestión completa', icon: CpuChipIcon, color: 'text-blue-400' },
-  { label: 'Cajero', desc: 'Pedidos & caja', icon: BanknotesIcon, color: 'text-green-400' },
-]
 
 // ── Validación ────────────────────────────────────────────
 function validate(): boolean {
@@ -307,7 +291,6 @@ async function handleLogin() {
   try {
     const ok = await admin.login(email.value.trim(), password.value)
     if (ok) {
-      // Redirige según el rol del usuario
       router.push(admin.homeRoute)
     } else {
       globalError.value = 'Correo o contraseña incorrectos. Intenta de nuevo.'
@@ -321,19 +304,20 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-.floating-emoji {
-  animation: float 3s ease-in-out infinite;
+/* ── Verde de marca (solo en esta vista) ── */
+.bg-brand-green {
+  background-color: #1B4B36;
 }
 
-@keyframes float {
+.bg-brand-green-dark {
+  background-color: #123526;
+}
 
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
+.text-brand-green {
+  color: #1B4B36;
+}
 
-  50% {
-    transform: translateY(-14px);
-  }
+.border-brand-green {
+  border-color: #1B4B36 !important;
 }
 </style>
