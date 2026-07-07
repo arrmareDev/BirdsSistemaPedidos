@@ -387,7 +387,7 @@
                    hover:bg-red-700 hover:-translate-y-0.5
                    active:scale-[0.98] transition-all duration-200"
             style="font-family:'Plus Jakarta Sans',sans-serif;">
-            🍗 Hacer otro pedido
+            Hacer otro pedido
           </RouterLink>
 
           <a :href="waConsultaLink" target="_blank" class="flex items-center justify-center gap-2.5 w-full py-3.5

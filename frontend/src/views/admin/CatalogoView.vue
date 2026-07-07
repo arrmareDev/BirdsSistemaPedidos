@@ -565,58 +565,70 @@
           <div v-if="categories.length === 0" class="flex items-center justify-center py-10 text-gray-400 text-[13px]">
             Sin categorías — crea la primera
           </div>
-          <div v-else class="divide-y divide-gray-50">
-            <div v-for="cat in categoriesSorted" :key="cat.id"
-              class="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
+          <div v-else class="flex flex-col">
+            <div v-for="group in categoriesGrouped" :key="group.line">
 
-              <!-- Emoji + info -->
-              <div class="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center
-                          text-[18px] shrink-0">
-                {{ cat.emoji || '📁' }}
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2">
-                  <p class="font-bold text-[13.5px] text-gray-900 m-0 truncate">{{ cat.name }}</p>
-                  <span class="text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded-full
-                           bg-red-50 text-brand-red shrink-0">
-                    {{ BUSINESS_LINE_LABELS[cat.business_line] ?? cat.business_line }}
-                  </span>
-                  <span v-if="!cat.active" class="text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded-full
-                           bg-gray-100 text-gray-500 shrink-0">
-                    Inactiva
-                  </span>
-                </div>
-                <p class="text-[11px] text-gray-400 m-0">
-                  {{ cat.products_count ?? 0 }} producto{{ (cat.products_count ?? 0) !== 1 ? 's' : '' }}
-                  · orden {{ cat.sort_order }}
+              <!-- Header de la línea de negocio -->
+              <div class="flex items-center gap-2 px-5 py-2.5 bg-gray-50/70 border-y border-gray-100">
+                <span class="text-[15px]">{{ group.icon }}</span>
+                <p class="font-black text-[11px] uppercase tracking-wider text-gray-500 m-0">
+                  {{ group.label }}
                 </p>
+                <span class="text-[10.5px] font-bold text-gray-400 ml-auto">
+                  {{ group.categories.length }} categoría{{ group.categories.length !== 1 ? 's' : '' }}
+                </span>
               </div>
 
-              <!-- Acciones -->
-              <div class="flex items-center gap-1.5 shrink-0">
-                <!-- Toggle activo -->
-                <button @click="toggleCat(cat)" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold border cursor-pointer
-                         transition-all duration-150" :class="cat.active
-                          ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
-                          : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'">
-                  {{ cat.active ? '✓ Activa' : '✗ Inactiva' }}
-                </button>
+              <!-- Vacío dentro de la línea -->
+              <div v-if="group.categories.length === 0"
+                class="flex items-center gap-2 px-5 py-4 text-[12.5px] text-gray-300 italic">
+                Sin categorías en {{ group.label.toLowerCase() }} todavía
+              </div>
 
-                <!-- Editar -->
-                <button @click="openEditCat(cat)" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-500
-                         cursor-pointer border-none bg-gray-100 hover:bg-red-50 hover:text-brand-red
-                         transition-all duration-150">
-                  <PencilIcon class="w-3.5 h-3.5" />
-                </button>
+              <!-- Categorías de esta línea -->
+              <div v-else class="divide-y divide-gray-50">
+                <div v-for="cat in group.categories" :key="cat.id"
+                  class="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
 
-                <!-- Eliminar — solo si no tiene productos -->
-                <button @click="askDeleteCat(cat)" :disabled="(cat.products_count ?? 0) > 0" class="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer
-                         border-none transition-all duration-150" :class="(cat.products_count ?? 0) > 0
-                          ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
-                          : 'bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500'"
-                  :title="(cat.products_count ?? 0) > 0 ? 'Tiene productos — no se puede eliminar' : 'Eliminar'">
-                  <TrashIcon class="w-3.5 h-3.5" />
-                </button>
+                  <div class="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center
+                    text-[18px] shrink-0">
+                    {{ cat.emoji || '📁' }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <p class="font-bold text-[13.5px] text-gray-900 m-0 truncate">{{ cat.name }}</p>
+                      <span v-if="!cat.active" class="text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded-full
+                     bg-gray-100 text-gray-500 shrink-0">
+                        Inactiva
+                      </span>
+                    </div>
+                    <p class="text-[11px] text-gray-400 m-0">
+                      {{ cat.products_count ?? 0 }} producto{{ (cat.products_count ?? 0) !== 1 ? 's' : '' }}
+                      · orden {{ cat.sort_order }}
+                    </p>
+                  </div>
+
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button @click="toggleCat(cat)" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold border cursor-pointer
+                   transition-all duration-150" :class="cat.active
+                    ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                    : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'">
+                      {{ cat.active ? '✓ Activa' : '✗ Inactiva' }}
+                    </button>
+                    <button @click="openEditCat(cat)" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-500
+                   cursor-pointer border-none bg-gray-100 hover:bg-red-50 hover:text-brand-red
+                   transition-all duration-150">
+                      <PencilIcon class="w-3.5 h-3.5" />
+                    </button>
+                    <button @click="askDeleteCat(cat)" :disabled="(cat.products_count ?? 0) > 0" class="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer
+                   border-none transition-all duration-150" :class="(cat.products_count ?? 0) > 0
+                    ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                    : 'bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500'"
+                      :title="(cat.products_count ?? 0) > 0 ? 'Tiene productos — no se puede eliminar' : 'Eliminar'">
+                      <TrashIcon class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -647,7 +659,7 @@
         <div class="relative">
           <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <input v-model="search" placeholder="Buscar..." class="pl-8 pr-3 py-1.5 rounded-xl border border-gray-200 bg-white text-[13px]
-                   text-gray-900 outline-none w-40 focus:border-brand-red transition-all duration-200
+                   text-gray-900 outline-none w-60 focus:border-brand-red transition-all duration-200
                    placeholder:text-gray-300" />
         </div>
 
@@ -984,6 +996,21 @@ const availableExtras = ref<AvailableExtra[]>([])
 // ── Computed ──────────────────────────────────────────────
 const categoriesSorted = computed(() =>
   [...categories.value].sort((a, b) => a.sort_order - b.sort_order)
+)
+
+// ← NUEVO: agrupa las categorías por línea de negocio, en orden fijo
+const BUSINESS_LINE_ORDER = ['floreria', 'cafeteria', 'menu'] as const
+const BUSINESS_LINE_ICONS: Record<string, string> = {
+  floreria: '💐', cafeteria: '☕', menu: '🍽️',
+}
+
+const categoriesGrouped = computed(() =>
+  BUSINESS_LINE_ORDER.map(line => ({
+    line,
+    label: BUSINESS_LINE_LABELS[line],
+    icon: BUSINESS_LINE_ICONS[line],
+    categories: categoriesSorted.value.filter(c => c.business_line === line),
+  }))
 )
 
 const filteredProducts = computed(() => {

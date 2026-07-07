@@ -281,7 +281,7 @@ onUnmounted(() => { if (clockTimer) clearInterval(clockTimer) })
 
 // ── Soporte WhatsApp ──────────────────────────────────────
 const supportLink = computed(() => {
-  const phone = (import.meta.env.VITE_WA_PHONE ?? '51984199340').replace(/\D/g, '')
+  const phone = (import.meta.env.VITE_WA_PHONE ?? '51969943657').replace(/\D/g, '')
   const nombre = admin.user?.name ?? 'Admin'
   // ← MARCA: reemplaza el nombre del negocio en el mensaje
   const mensaje = `Hola, soy *${nombre}* (Panel Admin de la Florería). Necesito soporte técnico.`

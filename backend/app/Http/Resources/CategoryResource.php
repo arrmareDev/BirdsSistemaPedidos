@@ -16,6 +16,10 @@ class CategoryResource extends JsonResource
             'emoji'         => $this->emoji,
             'sort_order'    => $this->sort_order,
             'active'        => $this->active,
+            'products_count' => $this->when(
+                isset($this->products_count),
+                fn() => $this->products_count
+            ),
         ];
     }
 }

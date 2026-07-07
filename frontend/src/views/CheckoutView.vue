@@ -22,7 +22,6 @@
       <label class="block text-[10.5px] font-black uppercase tracking-wider text-brand-red mb-3">
         ¿Cómo lo recibes?
       </label>
-      <!-- grid-cols-3 ahora que son 3 opciones ← NUEVO -->
       <div class="grid grid-cols-3 gap-3">
         <button v-for="t in ORDER_TYPES" :key="t.id" @click="form.type = t.id as any" class="flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2
                  font-bold text-[12px] cursor-pointer transition-all duration-200 uppercase" :class="form.type === t.id
@@ -58,7 +57,7 @@
             @input="form.phone = form.phone.replace(/\D/g, '').slice(0, 9)" maxlength="9" class="checkout-input" />
         </div>
 
-        <!-- ══ SECCIÓN LOCAL (nueva) ══ ← NUEVO -->
+        <!-- ══ SECCIÓN LOCAL ══ -->
         <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0 -translate-y-1"
           leave-active-class="transition-all duration-150" leave-to-class="opacity-0">
           <div v-if="form.type === 'local'" class="flex flex-col gap-3">
@@ -278,8 +277,8 @@
       </div>
     </div>
 
-    <!-- ══ ENTREGA PROGRAMADA ══ -->
-    <div class="bg-white rounded-3xl border border-surface-border shadow-card p-6 mb-6">
+    <!-- ══ ENTREGA PROGRAMADA (solo si el carrito tiene productos de florería) ══ -->
+    <div v-if="cartStore.hasFloreria" class="bg-white rounded-3xl border border-surface-border shadow-card p-6 mb-6">
       <div class="flex items-center justify-between mb-4">
         <div>
           <h2 class="font-black text-[15px] text-ink m-0 uppercase tracking-wide">
@@ -331,7 +330,7 @@
       </Transition>
     </div>
 
-    <!-- ══ MENSAJE PARA LA TARJETA (solo si el carrito tiene productos de florería) ══ ← NUEVO -->
+    <!-- ══ MENSAJE PARA LA TARJETA (solo si el carrito tiene productos de florería) ══ -->
     <div v-if="cartStore.hasFloreria" class="bg-white rounded-3xl border border-surface-border shadow-card p-6 mb-6">
       <h2 class="font-black text-[15px] text-ink mb-2 m-0 uppercase tracking-wide">
         Mensaje para la tarjeta
@@ -462,7 +461,7 @@ interface DeliveryZone { id: number; nombre: string; precio: number }
 const CHICLAYO_LAT = -6.7741
 const CHICLAYO_LNG = -79.8409
 
-// Orden: local, recoger, delivery — coincide con App\Enums\SaleChannel ← NUEVO
+// Orden: local, recoger, delivery — coincide con App\Enums\SaleChannel
 const ORDER_TYPES = [
   { id: 'local', icon: '🪑', label: 'Consumo en local' },
   { id: 'recoger', icon: '🏪', label: 'Para llevar' },
@@ -484,8 +483,8 @@ const HORARIOS = [
 const form = reactive({
   name: '',
   phone: '',
-  type: 'recoger' as 'local' | 'recoger' | 'delivery', // ← NUEVO tipo agregado
-  mesa: '', // ← NUEVO
+  type: 'recoger' as 'local' | 'recoger' | 'delivery',
+  mesa: '',
   address: '',
   reference: '',
   delivery_zone_id: 0,
@@ -541,7 +540,7 @@ const totalConDelivery = computed(() => {
 const canSubmit = computed(() => {
   if (!form.name.trim() || !form.phone.trim() || cartStore.isEmpty) return false
 
-  if (form.type === 'local') { // ← NUEVO
+  if (form.type === 'local') {
     return !!form.mesa.trim()
   }
 
@@ -572,13 +571,24 @@ watch(() => form.type, async (val) => {
     gpsError.value = ''
   }
 
-  if (val !== 'local') { // ← NUEVO — limpia mesa al salir de "local"
+  if (val !== 'local') {
     form.mesa = ''
   }
 })
 
 watch(() => form.entrega_programada, (val) => {
   if (!val) {
+    form.fecha_entrega = ''
+    form.hora_entrega = ''
+  }
+})
+
+// Si el carrito deja de tener productos de florería (ej: el cliente quita
+// el último ramo y solo deja café), limpiamos el estado de entrega
+// programada y mensaje de tarjeta para no enviar datos "fantasma".
+watch(() => cartStore.hasFloreria, (tieneFloreria) => {
+  if (!tieneFloreria) {
+    form.entrega_programada = false
     form.fecha_entrega = ''
     form.hora_entrega = ''
   }
@@ -723,7 +733,7 @@ async function handleOrder() {
 
   if (cartStore.isEmpty) { errorMsg.value = 'Tu carrito está vacío'; return }
 
-  if (form.type === 'local' && !form.mesa.trim()) { // ← NUEVO
+  if (form.type === 'local' && !form.mesa.trim()) {
     errorMsg.value = 'Indica el número de mesa'
     return
   }
@@ -747,7 +757,7 @@ async function handleOrder() {
     client_name: form.name.trim(),
     client_phone: form.phone.trim(),
     type: form.type,
-    mesa: form.mesa || undefined, // ← NUEVO
+    mesa: form.mesa || undefined,
     address: form.address || undefined,
     reference: form.reference || undefined,
     delivery_zone_id: form.delivery_zone_id || undefined,
