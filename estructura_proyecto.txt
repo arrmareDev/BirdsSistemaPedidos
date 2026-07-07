@@ -1,0 +1,235 @@
+Proyecto: BirdsSistemaPedidos
+
+├── .gitignore
+├── README.md
+├── backend
+│   ├── .editorconfig
+│   ├── .env
+│   ├── .env.example
+│   ├── .gitattributes
+│   ├── .gitignore
+│   ├── README.md
+│   ├── app
+│   │   ├── Enums
+│   │   │   ├── BusinessLine.php
+│   │   │   └── SaleChannel.php
+│   │   ├── Events
+│   │   │   ├── DespachoActualizado.php
+│   │   │   └── PedidoDisponible.php
+│   │   ├── Exceptions
+│   │   │   └── Handler.php
+│   │   ├── Http
+│   │   │   ├── Controllers
+│   │   │   │   ├── Api
+│   │   │   │   │   ├── AuthController.php
+│   │   │   │   │   ├── CajaController.php
+│   │   │   │   │   ├── CategoryController.php
+│   │   │   │   │   ├── ClientController.php
+│   │   │   │   │   ├── Controller.php
+│   │   │   │   │   ├── DeliveryZoneController.php
+│   │   │   │   │   ├── DespachoController.php
+│   │   │   │   │   ├── DespachoWebhookController.php
+│   │   │   │   │   ├── ExtraController.php
+│   │   │   │   │   ├── OrderController.php
+│   │   │   │   │   ├── ProductController.php
+│   │   │   │   │   ├── ReportController.php
+│   │   │   │   │   ├── SistemaController.php
+│   │   │   │   │   └── UserController.php
+│   │   │   │   └── Controller.php
+│   │   │   ├── Middleware
+│   │   │   │   ├── CheckRole.php
+│   │   │   │   └── ForceJsonResponse.php
+│   │   │   ├── Requests
+│   │   │   │   ├── LoginRequest.php
+│   │   │   │   ├── StoreOrderRequest.php
+│   │   │   │   ├── StoreProductRequest.php
+│   │   │   │   └── UpdateOrderStatusRequest.php
+│   │   │   └── Resources
+│   │   │       ├── CategoryResource.php
+│   │   │       ├── ClientResource.php
+│   │   │       ├── OrderItemResource.php
+│   │   │       ├── OrderResource.php
+│   │   │       └── ProductResource.php
+│   │   ├── Models
+│   │   │   ├── Caja.php
+│   │   │   ├── CajaMovimiento.php
+│   │   │   ├── Category.php
+│   │   │   ├── Client.php
+│   │   │   ├── Comision.php
+│   │   │   ├── ConfiguracionSistema.php
+│   │   │   ├── DeliveryTariff.php
+│   │   │   ├── DeliveryZone.php
+│   │   │   ├── Despacho.php
+│   │   │   ├── Extra.php
+│   │   │   ├── Motorizado.php
+│   │   │   ├── Order.php
+│   │   │   ├── OrderItem.php
+│   │   │   ├── Product.php
+│   │   │   ├── ProductCustomizationOption.php
+│   │   │   ├── ProductCustomizationSection.php
+│   │   │   ├── ProductExtra.php
+│   │   │   └── User.php
+│   │   ├── Observers
+│   │   │   └── OrderObserver.php
+│   │   ├── Providers
+│   │   │   └── AppServiceProvider.php
+│   │   ├── Repositories
+│   │   │   ├── ClientRepository.php
+│   │   │   ├── OrderRepository.php
+│   │   │   └── ProductRepository.php
+│   │   └── Services
+│   │       ├── ClientService.php
+│   │       ├── DeliveryCentralService.php
+│   │       ├── OrderService.php
+│   │       └── ProductService.php
+│   ├── artisan
+│   ├── composer.json
+│   ├── composer.lock
+│   ├── config
+│   │   ├── app.php
+│   │   ├── auth.php
+│   │   ├── broadcasting.php
+│   │   ├── cache.php
+│   │   ├── cors.php
+│   │   ├── database.php
+│   │   ├── filesystems.php
+│   │   ├── logging.php
+│   │   ├── mail.php
+│   │   ├── queue.php
+│   │   ├── sanctum.php
+│   │   ├── services.php
+│   │   └── session.php
+│   ├── database
+│   │   ├── .gitignore
+│   │   ├── factories
+│   │   │   └── UserFactory.php
+│   │   ├── migrations
+│   │   │   ├── 0001_01_01_000000_create_users_table.php
+│   │   │   ├── 0001_01_01_000001_create_cache_table.php
+│   │   │   ├── 0001_01_01_000002_create_jobs_table.php
+│   │   │   ├── 2025_01_01_000002_create_catalogue_table.php
+│   │   │   ├── 2026_01_01_000000_create_delivery_zones_table.php
+│   │   │   ├── 2026_01_01_000001_create_personal_access_tokens_table.php
+│   │   │   ├── 2026_01_01_000003_create_clients_table.php
+│   │   │   ├── 2026_01_01_000004_create_orders_table.php
+│   │   │   ├── 2026_01_01_000006_create_caja_table.php
+│   │   │   ├── 2026_01_01_000007_create_sistema_tables.php
+│   │   │   ├── 2026_06_08_064458_create_extra_product_table.php
+│   │   │   ├── 2026_06_18_065538_add_geo_fields_to_delivery_zones_table.php
+│   │   │   ├── 2026_06_18_152335_change_delivery_zones_to_polygon.php
+│   │   │   ├── 2026_06_18_212151_create_delivery_tariffs_table.php
+│   │   │   ├── 2026_07_06_000001_add_business_line_to_categories_table.php
+│   │   │   ├── 2026_07_06_000002_add_sale_channel_to_orders_table.php
+│   │   │   ├── 2026_07_07_000001_drop_orphan_extra_product_table.php
+│   │   │   ├── 2026_07_07_000002_create_shared_extras_table.php
+│   │   │   ├── 2026_07_08_000001_add_price_modifier_to_customization_options.php
+│   │   │   └── 2026_07_09_000001_dedupe_shared_extras.php
+│   │   └── seeders
+│   │       ├── DatabaseSeeder.php
+│   │       ├── DeliveryTariffSeeder.php
+│   │       ├── DeliveryZoneSeeder.php
+│   │       ├── ProductSeeder.php
+│   │       └── UserSeeder.php
+│   ├── package.json
+│   ├── phpunit.xml
+│   ├── public
+│   │   ├── .htaccess
+│   │   ├── favicon.ico
+│   │   ├── index.php
+│   │   └── robots.txt
+│   ├── resources
+│   │   ├── css
+│   │   │   └── app.css
+│   │   ├── js
+│   │   │   ├── app.js
+│   │   │   ├── bootstrap.js
+│   │   │   └── echo.js
+│   │   └── views
+│   │       └── welcome.blade.php
+│   ├── routes
+│   │   ├── api.php
+│   │   ├── channels.php
+│   │   ├── console.php
+│   │   └── web.php
+│   ├── tests
+│   │   ├── Feature
+│   │   │   └── ExampleTest.php
+│   │   ├── TestCase.php
+│   │   └── Unit
+│   │       └── ExampleTest.php
+│   └── vite.config.js
+├── estructura_proyecto.txt
+├── frontend
+│   ├── .env
+│   ├── index.html
+│   ├── jsconfig.json
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── postcss.config.js
+│   ├── postcss.config.mjs
+│   ├── public
+│   │   ├── images
+│   │   │   ├── birdsflores.png
+│   │   │   ├── cajarosas.png
+│   │   │   ├── delivery.jpeg
+│   │   │   ├── logobirds.png
+│   │   │   ├── ocacion.png
+│   │   │   └── rosasrojas.png
+│   │   └── robots.txt
+│   ├── src
+│   │   ├── App.vue
+│   │   ├── assets
+│   │   │   └── main.css
+│   │   ├── components
+│   │   │   ├── ConfirmModal.vue
+│   │   │   ├── cart
+│   │   │   │   └── CartDrawer.vue
+│   │   │   ├── catalog
+│   │   │   │   ├── CustomizerModal.vue
+│   │   │   │   └── ProductCard.vue
+│   │   │   ├── icons
+│   │   │   │   └── WhatsAppIcon.vue
+│   │   │   └── layout
+│   │   │       ├── AppFooter.vue
+│   │   │       ├── AppHeader.vue
+│   │   │       └── HeroCarousel.vue
+│   │   ├── composables
+│   │   │   └── useEcho.ts
+│   │   ├── env.d.ts
+│   │   ├── main.ts
+│   │   ├── router
+│   │   │   └── index.ts
+│   │   ├── stores
+│   │   │   ├── admin.ts
+│   │   │   ├── cart.ts
+│   │   │   ├── clients.ts
+│   │   │   ├── dashboard.ts
+│   │   │   ├── order.ts
+│   │   │   ├── orders.ts
+│   │   │   └── products.ts
+│   │   ├── types
+│   │   │   └── index.ts
+│   │   ├── utils
+│   │   │   ├── api.ts
+│   │   │   └── whatsapp.ts
+│   │   └── views
+│   │       ├── CatalogView.vue
+│   │       ├── CheckoutView.vue
+│   │       ├── ProductDetailView.vue
+│   │       ├── SuccessView.vue
+│   │       ├── TrackingView.vue
+│   │       └── admin
+│   │           ├── AdminLogin.vue
+│   │           ├── AdminShell.vue
+│   │           ├── CajaView.vue
+│   │           ├── CatalogoView.vue
+│   │           ├── ClientesView.vue
+│   │           ├── DashboardView.vue
+│   │           ├── DeliveryZonesView.vue
+│   │           ├── PedidosView.vue
+│   │           ├── ReportesView.vue
+│   │           ├── SistemaView.vue
+│   │           └── UsuariosView.vue
+│   ├── tailwind.config.js
+│   └── vite.config.ts
+└── generar_estructura.py
