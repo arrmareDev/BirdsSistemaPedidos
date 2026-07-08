@@ -111,7 +111,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Vistas permitidas ← NUEVO -->
+                                <!-- Vistas permitidas -->
                                 <div class="flex flex-col gap-1.5">
                                     <div class="flex items-center justify-between">
                                         <label class="text-[10.5px] font-black uppercase
@@ -132,13 +132,26 @@
                                             <input type="checkbox" :value="view.value" v-model="form.permissions"
                                                 class="accent-brand-red" />
                                             <span class="text-[12.5px] font-semibold text-gray-700">{{ view.label
-                                                }}</span>
+                                            }}</span>
                                         </label>
                                     </div>
                                     <p class="text-[11px] text-gray-400 m-0 mt-1">
                                         Estas vistas controlan tanto el menú como el acceso real al API.
                                     </p>
                                 </div>
+
+                                <!-- Aviso: Salón siempre es solo lectura ← NUEVO -->
+                                <Transition enter-active-class="transition-all duration-150"
+                                    enter-from-class="opacity-0 -translate-y-1" leave-to-class="opacity-0">
+                                    <div v-if="form.role === 'salon'" class="flex items-center gap-2.5 px-4 py-3 rounded-2xl
+                           bg-purple-50 border border-purple-200">
+                                        <EyeIcon class="w-4 h-4 text-purple-600 shrink-0" />
+                                        <p class="text-[12px] text-purple-700 m-0">
+                                            El rol Salón siempre es de solo lectura — no puede crear ni cambiar el
+                                            estado de pedidos, sin importar las vistas marcadas.
+                                        </p>
+                                    </div>
+                                </Transition>
 
                                 <!-- Error -->
                                 <Transition enter-active-class="transition-all duration-150"
@@ -360,7 +373,7 @@
         </div>
 
         <!-- KPIs -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <div v-for="kpi in kpiRoles" :key="kpi.label"
                 class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                 <div class="flex items-center gap-2 mb-2">
@@ -389,7 +402,7 @@ import {
     MagnifyingGlassIcon, CheckCircleIcon,
     UsersIcon, UserPlusIcon, ExclamationCircleIcon,
     EyeIcon, EyeSlashIcon,
-    StarIcon, CpuChipIcon, BanknotesIcon,
+    StarIcon, CpuChipIcon, BanknotesIcon, ClipboardDocumentListIcon,
 } from '@heroicons/vue/24/outline'
 
 const adminStore = useAdminStore()
@@ -416,46 +429,55 @@ const form = reactive({
     email: '',
     password: '',
     role: 'admin' as string,
-    permissions: [] as string[], // ← NUEVO — vistas habilitadas para este usuario
+    permissions: [] as string[],
 })
 
 // ── Constantes ────────────────────────────────────────────
 const ROLES = [
     {
-        value: 'super_admin',
-        label: 'Super Admin',
-        desc: 'Acceso total',
+        value: 'admin',
+        label: 'Admin',
+        desc: 'Acceso total (360°)',
         icon: StarIcon,
         bg: 'bg-yellow-50',
         color: 'text-yellow-600',
     },
     {
-        value: 'admin',
-        label: 'Admin',
-        desc: 'Gestión completa',
-        icon: CpuChipIcon,
+        value: 'contador',
+        label: 'Contador',
+        desc: 'Todo excepto catálogo y usuarios',
+        icon: BanknotesIcon,
         bg: 'bg-blue-50',
         color: 'text-blue-600',
     },
     {
-        value: 'cajero',
-        label: 'Cajero',
-        desc: 'Pedidos & caja',
-        icon: BanknotesIcon,
+        value: 'atencion',
+        label: 'Atención',
+        desc: 'Toma pedidos y ve mesas',
+        icon: ClipboardDocumentListIcon,
         bg: 'bg-green-50',
         color: 'text-green-600',
+    },
+    {
+        value: 'salon',
+        label: 'Salón',
+        desc: 'Solo ve pedidos de mesas',
+        icon: EyeIcon,
+        bg: 'bg-purple-50',
+        color: 'text-purple-600',
     },
 ]
 
 const ROLE_FILTERS = [
     { value: '', label: 'Todos' },
-    { value: 'super_admin', label: 'Super Admin' },
     { value: 'admin', label: 'Admin' },
-    { value: 'cajero', label: 'Cajero' },
+    { value: 'contador', label: 'Contador' },
+    { value: 'atencion', label: 'Atención' },
+    { value: 'salon', label: 'Salón' },
     { value: 'sistema', label: 'Sistema' },
 ]
 
-// ── Vistas disponibles en el sistema ── NUEVO
+// ── Vistas disponibles en el sistema ──────────────────────
 // (deben coincidir con las claves que usa AdminShell.vue / backend)
 const AVAILABLE_VIEWS = [
     { value: 'dashboard', label: 'Dashboard' },
@@ -470,10 +492,11 @@ const AVAILABLE_VIEWS = [
 
 function defaultViewsForRole(role: string): string[] {
     const m: Record<string, string[]> = {
-        super_admin: AVAILABLE_VIEWS.map(v => v.value),
+        admin: AVAILABLE_VIEWS.map(v => v.value),
         sistema: AVAILABLE_VIEWS.map(v => v.value),
-        admin: ['dashboard', 'catalog', 'orders', 'caja', 'clients', 'reports', 'users'],
-        cajero: ['dashboard', 'catalog', 'orders', 'caja', 'clients'],
+        contador: ['dashboard', 'catalog', 'orders', 'caja', 'clients', 'reports', 'sistema'],
+        atencion: ['orders'],
+        salon: ['orders'],
     }
     return m[role] ?? ['dashboard']
 }
@@ -537,7 +560,7 @@ async function saveUser() {
             name: form.name.trim(),
             email: form.email.trim(),
             role: form.role,
-            permissions: form.permissions, // ← NUEVO
+            permissions: form.permissions,
         }
         if (form.password) payload.password = form.password
 
@@ -580,13 +603,13 @@ function openModal(user?: any) {
         form.email = user.email
         form.role = user.role
         form.password = ''
-        form.permissions = user.permissions ?? defaultViewsForRole(user.role) // ← NUEVO
+        form.permissions = user.permissions ?? defaultViewsForRole(user.role)
     } else {
         form.name = ''
         form.email = ''
         form.role = 'admin'
         form.password = ''
-        form.permissions = defaultViewsForRole('admin') // ← NUEVO
+        form.permissions = defaultViewsForRole('admin')
     }
     showModal.value = true
 }
@@ -614,9 +637,10 @@ function initials(name: string): string {
 
 function avatarBg(role: string): string {
     const m: Record<string, string> = {
-        super_admin: 'bg-yellow-500',
-        admin: 'bg-blue-500',
-        cajero: 'bg-green-500',
+        admin: 'bg-yellow-500',
+        contador: 'bg-blue-500',
+        atencion: 'bg-green-500',
+        salon: 'bg-purple-500',
         sistema: 'bg-gray-500',
     }
     return m[role] ?? 'bg-gray-400'
@@ -624,9 +648,10 @@ function avatarBg(role: string): string {
 
 function roleCls(role: string): string {
     const m: Record<string, string> = {
-        super_admin: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
-        admin: 'bg-blue-50 text-blue-700 border border-blue-200',
-        cajero: 'bg-green-50 text-green-700 border border-green-200',
+        admin: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
+        contador: 'bg-blue-50 text-blue-700 border border-blue-200',
+        atencion: 'bg-green-50 text-green-700 border border-green-200',
+        salon: 'bg-purple-50 text-purple-700 border border-purple-200',
         sistema: 'bg-gray-50 text-gray-700 border border-gray-200',
     }
     return m[role] ?? 'bg-gray-50 text-gray-600 border border-gray-200'
@@ -634,9 +659,10 @@ function roleCls(role: string): string {
 
 function roleLabel(role: string): string {
     const m: Record<string, string> = {
-        super_admin: 'Super Admin',
         admin: 'Admin',
-        cajero: 'Cajero',
+        contador: 'Contador',
+        atencion: 'Atención',
+        salon: 'Salón',
         sistema: 'Sistema',
     }
     return m[role] ?? role
@@ -644,9 +670,10 @@ function roleLabel(role: string): string {
 
 function roleIcon(role: string): any {
     const m: Record<string, any> = {
-        super_admin: StarIcon,
-        admin: CpuChipIcon,
-        cajero: BanknotesIcon,
+        admin: StarIcon,
+        contador: BanknotesIcon,
+        atencion: ClipboardDocumentListIcon,
+        salon: EyeIcon,
         sistema: CpuChipIcon,
     }
     return m[role] ?? UsersIcon

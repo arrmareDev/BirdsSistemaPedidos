@@ -69,7 +69,7 @@ class AuthController extends Controller
             'email' => $user->email,
             'role'  => $user->role,
             'permissions' => [
-                // ── Navegación ────────────────────────────
+                // ── Navegación (según vistas habilitadas para este usuario) ──
                 'dashboard' => $user->canViewDashboard(),
                 'catalog'   => $user->canViewCatalog(),
                 'orders'    => $user->canManageOrders(),
@@ -77,13 +77,14 @@ class AuthController extends Controller
                 'clients'   => $user->canViewClients(),
                 'reports'   => $user->canViewReports(),
                 'users'     => $user->canViewUsers(),
-                'sistema'   => $user->canViewSistema(), // false para admin y cajero
+                'sistema'   => $user->canViewSistema(),
 
-                // ── Escritura ─────────────────────────────
-                'can_manage_catalog' => $user->canManageCatalog(), // admin y sistema
-                'can_manage_users'   => $user->canManageUsers(),   // admin y sistema
-                'can_cobrar'         => $user->isSistema(),        // solo sistema
-                'can_delete'         => !$user->isCajero(),        // admin y sistema sí, cajero no
+                // ── Escritura (ligada al rol, no a los checkboxes de vista) ──
+                'can_manage_catalog' => $user->canManageCatalog(),      // solo admin/sistema
+                'can_manage_users'   => $user->canManageUsers(),        // solo admin/sistema
+                'can_cobrar'         => $user->hasRole(['admin', 'sistema']),
+                'can_delete'         => !$user->isAtencion() && !$user->isSalon(),
+                'can_write_orders'   => $user->canWriteOrders(),        // false solo para 'salon'
             ],
         ];
     }
@@ -99,15 +100,24 @@ class AuthController extends Controller
                 'clients',
                 'reports',
                 'users',
-                // ← sin 'sistema' — admin no accede al módulo sistema
+                'sistema',
             ],
-            'cajero' => [
+            'contador' => [
                 'dashboard',
-                'catalog:view',
+                'catalog:view', // ← solo lectura, no gestiona catálogo
                 'orders',
                 'caja',
                 'clients',
-                // ← sin reports, users, sistema
+                'reports',
+                'sistema',
+                // ← sin 'users'
+            ],
+            'atencion' => [
+                'orders',
+                'catalog:view', // ← necesita leer productos para armar pedidos
+            ],
+            'salon' => [
+                'orders:view', // ← solo lectura, no puede crear ni cambiar estados
             ],
             'sistema' => [
                 'dashboard',

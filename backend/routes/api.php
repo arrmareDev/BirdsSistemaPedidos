@@ -54,12 +54,15 @@ Route::prefix('v1/admin')
 
         // ══ CATÁLOGO ══════════════════════════════════════════
 
-        Route::middleware(['role:cajero,admin,sistema,super_admin', 'permission:catalog'])->group(function () {
+        // Lectura: admin/sistema/contador (ven el módulo) + atencion
+        // (necesita leer productos para armar pedidos, sin ver el módulo completo)
+        Route::middleware(['role:admin,sistema,contador,atencion', 'permission:catalog|orders'])->group(function () {
             Route::get('products',   [ProductController::class, 'adminIndex']);
             Route::get('categories', [CategoryController::class, 'adminIndex']);
         });
 
-        Route::middleware(['role:admin,sistema,super_admin', 'permission:catalog'])->group(function () {
+        // Escritura: solo admin/sistema — contador NO gestiona catálogo
+        Route::middleware(['role:admin,sistema', 'permission:catalog'])->group(function () {
             Route::post('categories',           [CategoryController::class, 'store']);
             Route::put('categories/{id}',       [CategoryController::class, 'update'])
                 ->where('id', '[0-9]+');
@@ -84,39 +87,41 @@ Route::prefix('v1/admin')
 
         // ══ PEDIDOS ═══════════════════════════════════════════
 
-        Route::middleware(['role:cajero,admin,sistema,super_admin', 'permission:orders'])->group(function () {
-            Route::get('orders',               [OrderController::class, 'index']);
-            Route::get('orders/{id}',          [OrderController::class, 'show'])
+        // Lectura: todos los roles con acceso a "orders", incluido Salón (solo lectura)
+        Route::middleware(['role:admin,sistema,contador,atencion,salon', 'permission:orders'])->group(function () {
+            Route::get('orders',      [OrderController::class, 'index']);
+            Route::get('orders/{id}', [OrderController::class, 'show'])
                 ->where('id', '[0-9]+');
+        });
+
+        // Escritura: todos excepto Salón (solo lectura)
+        Route::middleware(['role:admin,sistema,contador,atencion', 'permission:orders'])->group(function () {
+            Route::post('orders',              [OrderController::class, 'adminStore']);
             Route::patch('orders/{id}/status', [OrderController::class, 'updateStatus'])
                 ->where('id', '[0-9]+');
         });
 
-        Route::middleware(['role:cajero,admin,super_admin', 'permission:orders'])->group(function () {
-            Route::post('orders', [OrderController::class, 'adminStore']);
-        });
-
-        Route::middleware(['role:admin,sistema,super_admin', 'permission:orders'])->group(function () {
+        Route::middleware(['role:admin,sistema', 'permission:orders'])->group(function () {
             Route::delete('orders/{id}', [OrderController::class, 'destroy'])
                 ->where('id', '[0-9]+');
         });
 
-        // ══ DESPACHOS — ligados al permiso de "orders" ═══════════
+        // ══ DESPACHOS — vía Delivery Central ═══════════════════
 
-        Route::middleware(['role:cajero,admin,sistema,super_admin', 'permission:orders'])->group(function () {
+        Route::middleware(['role:admin,sistema,contador', 'permission:orders'])->group(function () {
             Route::post('despachos/solicitar', [DespachoController::class, 'solicitar']);
             Route::get('despachos/{order_id}/estado', [DespachoController::class, 'estado'])
                 ->where('order_id', '[0-9]+');
         });
 
-        Route::middleware(['role:admin,sistema,super_admin', 'permission:orders'])->group(function () {
+        Route::middleware(['role:admin,sistema', 'permission:orders'])->group(function () {
             Route::post('despachos/{order_id}/cancelar', [DespachoController::class, 'cancelar'])
                 ->where('order_id', '[0-9]+');
         });
 
         // ══ CAJA ══════════════════════════════════════════════
 
-        Route::middleware(['role:cajero,admin,sistema,super_admin', 'permission:caja'])->group(function () {
+        Route::middleware(['role:admin,sistema,contador', 'permission:caja'])->group(function () {
             Route::get('caja/hoy', [CajaController::class, 'hoy']);
             Route::post('caja/abrir',      [CajaController::class, 'abrir']);
             Route::post('caja/movimiento', [CajaController::class, 'movimiento']);
@@ -125,7 +130,7 @@ Route::prefix('v1/admin')
 
         // ══ CLIENTES ══════════════════════════════════════════
 
-        Route::middleware(['role:cajero,admin,sistema,super_admin', 'permission:clients'])->group(function () {
+        Route::middleware(['role:admin,sistema,contador', 'permission:clients'])->group(function () {
             Route::get('clients',      [ClientController::class, 'index']);
             Route::get('clients/{id}', [ClientController::class, 'show'])
                 ->where('id', '[0-9]+');
@@ -133,14 +138,14 @@ Route::prefix('v1/admin')
 
         // ══ REPORTES ══════════════════════════════════════════
 
-        Route::middleware(['role:admin,sistema,super_admin', 'permission:reports'])->group(function () {
+        Route::middleware(['role:admin,sistema,contador', 'permission:reports'])->group(function () {
             Route::get('reports/sales',          [ReportController::class, 'sales']);
             Route::get('reports/customizations', [ReportController::class, 'customizations']);
         });
 
-        // ══ USUARIOS ══════════════════════════════════════════
+        // ══ USUARIOS — solo admin/sistema ═══════════════════════
 
-        Route::middleware(['role:admin,sistema,super_admin', 'permission:users'])->group(function () {
+        Route::middleware(['role:admin,sistema', 'permission:users'])->group(function () {
             Route::get('users',         [UserController::class, 'index']);
             Route::get('users/{id}',    [UserController::class, 'show'])
                 ->where('id', '[0-9]+');
@@ -151,30 +156,39 @@ Route::prefix('v1/admin')
                 ->where('id', '[0-9]+');
         });
 
-        Route::middleware('role:sistema,super_admin')->group(function () {
+        Route::middleware('role:admin,sistema')->group(function () {
             Route::post('users/{id}/reset', [UserController::class, 'resetPassword'])
                 ->where('id', '[0-9]+');
         });
 
-        // ══ SISTEMA ════════════════════════════════════════════
+        // ══ SISTEMA (módulo financiero/comisiones) ══════════════
 
-        Route::middleware(['role:sistema,super_admin', 'permission:sistema'])->group(function () {
+        // Ver el dashboard: admin/sistema/contador (accounting necesita verlo)
+        Route::middleware(['role:admin,sistema,contador', 'permission:sistema'])->group(function () {
             Route::get('sistema/dashboard', [SistemaController::class, 'dashboard']);
-            Route::get('sistema/config',    [SistemaController::class, 'getConfig']);
-            Route::put('sistema/config',    [SistemaController::class, 'updateConfig']);
-            Route::post('sistema/cobrar',   [SistemaController::class, 'marcarCobrado']);
         });
 
-        Route::middleware('role:cajero,admin,sistema,super_admin')->group(function () {
+        // Cambiar la tarifa de comisión: solo admin/sistema (política de negocio)
+        Route::middleware('role:admin,sistema')->group(function () {
+            Route::get('sistema/config', [SistemaController::class, 'getConfig']);
+            Route::put('sistema/config', [SistemaController::class, 'updateConfig']);
+        });
+
+        // Marcar comisiones como cobradas: admin/sistema/contador (tarea contable real)
+        Route::middleware(['role:admin,sistema,contador', 'permission:sistema'])->group(function () {
+            Route::post('sistema/cobrar', [SistemaController::class, 'marcarCobrado']);
+        });
+
+        Route::middleware('role:admin,sistema,contador')->group(function () {
             Route::get(
                 'sistema/comisiones-pendientes',
                 [SistemaController::class, 'comisionesPendientesCaja']
             );
         });
 
-        // ══ ZONAS DE DELIVERY — ligado al permiso de "catalog" ════
+        // ══ ZONAS DE DELIVERY — solo admin/sistema ═════════════
 
-        Route::middleware(['role:admin,sistema,super_admin', 'permission:catalog'])->group(function () {
+        Route::middleware(['role:admin,sistema', 'permission:catalog'])->group(function () {
             Route::get('delivery-zones', [DeliveryZoneController::class, 'adminIndex']);
             Route::post('delivery-zones', [DeliveryZoneController::class, 'store']);
             Route::post('delivery-zones/reorder', [DeliveryZoneController::class, 'reorder']);

@@ -6,7 +6,7 @@ export interface AdminUser {
   id: number;
   name: string;
   email: string;
-  role: "cajero" | "admin" | "sistema" | "super_admin"; // ← actualizado
+  role: "admin" | "sistema" | "contador" | "atencion" | "salon";
   permissions: {
     dashboard: boolean;
     catalog: boolean;
@@ -20,6 +20,7 @@ export interface AdminUser {
     can_manage_users: boolean;
     can_cobrar: boolean;
     can_delete: boolean;
+    can_write_orders: boolean; // ← NUEVO — false solo para 'salon'
   };
 }
 
@@ -30,13 +31,16 @@ export const useAdminStore = defineStore("admin", () => {
   );
   const loading = ref(false);
 
+  // ── Computed ──────────────────────────────────────────
   const isAuth = computed(() => !!token.value);
   const role = computed(() => user.value?.role ?? null);
   const isSistema = computed(() => role.value === "sistema");
   const isAdmin = computed(() => role.value === "admin");
-  const isCajero = computed(() => role.value === "cajero");
-  const isSuperAdmin = computed(() => role.value === "super_admin"); // ← NUEVO
+  const isContador = computed(() => role.value === "contador");
+  const isAtencion = computed(() => role.value === "atencion");
+  const isSalon = computed(() => role.value === "salon");
 
+  // Permisos de navegación
   const can = computed(() => ({
     dashboard: user.value?.permissions.dashboard ?? false,
     catalog: user.value?.permissions.catalog ?? false,
@@ -50,13 +54,16 @@ export const useAdminStore = defineStore("admin", () => {
     manageUsers: user.value?.permissions.can_manage_users ?? false,
     cobrar: user.value?.permissions.can_cobrar ?? false,
     delete: user.value?.permissions.can_delete ?? false,
-    zones: isAdmin.value || isSistema.value || isSuperAdmin.value,
+    writeOrders: user.value?.permissions.can_write_orders ?? false, // ← NUEVO
+    zones: isAdmin.value || isSistema.value,
   }));
 
+  // Ruta de inicio según rol
   const homeRoute = computed(() => {
     switch (role.value) {
-      case "cajero":
-        return "/admin/caja";
+      case "atencion":
+      case "salon":
+        return "/admin/pedidos"; // ← su única vista disponible
       case "sistema":
         return "/admin/sistema";
       default:
@@ -64,6 +71,7 @@ export const useAdminStore = defineStore("admin", () => {
     }
   });
 
+  // ── Actions ───────────────────────────────────────────
   async function login(email: string, password: string): Promise<boolean> {
     loading.value = true;
     try {
@@ -111,8 +119,9 @@ export const useAdminStore = defineStore("admin", () => {
     role,
     isSistema,
     isAdmin,
-    isCajero,
-    isSuperAdmin,
+    isContador,
+    isAtencion,
+    isSalon,
     can,
     homeRoute,
     login,

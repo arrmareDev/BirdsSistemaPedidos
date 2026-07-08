@@ -19,27 +19,29 @@ class User extends Authenticatable
         'permissions'       => 'array',
     ];
 
-    const ROLES = ['super_admin', 'admin', 'cajero', 'sistema'];
-
-    // Vistas disponibles en el sistema (deben coincidir con AdminShell.vue)
+    const ROLES = ['admin', 'sistema', 'contador', 'atencion', 'salon'];
     const VIEWS = ['dashboard', 'catalog', 'orders', 'caja', 'clients', 'reports', 'users', 'sistema'];
 
     // ── Helpers de rol ────────────────────────────────────
-    public function isSuperAdmin(): bool
+    public function isAdmin(): bool
     {
-        return $this->role === 'super_admin';
+        return $this->role === 'admin';
     }
     public function isSistema(): bool
     {
         return $this->role === 'sistema';
     }
-    public function isAdmin(): bool
+    public function isContador(): bool
     {
-        return $this->role === 'admin';
+        return $this->role === 'contador';
     }
-    public function isCajero(): bool
+    public function isAtencion(): bool
     {
-        return $this->role === 'cajero';
+        return $this->role === 'atencion';
+    }
+    public function isSalon(): bool
+    {
+        return $this->role === 'salon';
     }
 
     public function hasRole(string|array $roles): bool
@@ -49,25 +51,22 @@ class User extends Authenticatable
 
     public function canDelete(User $target): bool
     {
-        if (!$this->hasRole(['admin', 'sistema', 'super_admin'])) return false;
+        if (!$this->hasRole(['admin', 'sistema'])) return false;
         return $this->id !== $target->id;
     }
 
-    // ── Vistas por defecto según rol (usadas cuando el usuario
-    //    no tiene permisos personalizados asignados) ──────────
+    // ── Vistas por defecto según rol ──────────────────────
     public static function defaultViewsForRole(string $role): array
     {
         return match ($role) {
-            'super_admin', 'sistema' => self::VIEWS, // acceso total
-            'admin'  => ['dashboard', 'catalog', 'orders', 'caja', 'clients', 'reports', 'users'],
-            'cajero' => ['dashboard', 'catalog', 'orders', 'caja', 'clients'],
-            default  => ['dashboard'],
+            'admin', 'sistema' => self::VIEWS, // acceso total
+            'contador' => ['dashboard', 'catalog', 'orders', 'caja', 'clients', 'reports', 'sistema'], // todo menos 'users'
+            'atencion' => ['orders'],
+            'salon'    => ['orders'],
+            default    => ['dashboard'],
         };
     }
 
-    // ── Vistas efectivas de este usuario ──────────────────
-    // Si tiene `permissions` personalizado, se usa eso.
-    // Si no (null), cae al set por defecto de su rol.
     public function allowedViews(): array
     {
         return $this->permissions ?? self::defaultViewsForRole($this->role);
@@ -75,16 +74,13 @@ class User extends Authenticatable
 
     public function hasViewAccess(string $view): bool
     {
-        // super_admin y sistema siempre tienen acceso a Sistema,
-        // sin importar lo que digan sus permisos personalizados
-        if ($view === 'sistema' && ($this->isSuperAdmin() || $this->isSistema())) {
+        if ($view === 'sistema' && $this->hasRole(['admin', 'sistema'])) {
             return true;
         }
-
         return in_array($view, $this->allowedViews());
     }
 
-    // ── Permisos de vista (usados por frontend y middleware) ──
+    // ── Permisos de vista ──────────────────────────────────
     public function canViewDashboard(): bool
     {
         return $this->hasViewAccess('dashboard');
@@ -122,15 +118,19 @@ class User extends Authenticatable
         return $this->hasViewAccess('sistema');
     }
 
-    // ── Permisos de escritura/acción (siguen ligados al rol,
-    //    no son checkboxes de vista — ej: un cajero nunca gestiona
-    //    catálogo aunque tenga la vista de catálogo habilitada) ──
+    // ── Permisos de acción (ligados al rol, no a checkboxes) ──
     public function canManageCatalog(): bool
     {
-        return $this->hasRole(['admin', 'sistema', 'super_admin']);
+        return $this->hasRole(['admin', 'sistema']);
     }
     public function canManageUsers(): bool
     {
-        return $this->hasRole(['admin', 'sistema', 'super_admin']);
+        return $this->hasRole(['admin', 'sistema']);
+    }
+
+    // Salón solo lee pedidos — el resto de roles con acceso a "orders" sí pueden crear/editar
+    public function canWriteOrders(): bool
+    {
+        return $this->hasViewAccess('orders') && !$this->isSalon();
     }
 }

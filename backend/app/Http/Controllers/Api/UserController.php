@@ -57,7 +57,7 @@ class UserController extends Controller
             'name'          => 'required|string|max:100',
             'email'         => 'required|email|unique:users,email',
             'password'      => 'required|string|min:8',
-            'role'          => ['required', Rule::in(['super_admin', 'admin', 'cajero'])],
+            'role' => ['required', Rule::in(['admin', 'contador', 'atencion', 'salon'])], // ← quitado super_admin/cajero, sin 'sistema' (se crea solo por seed)
             'permissions'   => 'nullable|array',
             'permissions.*' => Rule::in(User::VIEWS),
         ]);
@@ -89,7 +89,7 @@ class UserController extends Controller
             'name'          => 'sometimes|string|max:100',
             'email'         => ['sometimes', 'email', Rule::unique('users')->ignore($id)],
             'password'      => 'sometimes|nullable|string|min:8',
-            'role'          => ['sometimes', Rule::in(['super_admin', 'admin', 'cajero'])],
+            'role' => ['sometimes', Rule::in(['admin', 'contador', 'atencion', 'salon'])], // ← quitado super_admin/cajero, sin 'sistema' (se crea solo por seed)
             'permissions'   => 'nullable|array',
             'permissions.*' => Rule::in(User::VIEWS),
         ]);
@@ -115,7 +115,7 @@ class UserController extends Controller
     // POST /admin/users/{id}/reset-password
     public function resetPassword(int $id): JsonResponse
     {
-        if (auth()->user()->role !== 'sistema') {
+        if (!auth()->user()->hasRole(['admin', 'sistema'])) {
             return $this->error('No tienes permiso para esta acción', 403);
         }
 
