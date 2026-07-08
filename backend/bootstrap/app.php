@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // ── Alias de roles aquí dentro, no en un bloque separado ──
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
+            'permission' => \App\Http\Middleware\CheckPermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -57,7 +57,7 @@
                                 tracking-widest text-gray-500">
                                         Correo electrónico *
                                     </label>
-                                    <input v-model="form.email" type="email" placeholder="usuario@mahoma.pe"
+                                    <input v-model="form.email" type="email" placeholder="usuario@birds.pe"
                                         class="modal-input" />
                                 </div>
 
@@ -89,7 +89,7 @@
                                     </label>
                                     <div class="grid grid-cols-2 gap-2">
                                         <button v-for="r in ROLES" :key="r.value" type="button"
-                                            @click="form.role = r.value" class="flex items-center gap-2.5 px-3.5 py-3 rounded-2xl
+                                            @click="selectRole(r.value)" class="flex items-center gap-2.5 px-3.5 py-3 rounded-2xl
                              border-2 text-left cursor-pointer
                              transition-all duration-150" :class="form.role === r.value
                                 ? 'border-brand-red bg-red-50'
@@ -109,6 +109,35 @@
                                             </div>
                                         </button>
                                     </div>
+                                </div>
+
+                                <!-- Vistas permitidas ← NUEVO -->
+                                <div class="flex flex-col gap-1.5">
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-[10.5px] font-black uppercase
+                                    tracking-widest text-gray-500">
+                                            Acceso a vistas *
+                                        </label>
+                                        <button type="button" @click="form.permissions = defaultViewsForRole(form.role)"
+                                            class="text-[11px] font-bold text-brand-red cursor-pointer
+                                   border-none bg-transparent hover:underline">
+                                            Restaurar por defecto
+                                        </button>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <label v-for="view in AVAILABLE_VIEWS" :key="view.value" class="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 cursor-pointer
+                                   transition-all duration-150" :class="form.permissions.includes(view.value)
+                                    ? 'border-brand-red bg-red-50'
+                                    : 'border-gray-100 bg-gray-50'">
+                                            <input type="checkbox" :value="view.value" v-model="form.permissions"
+                                                class="accent-brand-red" />
+                                            <span class="text-[12.5px] font-semibold text-gray-700">{{ view.label
+                                                }}</span>
+                                        </label>
+                                    </div>
+                                    <p class="text-[11px] text-gray-400 m-0 mt-1">
+                                        Estas vistas controlan tanto el menú como el acceso real al API.
+                                    </p>
                                 </div>
 
                                 <!-- Error -->
@@ -360,7 +389,7 @@ import {
     MagnifyingGlassIcon, CheckCircleIcon,
     UsersIcon, UserPlusIcon, ExclamationCircleIcon,
     EyeIcon, EyeSlashIcon,
-    StarIcon, CpuChipIcon, BanknotesIcon, FireIcon,
+    StarIcon, CpuChipIcon, BanknotesIcon,
 } from '@heroicons/vue/24/outline'
 
 const adminStore = useAdminStore()
@@ -387,6 +416,7 @@ const form = reactive({
     email: '',
     password: '',
     role: 'admin' as string,
+    permissions: [] as string[], // ← NUEVO — vistas habilitadas para este usuario
 })
 
 // ── Constantes ────────────────────────────────────────────
@@ -415,7 +445,6 @@ const ROLES = [
         bg: 'bg-green-50',
         color: 'text-green-600',
     },
-
 ]
 
 const ROLE_FILTERS = [
@@ -425,6 +454,34 @@ const ROLE_FILTERS = [
     { value: 'cajero', label: 'Cajero' },
     { value: 'sistema', label: 'Sistema' },
 ]
+
+// ── Vistas disponibles en el sistema ── NUEVO
+// (deben coincidir con las claves que usa AdminShell.vue / backend)
+const AVAILABLE_VIEWS = [
+    { value: 'dashboard', label: 'Dashboard' },
+    { value: 'catalog', label: 'Catálogo' },
+    { value: 'orders', label: 'Pedidos' },
+    { value: 'caja', label: 'Caja' },
+    { value: 'clients', label: 'Clientes' },
+    { value: 'reports', label: 'Reportes' },
+    { value: 'users', label: 'Usuarios' },
+    { value: 'sistema', label: 'Sistema' },
+]
+
+function defaultViewsForRole(role: string): string[] {
+    const m: Record<string, string[]> = {
+        super_admin: AVAILABLE_VIEWS.map(v => v.value),
+        sistema: AVAILABLE_VIEWS.map(v => v.value),
+        admin: ['dashboard', 'catalog', 'orders', 'caja', 'clients', 'reports', 'users'],
+        cajero: ['dashboard', 'catalog', 'orders', 'caja', 'clients'],
+    }
+    return m[role] ?? ['dashboard']
+}
+
+function selectRole(role: string) {
+    form.role = role
+    form.permissions = defaultViewsForRole(role)
+}
 
 // ── Computed ──────────────────────────────────────────────
 const filtered = computed(() => {
@@ -446,6 +503,7 @@ const canSave = computed(() =>
     form.name.trim() &&
     form.email.trim() &&
     form.role &&
+    form.permissions.length > 0 &&
     (editingUser.value ? true : form.password.length >= 8)
 )
 
@@ -479,6 +537,7 @@ async function saveUser() {
             name: form.name.trim(),
             email: form.email.trim(),
             role: form.role,
+            permissions: form.permissions, // ← NUEVO
         }
         if (form.password) payload.password = form.password
 
@@ -521,11 +580,13 @@ function openModal(user?: any) {
         form.email = user.email
         form.role = user.role
         form.password = ''
+        form.permissions = user.permissions ?? defaultViewsForRole(user.role) // ← NUEVO
     } else {
         form.name = ''
         form.email = ''
         form.role = 'admin'
         form.password = ''
+        form.permissions = defaultViewsForRole('admin') // ← NUEVO
     }
     showModal.value = true
 }
@@ -555,7 +616,7 @@ function avatarBg(role: string): string {
     const m: Record<string, string> = {
         super_admin: 'bg-yellow-500',
         admin: 'bg-blue-500',
-        cajero: 'bg-green-500',        
+        cajero: 'bg-green-500',
         sistema: 'bg-gray-500',
     }
     return m[role] ?? 'bg-gray-400'

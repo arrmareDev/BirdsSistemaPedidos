@@ -18,18 +18,18 @@ class UserController extends Controller
 
         $query = User::orderBy('id');
 
-        // Admin no puede ver usuarios con rol sistema
         if (!$isSistema) {
             $query->where('role', '!=', 'sistema');
         }
 
         $users = $query->get()->map(fn($u) => [
-            'id'         => $u->id,
-            'name'       => $u->name,
-            'email'      => $u->email,
-            'role'       => $u->role,
-            'can_reset'  => $isSistema,
-            'created_at' => $u->created_at?->toISOString(),
+            'id'          => $u->id,
+            'name'        => $u->name,
+            'email'       => $u->email,
+            'role'        => $u->role,
+            'permissions' => $u->allowedViews(), // ← NUEVO — vistas efectivas
+            'can_reset'   => $isSistema,
+            'created_at'  => $u->created_at?->toISOString(),
         ]);
 
         return $this->success($users);
@@ -41,50 +41,57 @@ class UserController extends Controller
         $user = User::findOrFail($id);
 
         return $this->success([
-            'id'         => $user->id,
-            'name'       => $user->name,
-            'email'      => $user->email,
-            'role'       => $user->role,
-            'created_at' => $user->created_at?->toISOString(),
+            'id'          => $user->id,
+            'name'        => $user->name,
+            'email'       => $user->email,
+            'role'        => $user->role,
+            'permissions' => $user->allowedViews(),
+            'created_at'  => $user->created_at?->toISOString(),
         ]);
     }
 
-    // POST /admin/users — solo super_admin
+    // POST /admin/users
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'     => 'required|string|max:100',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8',
-            'role'     => ['required', Rule::in(['super_admin', 'admin', 'cajero'])],
+            'name'          => 'required|string|max:100',
+            'email'         => 'required|email|unique:users,email',
+            'password'      => 'required|string|min:8',
+            'role'          => ['required', Rule::in(['super_admin', 'admin', 'cajero'])],
+            'permissions'   => 'nullable|array',
+            'permissions.*' => Rule::in(User::VIEWS),
         ]);
 
         $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role'     => $data['role'],
+            'name'        => $data['name'],
+            'email'       => $data['email'],
+            'password'    => Hash::make($data['password']),
+            'role'        => $data['role'],
+            'permissions' => $data['permissions'] ?? null,
         ]);
 
         return $this->created([
-            'id'         => $user->id,
-            'name'       => $user->name,
-            'email'      => $user->email,
-            'role'       => $user->role,
-            'created_at' => $user->created_at?->toISOString(),
+            'id'          => $user->id,
+            'name'        => $user->name,
+            'email'       => $user->email,
+            'role'        => $user->role,
+            'permissions' => $user->allowedViews(),
+            'created_at'  => $user->created_at?->toISOString(),
         ], 'Usuario creado');
     }
 
-    // PUT /admin/users/{id} — super_admin modifica todo
+    // PUT /admin/users/{id}
     public function update(Request $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
 
         $data = $request->validate([
-            'name'     => 'sometimes|string|max:100',
-            'email'    => ['sometimes', 'email', Rule::unique('users')->ignore($id)],
-            'password' => 'sometimes|nullable|string|min:8',
-            'role'     => ['sometimes', Rule::in(['super_admin', 'admin', 'cajero'])],
+            'name'          => 'sometimes|string|max:100',
+            'email'         => ['sometimes', 'email', Rule::unique('users')->ignore($id)],
+            'password'      => 'sometimes|nullable|string|min:8',
+            'role'          => ['sometimes', Rule::in(['super_admin', 'admin', 'cajero'])],
+            'permissions'   => 'nullable|array',
+            'permissions.*' => Rule::in(User::VIEWS),
         ]);
 
         if (!empty($data['password'])) {
@@ -96,45 +103,37 @@ class UserController extends Controller
         $user->update($data);
 
         return $this->success([
-            'id'         => $user->id,
-            'name'       => $user->name,
-            'email'      => $user->email,
-            'role'       => $user->role,
-            'created_at' => $user->created_at?->toISOString(),
+            'id'          => $user->id,
+            'name'        => $user->name,
+            'email'       => $user->email,
+            'role'        => $user->role,
+            'permissions' => $user->allowedViews(),
+            'created_at'  => $user->created_at?->toISOString(),
         ], 'Usuario actualizado');
     }
 
-    // POST /admin/users/{id}/reset-password — solo sistema
-    // Resetea contraseña a una temporal y la devuelve en texto plano
+    // POST /admin/users/{id}/reset-password
     public function resetPassword(int $id): JsonResponse
     {
-        // Solo sistema puede hacer esto
         if (auth()->user()->role !== 'sistema') {
             return $this->error('No tienes permiso para esta acción', 403);
         }
 
         $user = User::findOrFail($id);
+        $tempPassword = 'temp-' . strtolower(substr($user->name, 0, 4)) . rand(1000, 9999);
 
-        // Generar contraseña temporal legible
-        $tempPassword = 'temp-' . strtolower(substr($user->name, 0, 4))
-            . rand(1000, 9999);
-
-        $user->update([
-            'password' => Hash::make($tempPassword),
-        ]);
-
-        // Revocar todos sus tokens para forzar nuevo login
+        $user->update(['password' => Hash::make($tempPassword)]);
         $user->tokens()->delete();
 
         return $this->success([
             'user_id'       => $user->id,
             'name'          => $user->name,
             'email'         => $user->email,
-            'temp_password' => $tempPassword, // ← solo se devuelve una vez
+            'temp_password' => $tempPassword,
         ], 'Contraseña reseteada. Comparte esta contraseña temporal con el usuario.');
     }
 
-    // DELETE /admin/users/{id} — solo super_admin
+    // DELETE /admin/users/{id}
     public function destroy(User $user)
     {
         if (!auth()->user()->canDelete($user)) {
