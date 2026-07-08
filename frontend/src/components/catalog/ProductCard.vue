@@ -16,7 +16,7 @@
       :class="layout === 'grid' ? 'h-44 sm:h-48' : 'w-28 h-full min-h-[120px] shrink-0'">
 
       <!-- Imagen real -->
-      <img v-if="product.imageUrl && !imgError" :src="product.imageUrl" :alt="product.name" class="w-full h-full object-cover transition-transform duration-500
+      <img v-if="product.image_url && !imgError" :src="product.image_url" :alt="product.name" class="w-full h-full object-cover transition-transform duration-500
                group-hover:scale-105" @error="imgError = true" />
 
       <!-- Placeholder neumórfico con emoji -->
