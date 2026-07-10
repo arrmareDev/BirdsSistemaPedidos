@@ -63,31 +63,44 @@ export const useCartStore = defineStore("cart", () => {
     );
   }
 
-  function add(
+function add(
     product: Product,
     customization: CartCustomization[],
     extras: CartExtra[],
+    qtyToAdd: number = 1 // ← Agregamos este parámetro para recibir la cantidad directa
   ) {
     const modifiersPrice = calcModifiersPrice(customization);
     const extrasPrice = extras.reduce((sum, e) => sum + e.price * e.qty, 0);
     const summary = buildSummary(customization, extras);
 
-    items.value.push({
-      _uid: crypto.randomUUID(),
-      productId: product.id,
-      name: product.name,
-      emoji: product.emoji,
-      imageUrl: product.image_url,
-      businessLine: product.category?.business_line ?? null,
-      basePrice: product.price,
-      modifiersPrice,
-      extrasPrice,
-      price: product.price + modifiersPrice + extrasPrice,
-      qty: 1,
-      customization,
-      extras,
-      customSummary: summary,
-    });
+    // ── MAGIA: Buscamos si ya existe en el carrito ──
+    // Comparamos que sea el mismo producto y que la personalización sea idéntica
+    const existingItem = items.value.find(
+      (i) => i.productId === product.id && i.customSummary === summary
+    );
+
+    if (existingItem) {
+      // Si ya existe, solo le sumamos la cantidad solicitada
+      existingItem.qty += qtyToAdd;
+    } else {
+      // Si no existe (o tiene una personalización distinta), creamos una nueva fila
+      items.value.push({
+        _uid: crypto.randomUUID(),
+        productId: product.id,
+        name: product.name,
+        emoji: product.emoji,
+        imageUrl: product.image_url,
+        businessLine: product.category?.business_line ?? null,
+        basePrice: product.price,
+        modifiersPrice,
+        extrasPrice,
+        price: product.price + modifiersPrice + extrasPrice,
+        qty: qtyToAdd, // ← Usamos la cantidad inicial aquí
+        customization,
+        extras,
+        customSummary: summary,
+      });
+    }
   }
 
   // ── Actualiza un item existente (al editar desde el carrito) ──

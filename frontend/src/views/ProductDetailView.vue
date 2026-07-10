@@ -1,7 +1,6 @@
 <template>
     <div class="min-h-screen bg-white">
 
-        <!-- ══ NAVBAR ══ -->
         <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center gap-4">
                 <button @click="router.back()" class="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-500
@@ -12,7 +11,7 @@
                 </button>
 
                 <div class="flex items-center gap-2 text-[12.5px] text-gray-400 min-w-0">
-                    <span class="cursor-pointer hover:text-brand-red transition-colors truncate"
+                    <span class="cursor-pointer hover:text-brand-terracotta transition-colors truncate"
                         @click="router.push('/')">
                         Catálogo
                     </span>
@@ -24,7 +23,6 @@
             </div>
         </header>
 
-        <!-- ══ LOADING ══ -->
         <div v-if="loading" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
                 <div class="rounded-3xl bg-gray-100 animate-pulse" style="aspect-ratio:1;" />
@@ -39,7 +37,6 @@
             </div>
         </div>
 
-        <!-- ══ NOT FOUND ══ -->
         <div v-else-if="!product" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32
                    flex flex-col items-center gap-5 text-center">
             <div class="w-24 h-24 rounded-3xl bg-gray-50 flex items-center
@@ -52,22 +49,19 @@
                     El producto que buscas no existe o fue removido.
                 </p>
             </div>
-            <button @click="router.push('/')" class="px-6 py-3 rounded-2xl bg-brand-red text-white font-bold text-[13.5px]
-                       border-none cursor-pointer hover:bg-red-700 transition-colors">
+            <button @click="router.push('/')" class="px-6 py-3 rounded-2xl bg-brand-green text-white font-bold text-[13.5px]
+                       border-none cursor-pointer hover:bg-brand-green2 transition-colors">
                 Ver catálogo
             </button>
         </div>
 
-        <!-- ══ CONTENIDO ══ -->
         <main v-else class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10 pb-36 lg:pb-10">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
 
-                <!-- ── COLUMNA IZQUIERDA ── -->
                 <div class="flex flex-col gap-4 lg:sticky lg:top-20">
 
-                    <!-- Imagen principal -->
                     <div class="relative rounded-3xl overflow-hidden border border-gray-100
-                                bg-gradient-to-br from-rose-50 via-pink-50 to-emerald-50" style="aspect-ratio:1;">
+                                bg-gradient-to-br from-brand-bg via-white to-gray-50" style="aspect-ratio:1;">
                         <img v-if="selectedImage" :src="selectedImage" :alt="product.name"
                             class="w-full h-full object-cover transition-all duration-500"
                             :class="imgTransition ? 'opacity-0 scale-105' : 'opacity-100 scale-100'" />
@@ -78,11 +72,10 @@
                             </span>
                         </div>
 
-                        <!-- Badges -->
                         <div class="absolute top-4 left-4 flex flex-col gap-2">
                             <span v-if="product.popular" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
-                                       text-[10.5px] font-black uppercase tracking-wide text-white" style="background:linear-gradient(135deg,#f59e0b,#d97706);
-                                       box-shadow:0 4px 12px rgba(245,158,11,0.35);">
+                                       text-[10.5px] font-black uppercase tracking-wide text-brand-dark" style="background:linear-gradient(135deg,#E6D5C3,#D4AF37);
+                                       box-shadow:0 4px 12px rgba(212,175,55,0.35);">
                                 ⭐ Popular
                             </span>
                             <span v-if="agotado" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
@@ -95,7 +88,6 @@
                             </span>
                         </div>
 
-                        <!-- Overlay agotado -->
                         <div v-if="agotado" class="absolute inset-0 bg-white/60 backdrop-blur-[2px]
                                    flex items-center justify-center">
                             <span class="bg-white text-gray-600 font-black text-[12px] uppercase
@@ -105,22 +97,20 @@
                         </div>
                     </div>
 
-                    <!-- Miniaturas -->
                     <div v-if="product.image_url" class="flex gap-2.5">
                         <button @click="selectImage(product.image_url!)" class="w-16 h-16 rounded-2xl overflow-hidden border-2 cursor-pointer
                                    transition-all duration-150 shrink-0" :class="selectedImage === product.image_url
-                                    ? 'border-brand-red shadow-md shadow-red-100'
+                                    ? 'border-brand-terracotta shadow-md shadow-orange-100'
                                     : 'border-gray-200 hover:border-gray-300'">
                             <img :src="product.image_url" :alt="product.name" class="w-full h-full object-cover" />
                         </button>
                     </div>
 
-                    <!-- Info delivery — solo desktop -->
                     <div class="hidden lg:flex flex-col gap-2.5 mt-2">
                         <div class="flex items-center gap-3 p-3.5 rounded-2xl bg-gray-50 border border-gray-100">
-                            <div class="w-9 h-9 rounded-xl bg-green-50 flex items-center
-                                        justify-center shrink-0 border border-green-100">
-                                <TruckIcon class="w-4 h-4 text-green-600" />
+                            <div class="w-9 h-9 rounded-xl bg-brand-bg flex items-center
+                                        justify-center shrink-0 border border-brand-accent/30">
+                                <TruckIcon class="w-4 h-4 text-brand-terracotta" />
                             </div>
                             <div>
                                 <p class="font-semibold text-[13px] text-gray-800 m-0">Delivery en Chiclayo</p>
@@ -128,9 +118,9 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-3 p-3.5 rounded-2xl bg-gray-50 border border-gray-100">
-                            <div class="w-9 h-9 rounded-xl bg-blue-50 flex items-center
-                                        justify-center shrink-0 border border-blue-100">
-                                <SparklesIcon class="w-4 h-4 text-blue-500" />
+                            <div class="w-9 h-9 rounded-xl bg-brand-bg flex items-center
+                                        justify-center shrink-0 border border-brand-accent/30">
+                                <SparklesIcon class="w-4 h-4 text-brand-terracotta" />
                             </div>
                             <div>
                                 <p class="font-semibold text-[13px] text-gray-800 m-0">Flores frescas del día</p>
@@ -140,35 +130,29 @@
                     </div>
                 </div>
 
-                <!-- ── COLUMNA DERECHA ── -->
                 <div class="flex flex-col gap-7">
 
-                    <!-- Tags -->
                     <div class="flex items-center gap-2 flex-wrap">
-                        <span v-if="product.category" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
-                                   text-[11.5px] font-bold" style="background:rgba(196,30,30,0.07);color:#C41E1E;
-                                   border:1.5px solid rgba(196,30,30,0.15);">
-                            {{ product?.category?.emoji }} {{ product?.category?.name }}
+                        <span v-if="product.category" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-bold"
+                            style="background: #F8F5F0; color: #9A6B56; border: 1.5px solid rgba(154,107,86,0.2);">
+                            {{ product.category.emoji }} {{ product.category.name }}
                         </span>
                         <span v-if="product.ocasion" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
-                                   text-[11.5px] font-bold bg-rose-50 text-rose-600 border border-rose-100">
+                                   text-[11.5px] font-bold" style="background: #F8F5F0; color: #9A6B56; border: 1.5px solid rgba(154,107,86,0.2);">
                             <SparklesIcon class="w-3.5 h-3.5" />
                             {{ product.ocasion }}
                         </span>
                     </div>
 
-                    <!-- Nombre + descripción -->
                     <div class="flex flex-col gap-3">
-                        <h1 class="font-black text-[28px] sm:text-[34px] text-gray-900 m-0
-                                   leading-[1.15] tracking-tight" style="font-family:'Plus Jakarta Sans',sans-serif;">
+                        <h1 class="font-display font-black text-[32px] sm:text-[40px] text-brand-green m-0 leading-tight tracking-tight">
                             {{ product.name }}
                         </h1>
-                        <p v-if="product.description" class="text-[14.5px] text-gray-500 m-0 leading-relaxed">
+                        <p v-if="product.description" class="text-[15px] text-gray-600 m-0 leading-relaxed">
                             {{ product.description }}
                         </p>
                     </div>
 
-                    <!-- Atributos -->
                     <div v-if="product.color || product.tamano" class="flex flex-wrap gap-2">
                         <div v-if="product.color"
                             class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gray-50 border border-gray-200">
@@ -185,21 +169,18 @@
                         </div>
                     </div>
 
-                    <!-- Precio -->
                     <div class="flex items-baseline gap-2">
-                        <span class="text-[15px] font-bold text-gray-400">S/</span>
-                        <span class="font-black text-[46px] text-gray-900 leading-none"
-                            style="font-family:'Plus Jakarta Sans',sans-serif;">
+                        <span class="text-[16px] font-bold text-gray-400">S/</span>
+                        <span class="font-display font-black text-[46px] text-brand-green leading-none">
                             {{ totalPrice.toFixed(2) }}
                         </span>
-                        <span v-if="extrasTotal > 0" class="text-[13px] text-green-600 font-semibold">
+                        <span v-if="extrasTotal > 0" class="text-[13px] text-brand-terracotta font-semibold">
                             +S/ {{ extrasTotal.toFixed(2) }} extras
                         </span>
                     </div>
 
                     <div class="h-px bg-gray-100" />
 
-                    <!-- ── PERSONALIZACIÓN ── -->
                     <div v-if="product.customization_sections.length > 0" class="flex flex-col gap-6">
                         <p class="text-[11px] font-black text-gray-400 uppercase tracking-widest m-0">
                             Personalización
@@ -212,7 +193,7 @@
                                 <span class="text-[17px] leading-none">{{ sectionEmoji(section.seccion) }}</span>
                                 <span class="font-bold text-[14px] text-gray-900">{{ section.label }}</span>
                                 <span v-if="section.required" class="text-[9.5px] font-black uppercase px-2 py-0.5 rounded-full
-                                           bg-red-50 text-brand-red border border-red-200 tracking-wide">
+                                           bg-brand-bg text-brand-terracotta border border-brand-terracotta/30 tracking-wide">
                                     Requerido
                                 </span>
                                 <span v-if="section.multiple"
@@ -221,17 +202,16 @@
                                 </span>
                             </div>
 
-                            <!-- Múltiple -->
                             <div v-if="section.multiple" class="flex flex-wrap gap-2">
                                 <button v-for="opt in section.options" :key="opt.id"
                                     @click="toggleMultiple(section.id, opt)" class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border-2
                                            text-[13px] font-semibold cursor-pointer transition-all duration-150"
                                     :class="isSelected(section.id, opt.id)
-                                        ? 'border-brand-red bg-red-50 text-brand-red'
-                                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'">
+                                        ? 'border-brand-green bg-brand-bg text-brand-green'
+                                        : 'border-gray-200 bg-white text-gray-600 hover:border-brand-terracotta/50'">
                                     <div class="w-4 h-4 rounded-md border-2 flex items-center
                                                 justify-center shrink-0 transition-all" :class="isSelected(section.id, opt.id)
-                                                    ? 'border-brand-red bg-brand-red' : 'border-gray-300'">
+                                                    ? 'border-brand-green bg-brand-green' : 'border-gray-300'">
                                         <CheckIcon v-if="isSelected(section.id, opt.id)"
                                             class="w-2.5 h-2.5 text-white" />
                                     </div>
@@ -239,17 +219,16 @@
                                 </button>
                             </div>
 
-                            <!-- Único -->
                             <div v-else class="flex flex-wrap gap-2">
                                 <button v-for="opt in section.options" :key="opt.id"
                                     @click="selectSingle(section.id, opt)" class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border-2
                                            text-[13px] font-semibold cursor-pointer transition-all duration-150"
                                     :class="isSelected(section.id, opt.id)
-                                        ? 'border-brand-red bg-red-50 text-brand-red'
-                                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'">
+                                        ? 'border-brand-green bg-brand-bg text-brand-green'
+                                        : 'border-gray-200 bg-white text-gray-600 hover:border-brand-terracotta/50'">
                                     <div class="w-4 h-4 rounded-full border-2 flex items-center
                                                 justify-center shrink-0 transition-all" :class="isSelected(section.id, opt.id)
-                                                    ? 'border-brand-red bg-brand-red' : 'border-gray-300'">
+                                                    ? 'border-brand-green bg-brand-green' : 'border-gray-300'">
                                         <div v-if="isSelected(section.id, opt.id)"
                                             class="w-2 h-2 rounded-full bg-white" />
                                     </div>
@@ -257,7 +236,6 @@
                                 </button>
                             </div>
 
-                            <!-- Error -->
                             <Transition enter-active-class="transition-all duration-150"
                                 enter-from-class="opacity-0 -translate-y-1" leave-to-class="opacity-0">
                                 <div v-if="errors[section.id]" class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl
@@ -271,7 +249,6 @@
                         </div>
                     </div>
 
-                    <!-- ── EXTRAS COMPARTIDOS (cafetería/menú) ── -->
                     <div v-if="product.extras_compartidos.length > 0" class="flex flex-col gap-3">
                         <div class="flex items-center gap-2">
                             <p class="text-[11px] font-black text-gray-400 uppercase tracking-widest m-0">
@@ -283,21 +260,21 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <div v-for="extra in product.extras_compartidos" :key="'shared-' + extra.id" class="flex items-center justify-between px-4 py-3.5 rounded-2xl
                                        border-2 transition-all duration-150" :class="getSharedExtraQty(extra.id) > 0
-                                        ? 'border-brand-red bg-red-50/60'
+                                        ? 'border-brand-terracotta bg-brand-bg'
                                         : 'border-gray-100 bg-gray-50'">
                                 <div class="min-w-0 mr-3">
                                     <p class="font-semibold text-[13.5px] text-gray-900 m-0 truncate">
                                         {{ extra.name }}
                                     </p>
-                                    <p class="text-[12px] font-black text-green-600 m-0 mt-0.5">
+                                    <p class="text-[12px] font-black text-brand-green m-0 mt-0.5">
                                         +S/ {{ extra.price.toFixed(2) }}
                                     </p>
                                 </div>
                                 <div class="flex items-center gap-1.5 shrink-0">
                                     <button v-if="getSharedExtraQty(extra.id) > 0"
                                         @click="decrementSharedExtra(extra.id)" class="w-8 h-8 rounded-xl flex items-center justify-center
-                                               border-2 border-brand-red text-brand-red font-bold
-                                               cursor-pointer bg-white hover:bg-red-50 transition-all">
+                                               border-2 border-brand-terracotta text-brand-terracotta font-bold
+                                               cursor-pointer bg-white hover:bg-brand-bg transition-all">
                                         <MinusIcon class="w-3.5 h-3.5" />
                                     </button>
                                     <span v-if="getSharedExtraQty(extra.id) > 0"
@@ -305,8 +282,8 @@
                                         {{ getSharedExtraQty(extra.id) }}
                                     </span>
                                     <button @click="incrementSharedExtra(extra)" class="w-8 h-8 rounded-xl flex items-center justify-center
-                                               border-2 border-brand-red bg-brand-red text-white font-bold
-                                               cursor-pointer hover:bg-red-700 transition-all">
+                                               border-2 border-brand-terracotta bg-brand-terracotta text-white font-bold
+                                               cursor-pointer hover:opacity-90 transition-all">
                                         <PlusIcon class="w-3.5 h-3.5" />
                                     </button>
                                 </div>
@@ -314,7 +291,6 @@
                         </div>
                     </div>
 
-                    <!-- ── EXTRAS ── -->
                     <div v-if="product.extras.length > 0" class="flex flex-col gap-3">
                         <div class="flex items-center gap-2">
                             <p class="text-[11px] font-black text-gray-400 uppercase tracking-widest m-0">
@@ -326,20 +302,20 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <div v-for="extra in product.extras" :key="extra.id" class="flex items-center justify-between px-4 py-3.5 rounded-2xl
                                        border-2 transition-all duration-150" :class="getExtraQty(extra.id) > 0
-                                        ? 'border-brand-red bg-red-50/60'
+                                        ? 'border-brand-terracotta bg-brand-bg'
                                         : 'border-gray-100 bg-gray-50'">
                                 <div class="min-w-0 mr-3">
                                     <p class="font-semibold text-[13.5px] text-gray-900 m-0 truncate">
                                         {{ extra.name }}
                                     </p>
-                                    <p class="text-[12px] font-black text-green-600 m-0 mt-0.5">
+                                    <p class="text-[12px] font-black text-brand-green m-0 mt-0.5">
                                         +S/ {{ extra.price.toFixed(2) }}
                                     </p>
                                 </div>
                                 <div class="flex items-center gap-1.5 shrink-0">
                                     <button v-if="getExtraQty(extra.id) > 0" @click="decrementExtra(extra.id)" class="w-8 h-8 rounded-xl flex items-center justify-center
-                                               border-2 border-brand-red text-brand-red font-bold
-                                               cursor-pointer bg-white hover:bg-red-50 transition-all">
+                                               border-2 border-brand-terracotta text-brand-terracotta font-bold
+                                               cursor-pointer bg-white hover:bg-brand-bg transition-all">
                                         −
                                     </button>
                                     <span v-if="getExtraQty(extra.id) > 0"
@@ -349,8 +325,8 @@
                                     <button @click="incrementExtra(extra)" class="w-8 h-8 rounded-xl flex items-center justify-center
                                                border-2 font-bold cursor-pointer transition-all"
                                         :class="getExtraQty(extra.id) > 0
-                                            ? 'border-brand-red bg-brand-red text-white hover:bg-red-700'
-                                            : 'border-gray-300 text-gray-500 bg-white hover:border-brand-red hover:text-brand-red'">
+                                            ? 'border-brand-terracotta bg-brand-terracotta text-white hover:opacity-90'
+                                            : 'border-gray-300 text-gray-500 bg-white hover:border-brand-terracotta hover:text-brand-terracotta'">
                                         +
                                     </button>
                                 </div>
@@ -358,7 +334,6 @@
                         </div>
                     </div>
 
-                    <!-- ── RESUMEN ── -->
                     <Transition enter-active-class="transition-all duration-200"
                         enter-from-class="opacity-0 -translate-y-1" leave-to-class="opacity-0">
                         <div v-if="summaryText"
@@ -373,16 +348,14 @@
 
                     <div class="h-px bg-gray-100" />
 
-                    <!-- ── CANTIDAD + CTA — solo desktop ── -->
                     <div class="flex flex-col gap-3">
                         <div class="flex items-center gap-3">
 
-                            <!-- Qty -->
                             <div class="flex items-center gap-1 bg-gray-50 border-2 border-gray-200
                                         rounded-2xl p-1 shrink-0">
                                 <button @click="decrementQty" :disabled="agotado || qty <= 1" class="w-10 h-10 rounded-xl flex items-center justify-center
                                            cursor-pointer border-none bg-white text-gray-600
-                                           font-bold hover:text-brand-red hover:bg-red-50
+                                           font-bold hover:text-brand-terracotta hover:bg-brand-bg
                                            shadow-sm transition-all duration-150
                                            disabled:opacity-30 disabled:cursor-not-allowed">
                                     <MinusIcon class="w-4 h-4" />
@@ -392,25 +365,24 @@
                                 </span>
                                 <button @click="incrementQty" :disabled="agotado || qty >= maxQty" class="w-10 h-10 rounded-xl flex items-center justify-center
                                            cursor-pointer border-none bg-white text-gray-600
-                                           font-bold hover:text-brand-red hover:bg-red-50
+                                           font-bold hover:text-brand-terracotta hover:bg-brand-bg
                                            shadow-sm transition-all duration-150
                                            disabled:opacity-30 disabled:cursor-not-allowed">
                                     <PlusIcon class="w-4 h-4" />
                                 </button>
                             </div>
 
-                            <!-- Botón agregar — SOLO DESKTOP -->
                             <button @click="addToCart" :disabled="agotado" class="flex-1 py-4 rounded-2xl font-black text-[14.5px] text-white
-                                       border-none cursor-pointer uppercase tracking-wide
+                                       border-none cursor-pointer uppercase tracking-widest
                                        transition-all duration-200 hover:-translate-y-0.5
                                        active:scale-[0.98] disabled:opacity-50
                                        disabled:cursor-not-allowed disabled:hover:translate-y-0
-                                       hidden lg:flex items-center justify-center gap-2.5" :class="agotado
+                                       hidden lg:flex items-center justify-center gap-2.5" 
+                                       :class="agotado
                                         ? 'bg-gray-400'
                                         : added
                                             ? 'bg-green-600 shadow-[0_6px_20px_rgba(22,163,74,0.3)]'
-                                            : 'bg-brand-red hover:bg-red-700 shadow-[0_6px_20px_rgba(196,30,30,0.3)]'"
-                                style="font-family:'Plus Jakarta Sans',sans-serif;">
+                                            : 'bg-brand-green hover:bg-brand-green2 shadow-[0_8px_24px_rgba(12,84,44,0.3)]'">
                                 <Transition mode="out-in" enter-active-class="transition-all duration-200"
                                     enter-from-class="opacity-0 scale-50"
                                     leave-active-class="transition-all duration-150"
@@ -425,39 +397,47 @@
                                 </span>
                             </button>
                         </div>
+                        
+                        <div class="hidden lg:grid grid-cols-2 gap-4 mt-2">
+                            <div class="flex items-center gap-2.5 text-gray-500">
+                                <SparklesIcon class="w-5 h-5 text-brand-terracotta" />
+                                <span class="text-[12px] font-medium leading-tight">Calidad premium<br>garantizada</span>
+                            </div>
+                            <div class="flex items-center gap-2.5 text-gray-500">
+                                <TruckIcon class="w-5 h-5 text-brand-terracotta" />
+                                <span class="text-[12px] font-medium leading-tight">Envío cuidadoso<br>y puntual</span>
+                            </div>
+                        </div>
 
-                        <!-- Link ver carrito — solo desktop -->
                         <Transition enter-active-class="transition-all duration-300"
                             enter-from-class="opacity-0 translate-y-2" leave-to-class="opacity-0">
                             <RouterLink v-if="added" to="/checkout" class="hidden lg:flex items-center justify-center gap-2 py-3.5 rounded-2xl
-                                       border-2 border-brand-red text-brand-red font-bold text-[13.5px]
-                                       no-underline hover:bg-red-50 transition-all duration-150">
+                                       border-2 border-brand-green text-brand-green font-bold text-[13.5px]
+                                       no-underline hover:bg-gray-50 transition-all duration-150 mt-2">
                                 <span>Ver carrito y confirmar pedido</span>
                                 <ArrowRightIcon class="w-4 h-4" />
                             </RouterLink>
                         </Transition>
                     </div>
 
-                    <!-- Info delivery — solo mobile -->
                     <div class="flex lg:hidden flex-col gap-2.5 pt-2 border-t border-gray-100">
                         <div class="flex items-center gap-3 text-[13px] text-gray-500">
-                            <div class="w-8 h-8 rounded-xl bg-green-50 flex items-center
-                                        justify-center shrink-0 border border-green-100">
-                                <TruckIcon class="w-4 h-4 text-green-600" />
+                            <div class="w-8 h-8 rounded-xl bg-brand-bg flex items-center
+                                        justify-center shrink-0 border border-brand-accent/30">
+                                <TruckIcon class="w-4 h-4 text-brand-terracotta" />
                             </div>
                             <span>Delivery disponible en Chiclayo y alrededores</span>
                         </div>
                         <div class="flex items-center gap-3 text-[13px] text-gray-500">
-                            <div class="w-8 h-8 rounded-xl bg-blue-50 flex items-center
-                                        justify-center shrink-0 border border-blue-100">
-                                <SparklesIcon class="w-4 h-4 text-blue-500" />
+                            <div class="w-8 h-8 rounded-xl bg-brand-bg flex items-center
+                                        justify-center shrink-0 border border-brand-accent/30">
+                                <SparklesIcon class="w-4 h-4 text-brand-terracotta" />
                             </div>
                             <span>Flores frescas del día — arreglo personalizado</span>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- ── PRODUCTOS QUE TE PUEDAN INTERESAR ── -->
             <div v-if="relatedProducts.length > 0" class="mt-20 pt-12 border-t border-gray-100">
                 <div class="flex items-center justify-between mb-8">
                     <h2 class="font-black text-[22px] sm:text-[28px] text-gray-900 m-0" 
@@ -466,8 +446,7 @@
                     </h2>
                 </div>
                 
-                <!-- Cuadrícula responsive de tarjetas -->
-                    <div class="flex sm:grid sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 
+                <div class="flex sm:grid sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 
                             overflow-x-auto snap-x snap-mandatory pb-4 hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
                     <div v-for="item in relatedProducts" :key="item.id" 
                          class="w-[70vw] sm:w-auto shrink-0 snap-center sm:snap-align-none">
@@ -477,31 +456,27 @@
             </div>
         </main>
 
-        <!-- ══ BOTTOM BAR MOBILE — único botón en mobile ══ -->
         <div v-if="product && !loading" class="fixed bottom-0 inset-x-0 z-50 lg:hidden bg-white border-t border-gray-100
                    px-4 py-3 flex items-center gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
 
-            <!-- Precio + nombre -->
             <div class="flex flex-col min-w-0 shrink-0">
                 <span class="text-[11px] text-gray-400 font-medium truncate max-w-[120px]">
                     {{ product.name }}
                 </span>
                 <div class="flex items-baseline gap-0.5">
                     <span class="text-[11px] text-gray-400 font-semibold">S/</span>
-                    <span class="font-black text-[20px] text-gray-900 leading-none"
-                        style="font-family:'Plus Jakarta Sans',sans-serif;">
+                    <span class="font-display font-black text-[20px] text-brand-green leading-none">
                         {{ totalPrice.toFixed(2) }}
                     </span>
                 </div>
             </div>
 
-            <!-- Botón agregar -->
             <button @click="addToCart" :disabled="agotado" class="flex-1 py-3 rounded-2xl font-black text-[13.5px] text-white
-                       border-none cursor-pointer uppercase tracking-wide
+                       border-none cursor-pointer uppercase tracking-widest
                        transition-all duration-150 active:scale-[0.98]
                        disabled:opacity-50 flex items-center justify-center gap-2" :class="agotado ? 'bg-gray-400'
                         : added ? 'bg-green-600'
-                            : 'bg-brand-red hover:bg-red-700'" style="font-family:'Plus Jakarta Sans',sans-serif;">
+                            : 'bg-brand-green hover:bg-brand-green2'">
                 <CheckIcon v-if="added" class="w-5 h-5 shrink-0" />
                 <ShoppingCartIcon v-else class="w-5 h-5 shrink-0" />
                 <span>{{ agotado ? 'Agotado' : added ? '¡Agregado!' : 'Agregar al carrito' }}</span>
@@ -748,8 +723,7 @@ function addToCart() {
         ...Array.from(sharedExtrasMap.value.values()),
     ].filter(e => e.qty > 0)
 
-    for (let i = 0; i < qty.value; i++) {
-        cartStore.add(product.value, customization, extras)
+      cartStore.add(product.value, customization, extras, qty.value)
     }
 
     added.value = true
@@ -761,7 +735,8 @@ function addToCart() {
         // Opcional: Si quieres que la cantidad vuelva a 1 tras agregar
         // qty.value = 1 
     }, 2000)
-}
+
+
 
 // ── Helpers ───────────────────────────────────────────────
 const COLOR_MAP: Record<string, string> = {
@@ -792,15 +767,13 @@ const relatedProducts = computed(() => {
     const otherProducts = productsStore.products.filter(p => p.id !== product.value?.id)
     
     // Intentamos buscar productos de la misma categoría
-const sameCategory = otherProducts.filter(p => p.category?.id === product.value?.category?.id)    
+    const sameCategory = otherProducts.filter(p => p.category?.id === product.value?.category?.id)    
     // Si hay suficientes de la misma categoría, mostramos esos (máximo 4)
     // Si no, simplemente devolvemos 4 productos aleatorios/recientes
     return sameCategory.length >= 4 
         ? sameCategory.slice(0, 4) 
         : otherProducts.slice(0, 4)
 })
-
-
 
 </script>
 

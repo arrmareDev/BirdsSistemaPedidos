@@ -27,12 +27,12 @@ class UserSeeder extends Seeder
                 'role'     => 'admin',
             ],
 
-            // ── Cajero — operador de caja ─────────────────
+            // ── Cajero/Contador — operador de caja ────────
             [
                 'name'     => 'Cajero',
                 'email'    => 'cajero@mahoma.pe',
                 'password' => Hash::make('cajero1234'),
-                'role'     => 'cajero',
+                'role'     => 'contador', // <--- ¡AQUÍ ESTÁ EL CAMBIO!
             ],
         ];
 

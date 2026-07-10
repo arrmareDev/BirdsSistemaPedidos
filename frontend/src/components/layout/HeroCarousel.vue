@@ -181,7 +181,7 @@ const progressWidth = computed(() =>
 const SLIDES = [
     {
         id: 1,
-        bgImage: '/images/rosasrojas.png',
+        bgImage: '/images/sombrerera.png',
         bg: 'linear-gradient(135deg,#0C542C,#083B1E,#052211)',
         overlay: 'linear-gradient(110deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.45) 55%, rgba(0,0,0,0.12) 100%)',
         badgeIcon: '🌹',
@@ -189,9 +189,9 @@ const SLIDES = [
         badgeText: '#D4AF37',
         badgeBg: 'rgba(212,175,55,0.15)',
         badgeBorder: 'rgba(212,175,55,0.35)',
-        title: 'Ramo de 12<br><span style="color:#E6D5C3">Rosas Rojas</span>',
-        subtitle: 'Rosas frescas seleccionadas a mano, envueltas con papel premium y lazo de seda. El detalle que dice todo.',
-        priceTag: '89',
+        title: 'Rosas que<br><span style="color:#E6D5C3">hablan por tí</span>',
+        subtitle: 'Arreglos florales elaborados con rosas premium cuidadosamente seleccionadas. El detalle perfecto para sorprender, celebrar y crear momentos inolvidables.',
+        priceTag: '95',
         priceSub: 'precio especial hoy',
         ctaBg: '#0C542C',
         ctaColor: '#FFFFFF',

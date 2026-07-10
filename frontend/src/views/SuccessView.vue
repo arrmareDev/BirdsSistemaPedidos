@@ -139,114 +139,112 @@ function sendWA() {
   const numero = orderStore.orderNumber || '—'
   const o = order.value
   const clientPhone = (o?.client_phone ?? '').replace(/\D/g, '')
+  const clientName = o?.client_name ?? 'Cliente'
 
   const L: string[] = []
 
-  L.push(`*FLORERÍA BIRDS*`)
-  L.push(`Pedido *#${numero}*`)
-  L.push(`━━━━━━━━━━━━━━━━━━━━`)
+  // ── Saludo Inicial ────────────────────────────────────────
+  L.push(`Hola *Florería Birds* 💐`)
+  L.push(`Soy *${clientName}*, aquí está el detalle de mi pedido:`)
   L.push(``)
+  L.push(`*🧾 PEDIDO #${numero}*`)
+  L.push(`-----------------------------------`)
 
   if (o?.items?.length) {
 
-    // ── Items ─────────────────────────────────────────────
+    // ── Resumen de Productos ────────────────────────────────
     o.items.forEach((item: any) => {
       const nombre = item.name ?? item.product?.name ?? 'Producto'
       const basePrice = Number(item.unit_price ?? 0)
       const subtotal = Number(item.subtotal ?? 0)
       const extras: any[] = item.extras ?? []
 
-      L.push(`💐 *${item.qty}× ${nombre}*  —  S/ ${basePrice.toFixed(2)}`)
+      L.push(`✨ *${item.qty}x ${nombre}*`)
+      L.push(`   _S/ ${basePrice.toFixed(2)}_`)
 
+      // Personalización (Solo si existe)
       if (item.custom_summary) {
-        L.push(`   • ${item.custom_summary}`)
+        L.push(`   ▸ ${item.custom_summary}`)
       }
 
+      // Extras
       extras.forEach((e: any) => {
         if ((e.qty ?? 0) > 0) {
-          const extraLabel = e.qty > 1 ? `${e.name} ×${e.qty}` : e.name
-          L.push(`   ➕ ${extraLabel}  +S/ ${(e.price * e.qty).toFixed(2)}`)
+          const extraLabel = e.qty > 1 ? `${e.name} (x${e.qty})` : e.name
+          L.push(`   ➕ ${extraLabel} [+S/ ${(e.price * e.qty).toFixed(2)}]`)
         }
       })
-
-      if (extras.some((e: any) => e.qty > 0)) {
-        L.push(`   💰 Subtotal: S/ ${subtotal.toFixed(2)}`)
-      }
 
       L.push(``)
     })
 
-    L.push(`━━━━━━━━━━━━━━━━━━━━`)
+    L.push(`-----------------------------------`)
 
-    // ── Tipo de pedido ─────────────────────────────────────
-    L.push(TIPO_LABELS[o.type] ?? o.type)
+    // ── Opciones de Entrega ─────────────────────────────────
+    L.push(`*📍 DATOS DE ENTREGA*`)
+    L.push(`▸ Modalidad: _${TIPO_LABELS[o.type] ?? o.type}_`)
 
-    // ── Mesa (consumo en local) ─────────────────────────────
     if (o.type === 'local' && o.mesa) {
-      L.push(`Mesa: ${o.mesa}`)
+      L.push(`▸ Mesa: ${o.mesa}`)
     }
 
-    // ── Datos de entrega ───────────────────────────────────
     if (o.type === 'delivery') {
-      if (o.address) L.push(`Dirección: ${o.address}`)
-      if (o.reference) L.push(`Referencia: ${o.reference}`)
+      if (o.address) L.push(`▸ Dirección: ${o.address}`)
+      if (o.reference) L.push(`▸ Referencia: ${o.reference}`)
     }
 
-    // ── Entrega programada ─────────────────────────────────
     if (o.entrega_programada && o.fecha_entrega) {
-      L.push(`Fecha de entrega: ${formatFechaEntrega(o.fecha_entrega)}`)
-      if (o.hora_entrega) {
-        L.push(`Hora: ${formatHora(o.hora_entrega)}`)
-      }
+      L.push(`▸ ¿Cuándo?: ${formatFechaEntrega(o.fecha_entrega)}`)
+      if (o.hora_entrega) L.push(`▸ Hora: ${formatHora(o.hora_entrega)}`)
     } else {
-      L.push(`⚡ Entrega: Lo antes posible`)
+      L.push(`▸ ¿Cuándo?: _Lo antes posible_ ⚡`)
     }
-
-    // ── Mensaje de tarjeta ─────────────────────────────────
-    if (o.mensaje_tarjeta) {
-      L.push(``)
-      L.push(`*Mensaje para la tarjeta:*`)
-      L.push(`"${o.mensaje_tarjeta}"`)
-    }
-
-    // ── Método de pago ─────────────────────────────────────
-    if (o.type === 'delivery' && o.metodo_pago) {
-      L.push(``)
-      L.push(METODO_PAGO_LABELS[o.metodo_pago] ?? o.metodo_pago)
-    }
-
-    // ── Nota adicional ─────────────────────────────────────
-    if (o.note) L.push(`Nota: ${o.note}`)
-
     L.push(``)
 
-    // ── Totales ────────────────────────────────────────────
-    const subtotalItems = o.items.reduce(
-      (s: number, i: any) => s + Number(i.subtotal ?? 0), 0
-    )
-    L.push(` Subtotal: S/ ${subtotalItems.toFixed(2)}`)
-
-    if (o.type === 'delivery' && o.delivery_fee > 0) {
-      L.push(`Delivery: S/ ${Number(o.delivery_fee).toFixed(2)}`)
+    // ── Extras Especiales ───────────────────────────────────
+    if (o.mensaje_tarjeta || o.note) {
+      L.push(`*💌 DETALLES ADICIONALES*`)
+      if (o.mensaje_tarjeta) {
+        L.push(`Mensaje para la tarjeta:`)
+        L.push(`_"${o.mensaje_tarjeta}"_`)
+        L.push(``)
+      }
+      if (o.note) {
+        L.push(`Nota especial: _${o.note}_`)
+        L.push(``)
+      }
     }
 
-    L.push(`*TOTAL: S/ ${Number(o.total).toFixed(2)}*`)
+    // ── Resumen de Pago ─────────────────────────────────────
+    L.push(`-----------------------------------`)
+    L.push(`*💳 RESUMEN DE PAGO*`)
+    
+    const subtotalItems = o.items.reduce((s: number, i: any) => s + Number(i.subtotal ?? 0), 0)
+    L.push(`▸ Subtotal: S/ ${subtotalItems.toFixed(2)}`)
+
+    if (o.type === 'delivery' && o.delivery_fee > 0) {
+      L.push(`▸ Delivery: S/ ${Number(o.delivery_fee).toFixed(2)}`)
+    }
+
+    L.push(`*👉 TOTAL A PAGAR: S/ ${Number(o.total).toFixed(2)}*`)
+
+    if (o.type === 'delivery' && o.metodo_pago) {
+      L.push(`(Método: ${METODO_PAGO_LABELS[o.metodo_pago] ?? o.metodo_pago})`)
+    }
 
   } else {
     L.push(`Hola, acabo de realizar el pedido *#${numero}* en la web.`)
   }
 
-  // ── Datos de pago por Yape (en TODOS los pedidos) ─────────
+  // ── Info Final (Pago y Seguimiento) ─────────────────────
   L.push(``)
-  L.push(`━━━━━━━━━━━━━━━━━━━━`)
-  L.push(`*PAGA CON YAPE / PLIN*`)
+  L.push(`*🏦 DATOS PARA YAPE / PLIN*`)
   L.push(`Número: *${YAPE_PHONE}*`)
   L.push(`Titular: ${YAPE_TITULAR}`)
-  L.push(`*_Envía la captura del pago por aquí_*`)
+  L.push(`_Por favor, te envío mi captura por aquí para confirmar mi pedido. Gracias._`)
 
   L.push(``)
-  L.push(`━━━━━━━━━━━━━━━━━━━━`)
-  L.push(`Seguimiento en tiempo real:`)
+  L.push(`📱 *Sigue tu pedido en vivo:*`)
   L.push(`https://catalogo.birds.pe/seguimiento/${numero}?tel=${clientPhone}`)
 
   window.open(
