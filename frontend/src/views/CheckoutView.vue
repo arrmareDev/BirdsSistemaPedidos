@@ -218,17 +218,17 @@
                 ¿Cómo vas a pagar? *
               </label>
               <div class="flex flex-col gap-2">
-                <button @click="form.metodo_pago = 'anticipado'"
+               <!-- <button @click="form.metodo_pago = 'anticipado'"
                   class="flex items-center gap-3 p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-150"
                   :class="form.metodo_pago === 'anticipado'
                     ? 'border-brand-red bg-brand-red/8'
                     : 'border-surface-border bg-white hover:border-brand-red/40'">
                   <span class="text-xl">💳</span>
-                  <div>
+                  /<div>
                     <p class="font-bold text-[13px] text-ink m-0">Ya pagué / Pago anticipado</p>
                     <p class="text-[11.5px] text-ink-muted m-0">Transferencia o coordinado con la tienda</p>
-                  </div>
-                </button>
+                  </div> 
+                </button>-->
 
                 <button @click="form.metodo_pago = 'contraentrega_efectivo'"
                   class="flex items-center gap-3 p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-150"
@@ -249,7 +249,7 @@
                     : 'border-surface-border bg-white hover:border-brand-red/40'">
                   <span class="text-xl">📱</span>
                   <div>
-                    <p class="font-bold text-[13px] text-ink m-0">Yape / Plin al repartidor</p>
+                    <p class="font-bold text-[13px] text-ink m-0">Yape / Plin</p>
                     <p class="text-[11.5px] text-ink-muted m-0">Pago contraentrega digital</p>
                   </div>
                 </button>
@@ -404,6 +404,38 @@
                placeholder:text-ink-faint focus:border-brand-red transition-all duration-200" />
     </div>
 
+    <!-- ══ BOTÓN FLOTANTE — AYUDA CON TU PEDIDO ══ -->
+    <Teleport to="body">
+      <div class="fixed bottom-5 right-5 z-50 flex items-center gap-3">
+
+        <!-- Tooltip: visible por defecto en desktop -->
+        <Transition enter-active-class="transition-all duration-150" enter-from-class="opacity-0 translate-x-2"
+          leave-active-class="transition-all duration-100" leave-to-class="opacity-0 translate-x-2">
+          <div v-if="showHelpTooltip" class="hidden sm:flex items-start gap-2 bg-white rounded-2xl border border-surface-border
+                   shadow-lg px-4 py-3 max-w-[200px]">
+            <div class="flex-1">
+              <p class="font-bold text-[13px] text-ink m-0">¿Necesitas ayuda con tu pedido?</p>
+              <p class="text-[11.5px] text-ink-muted m-0 mt-0.5">Escríbenos por WhatsApp</p>
+            </div>
+            <button @click="showHelpTooltip = false" class="w-4 h-4 rounded-full flex items-center justify-center
+                     text-ink-faint hover:text-ink-muted border-none bg-transparent cursor-pointer shrink-0 mt-0.5"
+              aria-label="Cerrar">
+              ✕
+            </button>
+          </div>
+        </Transition>
+
+        <!-- Botón -->
+        <button @click="contactSoporte" class="relative w-14 h-14 rounded-full bg-[#25D366] border-none cursor-pointer
+                 flex items-center justify-center shadow-[0_4px_20px_rgba(37,211,102,0.5)]
+                 hover:bg-[#128C7E] hover:scale-105 active:scale-95
+                 transition-all duration-200 shrink-0" aria-label="Ayuda por WhatsApp">
+          <span class="absolute inset-0 rounded-full bg-[#25D366] animate-ping-slow opacity-75" />
+          <span class="relative text-2xl">💬</span>
+        </button>
+      </div>
+    </Teleport>
+
     <!-- Error general -->
     <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0 -translate-y-1"
       leave-to-class="opacity-0">
@@ -463,14 +495,14 @@ const CHICLAYO_LNG = -79.8409
 
 // Orden: local, recoger, delivery — coincide con App\Enums\SaleChannel
 const ORDER_TYPES = [
-  { id: 'local', icon: '🪑', label: 'Consumo en local' },
+ // { id: 'local', icon: '🪑', label: 'Consumo en local' },//
   { id: 'recoger', icon: '🏪', label: 'Para llevar' },
   { id: 'delivery', icon: '🚚', label: 'Delivery' },
 ] as const
 
 const HORARIOS = [
   { value: '09:00', label: '9:00 AM - 10:00 AM' },
-  { value: '10:00', label: '10:00 AM - 11:00 AM' },
+  { value: '10:00', label: '10:00 AM - 11:00 AM' }, 
   { value: '11:00', label: '11:00 AM - 12:00 PM' },
   { value: '12:00', label: '12:00 PM - 1:00 PM' },
   { value: '14:00', label: '2:00 PM - 3:00 PM' },
@@ -501,6 +533,7 @@ const form = reactive({
 
 // ── Estado general ────────────────────────────────────────
 const errorMsg = ref('')
+const showHelpTooltip = ref(true) // visible por defecto, se puede cerrar con la ✕
 
 // ── Zonas ────────────────────────────────────────────────
 const zones = ref<DeliveryZone[]>([])
@@ -727,6 +760,13 @@ function selectMapResult(result: any) {
   detectarZona(lat, lng)
 }
 
+// ── Ayuda con el pedido ────────────────────────────────────
+function contactSoporte() {
+  const phone = (import.meta.env.VITE_WA_PHONE ?? '51984199340').replace(/\D/g, '')
+  const msg = 'Hola, tengo una consulta sobre mi pedido en la web.'
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank')
+}
+
 // ── Submit ────────────────────────────────────────────────
 async function handleOrder() {
   errorMsg.value = ''
@@ -803,5 +843,15 @@ async function handleOrder() {
   border-color: #C41E1E;
   background: white;
   box-shadow: 0 0 0 3px rgba(196, 30, 30, 0.08);
+}
+
+/* Pulso lento y sutil del botón flotante de WhatsApp */
+@keyframes ping-slow {
+  0% { transform: scale(1); opacity: 0.5; }
+  75%, 100% { transform: scale(1.6); opacity: 0; }
+}
+
+.animate-ping-slow {
+  animation: ping-slow 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 </style>

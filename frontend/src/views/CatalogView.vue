@@ -33,14 +33,16 @@
       <div class="flex-1 min-w-0" id="menu">
 
         <!-- ── Línea de negocio (Florería / Cafetería / Menú) ── -->
-        <div class="px-4 md:px-8 pt-6">
-          <div class="flex gap-2 sm:gap-2.5 overflow-x-auto scrollbar-none pb-1">
-            <button v-for="line in BUSINESS_LINES" :key="line.value" @click="changeLine(line.value)" class="flex items-center gap-2 px-4 py-2.5 rounded-full border-2
-             font-bold text-[12.5px] cursor-pointer transition-all duration-200
-             uppercase tracking-wide shrink-0" :class="productsStore.activeLine === line.value
-              ? 'border-brand-red bg-brand-red text-white shadow-red-sm'
-              : 'border-surface-border bg-white text-ink-muted hover:border-brand-red/40 hover:text-brand-red'">
-              <span class="text-[16px] leading-none">{{ line.icon }}</span>
+        <div class="px-4 md:px-8 pt-6 pb-2">
+          <div class="grid grid-cols-3 gap-3 sm:gap-4 pb-2 pt-2 px-1">
+            <button v-for="line in BUSINESS_LINES" :key="line.value" @click="changeLine(line.value)" 
+              class="flex items-center justify-center gap-2.5 sm:gap-3 px-4 py-3.5 sm:px-6 sm:py-4 rounded-full border-2
+                     font-black text-[13px] sm:text-[16px] cursor-pointer transition-all duration-300
+                     uppercase tracking-widest w-full" 
+              :class="productsStore.activeLine === line.value
+               ? 'border-brand-red bg-brand-red text-white shadow-[0_8px_24px_rgba(196,30,30,0.35)] scale-105'
+               : 'border-surface-border bg-white text-ink-muted hover:border-brand-red/40 hover:text-brand-red shadow-sm hover:shadow-md hover:-translate-y-0.5'">
+              <span class="text-[20px] sm:text-[26px] leading-none">{{ line.icon }}</span>
               {{ line.label }}
             </button>
           </div>

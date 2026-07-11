@@ -453,7 +453,7 @@ const tiempoEstimado = computed(() => {
   const m: Record<string, string> = {
     nuevo: 'Esperando confirmación del local...',
     confirmado: 'Confirmado · Preparación en ~20 minutos',
-    preparando: '👨‍🍳 Preparando tu pedido · ~15 minutos',
+    preparando: '👨‍🍳 Alistando tu pedido · ~15 minutos',
     listo: '✅ ¡Tu pedido está listo para entregar!',
     en_camino: '🛵 En camino a tu dirección · ~10 minutos',
     entregado: '🏠 Pedido entregado',
@@ -551,10 +551,10 @@ function stepSubtitle(step: any): string {
     const m: Record<string, string> = {
       nuevo: 'Notificando al local...',
       confirmado: 'El local revisó tu pedido',
-      preparando: '¡Preparando con amor! ~15 min',
+      preparando: 'Alistando con amor! ~15 min',
       listo: '¡Listo para entregar!',
       en_camino: 'En camino a tu dirección',
-      entregado: '¡Que lo disfrutes! 🍗',
+      entregado: '¡Que lo disfrutes! 💐',
     }
     return m[step.status] ?? 'En proceso...'
   }
@@ -570,7 +570,7 @@ function typeLabel(t: string): string {
 
 function statusLabel(s: string): string {
   const m: Record<string, string> = {
-    nuevo: 'Nuevo', confirmado: 'Confirmado', preparando: 'Preparando',
+    nuevo: 'Nuevo', confirmado: 'Confirmado', preparando: 'Alistando',
     listo: 'Listo', en_camino: 'En camino', entregado: 'Entregado',
     cancelado: 'Cancelado',
   }

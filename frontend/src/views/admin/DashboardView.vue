@@ -216,9 +216,10 @@ const dashStore = useDashboardStore()
 const ordersStore = useOrdersStore()
 
 onMounted(() => {
-  dashStore.fetch()
+  if (adminStore.can.reports) dashStore.fetch()
   ordersStore.fetch({ status: 'nuevo,confirmado,preparando,listo' })
 })
+
 
 // ── Computed ──────────────────────────────────────────────
 const computedStats = computed(() => {

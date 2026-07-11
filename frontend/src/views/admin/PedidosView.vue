@@ -616,7 +616,7 @@
                    outline-none w-52 focus:border-brand-red transition-all duration-200 placeholder:text-gray-300" />
         </div>
 
-        <button @click="openModal" class="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-brand-red text-white font-bold
+        <button v-if="can.writeOrders" @click="openModal" class="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-brand-red text-white font-bold
                  text-[13px] border-none cursor-pointer shadow-sm hover:bg-red-700 transition-all duration-150">
           <PlusIcon class="w-3.5 h-3.5" />
           Nuevo
@@ -641,7 +641,7 @@
             {{ search ? `No encontramos pedidos para "${search}"` : filter ? 'No hay pedidos con este estado' : 'Aún no hay pedidos registrados' }}
           </p>
         </div>
-        <button v-if="!search && !filter" @click="openModal" class="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-brand-red text-white font-bold
+        <button v-if="!search && !filter && can.writeOrders" @click="openModal" class="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-brand-red text-white font-bold
                  text-[13px] border-none cursor-pointer shadow-sm hover:bg-red-700 transition-all duration-150">
           <PlusIcon class="w-4 h-4" />
           Registrar primer pedido
@@ -727,37 +727,39 @@
               </span>
               <div class="flex gap-1.5 ml-auto">
 
-                <!-- Delivery listo: repartidor propio o delivery central -->
-                <template v-if="o.type === 'delivery' && o.status === 'listo'">
-                  <button @click.stop="abrirDespachoModal(o)"
-                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border
-                           cursor-pointer bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 transition-all duration-150">
-                    <TruckIcon class="w-3.5 h-3.5" />
-                    Repartidor
+                <template v-if="can.writeOrders">
+                  <!-- Delivery listo: repartidor propio o delivery central -->
+                  <template v-if="o.type === 'delivery' && o.status === 'listo'">
+                    <button @click.stop="abrirDespachoModal(o)"
+                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border
+                             cursor-pointer bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 transition-all duration-150">
+                      <TruckIcon class="w-3.5 h-3.5" />
+                      Repartidor
+                    </button>
+                    <button @click.stop="askYaTengo(o)"
+                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border
+                             cursor-pointer bg-green-50 border-green-300 text-green-700 hover:bg-green-100 transition-all duration-150">
+                      <CheckCircleIcon class="w-3.5 h-3.5" />
+                      Ya tengo →
+                    </button>
+                  </template>
+
+                  <!-- Avanzar normal -->
+                  <button v-else-if="o.status !== 'entregado' && o.status !== 'cancelado'" @click.stop="advanceOrder(o)"
+                    class="px-3 py-1.5 rounded-xl text-[12px] font-bold border border-gray-200 bg-white
+                           text-gray-600 cursor-pointer hover:border-brand-red hover:text-brand-red transition-all duration-150">
+                    {{ nextStatusLabel(o.status, o.type) }} →
                   </button>
-                  <button @click.stop="askYaTengo(o)"
-                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border
-                           cursor-pointer bg-green-50 border-green-300 text-green-700 hover:bg-green-100 transition-all duration-150">
-                    <CheckCircleIcon class="w-3.5 h-3.5" />
-                    Ya tengo →
+
+                  <!-- Cancelar -->
+                  <button v-if="o.status !== 'entregado' && o.status !== 'cancelado'" @click.stop="askCancel(o)" class="w-8 h-8 rounded-xl flex items-center justify-center border border-gray-200
+                           bg-white text-gray-400 cursor-pointer hover:border-amber-300 hover:text-amber-500
+                           transition-all duration-150" title="Cancelar pedido">
+                    <XCircleIcon class="w-4 h-4" />
                   </button>
                 </template>
 
-                <!-- Avanzar normal -->
-                <button v-else-if="o.status !== 'entregado' && o.status !== 'cancelado'" @click.stop="advanceOrder(o)"
-                  class="px-3 py-1.5 rounded-xl text-[12px] font-bold border border-gray-200 bg-white
-                         text-gray-600 cursor-pointer hover:border-brand-red hover:text-brand-red transition-all duration-150">
-                  {{ nextStatusLabel(o.status, o.type) }} →
-                </button>
-
-                <!-- Cancelar -->
-                <button v-if="o.status !== 'entregado' && o.status !== 'cancelado'" @click.stop="askCancel(o)" class="w-8 h-8 rounded-xl flex items-center justify-center border border-gray-200
-                         bg-white text-gray-400 cursor-pointer hover:border-amber-300 hover:text-amber-500
-                         transition-all duration-150" title="Cancelar pedido">
-                  <XCircleIcon class="w-4 h-4" />
-                </button>
-
-                <!-- WhatsApp -->
+                <!-- WhatsApp: solo lectura/comunicación, disponible para todos los roles con acceso a pedidos -->
                 <button @click.stop="sendWA(o)" class="w-8 h-8 rounded-xl flex items-center justify-center bg-[#25D366] text-white
                          border-none cursor-pointer hover:bg-[#128C7E] transition-colors" title="WhatsApp">
                   <WhatsAppIcon :size="15" />
@@ -795,8 +797,9 @@
     <!-- ══ PANEL DETALLE ══ -->
     <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0 translate-x-4"
       leave-active-class="transition-all duration-150" leave-to-class="opacity-0 translate-x-4">
-      <div v-if="selected" class="hidden lg:flex w-72 xl:w-80 shrink-0 bg-white rounded-2xl
-               border border-gray-100 shadow-sm flex-col overflow-hidden">
+   <div v-if="selected" class="fixed inset-0 z-[150] flex flex-col bg-white
+         lg:static lg:z-auto lg:w-72 xl:w-80 lg:shrink-0 lg:rounded-2xl
+         lg:border lg:border-gray-100 lg:shadow-sm overflow-hidden">
 
         <div class="px-5 py-4 border-b border-gray-100">
           <div class="flex items-start justify-between mb-3">
@@ -912,28 +915,30 @@
             </div>
           </div>
 
-          <template v-if="selected.type === 'delivery' && selected.status === 'listo'">
-            <button @click="abrirDespachoModal(selected)" class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-blue-600
-                     border-none cursor-pointer hover:bg-blue-700 transition-all duration-150
-                     flex items-center justify-center gap-2">
-              <TruckIcon class="w-4 h-4" />
-              Solicitar repartidor
-            </button>
-            <button @click="askYaTengo(selected)" class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-green-600
-                     border-none cursor-pointer hover:bg-green-700 transition-all duration-150
-                     flex items-center justify-center gap-2">
-              <CheckCircleIcon class="w-4 h-4" />
-              Ya tengo repartidor
+          <template v-if="can.writeOrders">
+            <template v-if="selected.type === 'delivery' && selected.status === 'listo'">
+              <button @click="abrirDespachoModal(selected)" class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-blue-600
+                       border-none cursor-pointer hover:bg-blue-700 transition-all duration-150
+                       flex items-center justify-center gap-2">
+                <TruckIcon class="w-4 h-4" />
+                Solicitar repartidor
+              </button>
+              <button @click="askYaTengo(selected)" class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-green-600
+                       border-none cursor-pointer hover:bg-green-700 transition-all duration-150
+                       flex items-center justify-center gap-2">
+                <CheckCircleIcon class="w-4 h-4" />
+                Ya tengo repartidor
+              </button>
+            </template>
+
+            <button v-else @click="advanceOrder(selected)"
+              :disabled="selected.status === 'entregado' || selected.status === 'cancelado'" class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-brand-red border-none
+                     cursor-pointer shadow-sm hover:bg-red-700 transition-all duration-150
+                     flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+              <ArrowRightCircleIcon class="w-4 h-4" />
+              {{ nextStatusLabel(selected.status, selected.type) }}
             </button>
           </template>
-
-          <button v-else @click="advanceOrder(selected)"
-            :disabled="selected.status === 'entregado' || selected.status === 'cancelado'" class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-brand-red border-none
-                   cursor-pointer shadow-sm hover:bg-red-700 transition-all duration-150
-                   flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
-            <ArrowRightCircleIcon class="w-4 h-4" />
-            {{ nextStatusLabel(selected.status, selected.type) }}
-          </button>
 
           <button @click="sendWA(selected)" class="w-full py-2.5 rounded-xl font-semibold text-[13px] text-white bg-[#25D366]
                    border-none cursor-pointer hover:bg-[#128C7E] transition-all duration-150
@@ -942,20 +947,22 @@
             WhatsApp al cliente
           </button>
 
-          <button v-if="selected.status !== 'entregado' && selected.status !== 'cancelado'" @click="askCancel(selected)"
-            class="w-full py-2 rounded-xl font-semibold text-[12px] text-amber-600 bg-transparent
-                   border border-amber-200 cursor-pointer hover:bg-amber-50 hover:border-amber-300
-                   transition-all duration-150 flex items-center justify-center gap-1.5">
-            <XCircleIcon class="w-3.5 h-3.5" />
-            Cancelar pedido
-          </button>
+          <template v-if="can.writeOrders">
+            <button v-if="selected.status !== 'entregado' && selected.status !== 'cancelado'" @click="askCancel(selected)"
+              class="w-full py-2 rounded-xl font-semibold text-[12px] text-amber-600 bg-transparent
+                     border border-amber-200 cursor-pointer hover:bg-amber-50 hover:border-amber-300
+                     transition-all duration-150 flex items-center justify-center gap-1.5">
+              <XCircleIcon class="w-3.5 h-3.5" />
+              Cancelar pedido
+            </button>
 
-          <button v-if="selected.status === 'cancelado' || selected.status === 'entregado'" @click="askDelete(selected)" class="w-full py-2 rounded-xl font-semibold text-[12px] text-gray-400 bg-transparent
-                   border border-gray-100 cursor-pointer hover:bg-red-50 hover:text-red-500
-                   hover:border-red-200 transition-all duration-150 flex items-center justify-center gap-1.5">
-            <TrashIcon class="w-3.5 h-3.5" />
-            Eliminar pedido
-          </button>
+            <button v-if="selected.status === 'cancelado' || selected.status === 'entregado'" @click="askDelete(selected)" class="w-full py-2 rounded-xl font-semibold text-[12px] text-gray-400 bg-transparent
+                     border border-gray-100 cursor-pointer hover:bg-red-50 hover:text-red-500
+                     hover:border-red-200 transition-all duration-150 flex items-center justify-center gap-1.5">
+              <TrashIcon class="w-3.5 h-3.5" />
+              Eliminar pedido
+            </button>
+          </template>
         </div>
       </div>
     </Transition>
@@ -970,7 +977,7 @@
         <p class="font-bold text-gray-600 text-[14px] m-0">Selecciona un pedido</p>
         <p class="text-[12px] m-0 mt-1">para ver el detalle completo</p>
       </div>
-      <button @click="openModal" class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-red text-white font-bold
+      <button v-if="can.writeOrders" @click="openModal" class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-red text-white font-bold
                text-[12.5px] border-none cursor-pointer shadow-sm hover:bg-red-700 transition-all duration-150">
         <PlusIcon class="w-3.5 h-3.5" />
         Nuevo pedido
@@ -996,12 +1003,18 @@ import CustomizerModal from '@/components/catalog/CustomizerModal.vue'
 import { useOrdersStore } from '@/stores/orders'
 import { useProductsStore } from '@/stores/products'
 import { useCartStore } from '@/stores/cart'
+import { useAdminStore } from '@/stores/admin'
+import { storeToRefs } from 'pinia'
+
 import api from '@/utils/api'
 
 // ── Stores ────────────────────────────────────────────────
 const ordersStore = useOrdersStore()
 const productsStore = useProductsStore()
 const cartStore = useCartStore()
+const adminStore = useAdminStore()
+const { can } = storeToRefs(adminStore)
+// acceso reactivo a permisos (writeOrders, etc.)
 
 const customizerRef = ref<InstanceType<typeof CustomizerModal> | null>(null)
 const registerCta = inject<(fn: () => void) => void>('registerCta')
@@ -1138,7 +1151,7 @@ const filteredCatalog = computed(() => {
 
 // ── Lifecycle ─────────────────────────────────────────────
 onMounted(() => {
-  registerCta?.(() => openModal())
+  if (can.value.writeOrders) registerCta?.(() => openModal())
   loadOrders()
   productsStore.fetchAdmin()
   refreshInterval = setInterval(() => silentRefresh(), 20_000)
@@ -1192,6 +1205,9 @@ function debouncedSearch() {
 
 // ── Modal nuevo pedido ────────────────────────────────────
 function openModal() {
+  // Defensa extra: el rol "salón" no puede registrar pedidos, aunque
+  // el botón esté oculto en la UI (por si se dispara desde otro lado).
+  if (!can.value.writeOrders) return
   cartStore.clear(); showModal.value = true; modalError.value = ''
   rightTab.value = 'catalogo'; activeCat.value = 'all'; resetForm()
 }
@@ -1214,7 +1230,7 @@ function openProduct(product: any) {
 }
 
 async function submitOrder() {
-  if (!canSubmit.value) return
+  if (!canSubmit.value || !can.value.writeOrders) return
   submitting.value = true; modalError.value = ''
   try {
     await api.post('/admin/orders', {
@@ -1250,6 +1266,7 @@ async function submitOrder() {
 
 // ── Despacho ──────────────────────────────────────────────
 function abrirDespachoModal(order: any) {
+  if (!can.value.writeOrders) return
   despachoModal.order = order; despachoModal.show = true
   despachoModal.loading = false; despachoModal.error = ''
 }
@@ -1271,6 +1288,7 @@ async function confirmarDespacho() {
 
 // ── Ya tengo repartidor ───────────────────────────────────
 function askYaTengo(o: any) {
+  if (!can.value.writeOrders) return
   yaTengoModal.order = o; yaTengoModal.show = true; yaTengoModal.loading = false
 }
 
@@ -1285,6 +1303,7 @@ async function confirmarYaTengo() {
 async function selectOrder(o: any) { selected.value = await ordersStore.getOne(o.id) }
 
 async function advanceOrder(o: any) {
+  if (!can.value.writeOrders) return
   const flow = flowFor(o.type)
   const idx = flow.indexOf(o.status)
   if (idx >= flow.length - 1) return
@@ -1295,11 +1314,13 @@ async function advanceOrder(o: any) {
 }
 
 function askCancel(o: any) {
+  if (!can.value.writeOrders) return
   confirmModal.order = o; confirmModal.type = 'cancelar'
   confirmModal.show = true; confirmModal.loading = false
 }
 
 function askDelete(o: any) {
+  if (!can.value.writeOrders) return
   confirmModal.order = o; confirmModal.type = 'eliminar'
   confirmModal.show = true; confirmModal.loading = false
 }

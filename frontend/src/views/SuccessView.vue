@@ -4,7 +4,7 @@
     <!-- Icono -->
     <div class="w-28 h-28 rounded-full bg-pink-50 border-4 border-pink-200
                 flex items-center justify-center mb-6">
-      <span class="text-6xl">💐</span>
+      <span class="text-6xl">{{ EMOJI.flor }}</span>
     </div>
 
     <h1 class="font-black text-[32px] text-ink leading-tight m-0 mb-3
@@ -27,7 +27,7 @@
     <!-- Banner entrega programada -->
     <div v-if="order?.entrega_programada && order?.fecha_entrega" class="w-full max-w-xs mb-6 px-4 py-3.5 rounded-2xl bg-pink-50
              border border-pink-200 flex items-start gap-3 text-left">
-      <span class="text-xl shrink-0">📅</span>
+      <span class="text-xl shrink-0">{{ EMOJI.calendario }}</span>
       <div>
         <p class="font-black text-[13px] text-pink-800 m-0">Entrega programada</p>
         <p class="text-[12px] text-pink-600 m-0 mt-0.5">
@@ -44,17 +44,17 @@
              shadow-[0_4px_20px_rgba(37,211,102,0.3)] uppercase tracking-wide
              hover:-translate-y-0.5 hover:shadow-[0_6px_28px_rgba(37,211,102,0.4)]
              transition-all duration-200 justify-center">
-      <span class="text-xl">💬</span>
+      <span class="text-xl">{{ EMOJI.chat }}</span>
       Enviar por WhatsApp
     </button>
 
-    <RouterLink to="/seguimiento" class="flex items-center justify-center gap-2 px-6 py-3 rounded-2xl
-             no-underline border-2 border-surface-border text-ink-muted
-             font-bold text-[14px] w-full max-w-xs uppercase tracking-wide
-             hover:border-brand-red/40 hover:text-brand-red
-             transition-all duration-200">
-      Ver estado del pedido →
-    </RouterLink>
+<RouterLink :to="seguimientoLink" class="flex items-center justify-center gap-2 px-6 py-3 rounded-2xl
+         no-underline border-2 border-surface-border text-ink-muted
+         font-bold text-[14px] w-full max-w-xs uppercase tracking-wide
+         hover:border-brand-red/40 hover:text-brand-red
+         transition-all duration-200">
+  Ver estado del pedido →
+</RouterLink>
 
     <!-- Pasos -->
     <div class="mt-10 w-full max-w-xs bg-white rounded-3xl border
@@ -77,6 +77,39 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useOrderStore } from '@/stores/order'
+
+// ── Emojis para la UI (esto NO va al mensaje de WhatsApp) ──
+// Estos sí se pueden usar tranquilos: se renderizan en tu propia
+// página, no pasan por el bug de decodificación de wa.me.
+const EMOJI = {
+  flor: '\u{1F490}',        // 💐
+  calendario: '\u{1F4C5}',  // 📅
+  chat: '\u{1F4AC}',        // 💬
+}
+
+// ── Símbolos para el mensaje de WhatsApp ───────────────────
+// wa.me / api.whatsapp.com tiene un bug confirmado que corrompe
+// los emoji de color al armar el compositor de "click to chat"
+// (llegan como � tanto en escritorio como en el celular).
+// Se usan solo símbolos de texto plano, que sí renderizan bien
+// (confirmado con pruebas manuales).
+const SYM = {
+  bullet: '▸',
+  arrow: '➤',
+  plus: '+',
+  dash: '-----------------------------------',
+}
+
+const seguimientoLink = computed(() => {
+  const numero = orderStore.orderNumber
+  const clientPhone = order.value?.client_phone
+  if (!numero || !clientPhone) return '/seguimiento' // fallback: sin datos, formulario manual
+
+  return {
+    path: `/seguimiento/${numero}`,
+    query: { tel: String(clientPhone).replace(/\D/g, '') },
+  }
+})
 
 const orderStore = useOrderStore()
 const order = computed(() => orderStore.currentOrder)
@@ -138,17 +171,16 @@ function sendWA() {
   const phone = rawPhone.replace(/\D/g, '')
   const numero = orderStore.orderNumber || '—'
   const o = order.value
-  const clientPhone = (o?.client_phone ?? '').replace(/\D/g, '')
   const clientName = o?.client_name ?? 'Cliente'
 
   const L: string[] = []
 
   // ── Saludo Inicial ────────────────────────────────────────
-  L.push(`Hola *Florería Birds* 💐`)
+  L.push(`Hola *Florería Birds*`)
   L.push(`Soy *${clientName}*, aquí está el detalle de mi pedido:`)
   L.push(``)
-  L.push(`*🧾 PEDIDO #${numero}*`)
-  L.push(`-----------------------------------`)
+  L.push(`*PEDIDO #${numero}*`)
+  L.push(SYM.dash)
 
   if (o?.items?.length) {
 
@@ -156,10 +188,9 @@ function sendWA() {
     o.items.forEach((item: any) => {
       const nombre = item.name ?? item.product?.name ?? 'Producto'
       const basePrice = Number(item.unit_price ?? 0)
-      const subtotal = Number(item.subtotal ?? 0)
       const extras: any[] = item.extras ?? []
 
-      L.push(`✨ *${item.qty}x ${nombre}*`)
+      L.push(`${SYM.bullet} *${item.qty}x ${nombre}*`)
       L.push(`   _S/ ${basePrice.toFixed(2)}_`)
 
       // Personalización (Solo si existe)
@@ -171,17 +202,17 @@ function sendWA() {
       extras.forEach((e: any) => {
         if ((e.qty ?? 0) > 0) {
           const extraLabel = e.qty > 1 ? `${e.name} (x${e.qty})` : e.name
-          L.push(`   ➕ ${extraLabel} [+S/ ${(e.price * e.qty).toFixed(2)}]`)
+          L.push(`   ${SYM.plus} ${extraLabel} [+S/ ${(e.price * e.qty).toFixed(2)}]`)
         }
       })
 
       L.push(``)
     })
 
-    L.push(`-----------------------------------`)
+    L.push(SYM.dash)
 
     // ── Opciones de Entrega ─────────────────────────────────
-    L.push(`*📍 DATOS DE ENTREGA*`)
+    L.push(`*DATOS DE ENTREGA*`)
     L.push(`▸ Modalidad: _${TIPO_LABELS[o.type] ?? o.type}_`)
 
     if (o.type === 'local' && o.mesa) {
@@ -197,13 +228,13 @@ function sendWA() {
       L.push(`▸ ¿Cuándo?: ${formatFechaEntrega(o.fecha_entrega)}`)
       if (o.hora_entrega) L.push(`▸ Hora: ${formatHora(o.hora_entrega)}`)
     } else {
-      L.push(`▸ ¿Cuándo?: _Lo antes posible_ ⚡`)
+      L.push(`▸ ¿Cuándo?: _Lo antes posible_`)
     }
     L.push(``)
 
     // ── Extras Especiales ───────────────────────────────────
     if (o.mensaje_tarjeta || o.note) {
-      L.push(`*💌 DETALLES ADICIONALES*`)
+      L.push(`*DETALLES ADICIONALES*`)
       if (o.mensaje_tarjeta) {
         L.push(`Mensaje para la tarjeta:`)
         L.push(`_"${o.mensaje_tarjeta}"_`)
@@ -216,9 +247,9 @@ function sendWA() {
     }
 
     // ── Resumen de Pago ─────────────────────────────────────
-    L.push(`-----------------------------------`)
-    L.push(`*💳 RESUMEN DE PAGO*`)
-    
+    L.push(SYM.dash)
+    L.push(`*RESUMEN DE PAGO*`)
+
     const subtotalItems = o.items.reduce((s: number, i: any) => s + Number(i.subtotal ?? 0), 0)
     L.push(`▸ Subtotal: S/ ${subtotalItems.toFixed(2)}`)
 
@@ -226,7 +257,7 @@ function sendWA() {
       L.push(`▸ Delivery: S/ ${Number(o.delivery_fee).toFixed(2)}`)
     }
 
-    L.push(`*👉 TOTAL A PAGAR: S/ ${Number(o.total).toFixed(2)}*`)
+    L.push(`*${SYM.arrow} TOTAL A PAGAR: S/ ${Number(o.total).toFixed(2)}*`)
 
     if (o.type === 'delivery' && o.metodo_pago) {
       L.push(`(Método: ${METODO_PAGO_LABELS[o.metodo_pago] ?? o.metodo_pago})`)
@@ -236,16 +267,19 @@ function sendWA() {
     L.push(`Hola, acabo de realizar el pedido *#${numero}* en la web.`)
   }
 
-  // ── Info Final (Pago y Seguimiento) ─────────────────────
+  // ── Info Final (Pago) ────────────────────────────────────
   L.push(``)
-  L.push(`*🏦 DATOS PARA YAPE / PLIN*`)
-  L.push(`Número: *${YAPE_PHONE}*`)
-  L.push(`Titular: ${YAPE_TITULAR}`)
-  L.push(`_Por favor, te envío mi captura por aquí para confirmar mi pedido. Gracias._`)
 
-  L.push(``)
-  L.push(`📱 *Sigue tu pedido en vivo:*`)
-  L.push(`https://catalogo.birds.pe/seguimiento/${numero}?tel=${clientPhone}`)
+  if (o?.metodo_pago === 'contraentrega_yape') {
+    L.push(`*DATOS PARA YAPE / PLIN*`)
+    L.push(`Número: *${YAPE_PHONE}*`)
+    L.push(`Titular: ${YAPE_TITULAR}`)
+    L.push(`_Por favor, te envío mi captura por aquí para confirmar mi pedido. Gracias._`)
+  } else if (o?.metodo_pago === 'contraentrega_efectivo') {
+    L.push(`*Pagaré en efectivo al repartidor al momento de la entrega.*`)
+  } else if (o?.metodo_pago === 'anticipado') {
+    L.push(`*Quedo atento a las indicaciones para el pago anticipado.*`)
+  }
 
   window.open(
     `https://wa.me/${phone}?text=${encodeURIComponent(L.join('\n'))}`,

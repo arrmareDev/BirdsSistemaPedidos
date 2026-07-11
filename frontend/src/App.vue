@@ -16,7 +16,7 @@
 
     <AppFooter />
 
-    <CartDrawer :open="cartOpen" @close="cartOpen = false" />
+    <CartDrawer/>
     <CustomizerModal ref="customizerRef" />
   </div>
 </template>

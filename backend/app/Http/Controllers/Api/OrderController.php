@@ -62,12 +62,13 @@ class OrderController extends Controller
     }
 
     // GET /admin/orders/{id}
-    public function show(int $id): JsonResponse
-    {
-        $order = $this->orderRepository->findById($id);
-        if (!$order) return $this->notFound('Pedido no encontrado');
-        return $this->success(new OrderResource($order));
-    }
+public function show(int $id): JsonResponse
+{
+    $order = $this->orderRepository->findById($id);
+    if (!$order) return $this->notFound('Pedido no encontrado');
+    $order->load('items.product');   // ← ESTA LÍNEA FALTABA
+    return $this->success(new OrderResource($order));
+}
 
     // POST /admin/orders — admin crea pedido manual
     public function adminStore(Request $request): JsonResponse
@@ -230,13 +231,13 @@ class OrderController extends Controller
     // ── Historia de estados ───────────────────────────────────
     // $type: 'local' | 'recoger' | 'delivery' — los pedidos que no son
     // delivery nunca pasan por "en_camino" (no hay motorizado de por medio).
-    private function buildStatusHistory(string $currentStatus, string $type = 'delivery'): array
+private function buildStatusHistory(string $currentStatus, string $type = 'delivery'): array
     {
         $flow = [
             'nuevo'      => ['label' => 'Pedido recibido',  'icon' => '📝'],
             'confirmado' => ['label' => 'Confirmado',       'icon' => '✅'],
-            'preparando' => ['label' => 'Preparando',       'icon' => '👨‍🍳'],
-            'listo'      => ['label' => $type === 'delivery' ? 'Listo para entrega' : 'Listo para recoger', 'icon' => '🎉'],
+            'preparando' => ['label' => 'Alistando pedido', 'icon' => '💐'], // ← LÍNEA MODIFICADA
+            'listo'      => ['label' => $type === 'delivery' ? 'Listo para entrega' : 'Acercate a recoger tu pedido', 'icon' => '🎉'],
         ];
 
         if ($type === 'delivery') {

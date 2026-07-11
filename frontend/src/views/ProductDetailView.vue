@@ -482,11 +482,30 @@
                 <span>{{ agotado ? 'Agotado' : added ? '¡Agregado!' : 'Agregar al carrito' }}</span>
             </button>
         </div>
-    </div>
+            <!-- ── NOTIFICACIÓN FLOTANTE (TOAST) ── -->
+        <Teleport to="body">
+            <Transition 
+                enter-active-class="transition-all duration-300 ease-out"
+                enter-from-class="opacity-0 -translate-y-8 scale-90"
+                leave-active-class="transition-all duration-200 ease-in"
+                leave-to-class="opacity-0 -translate-y-8 scale-90"
+            >
+                <div v-if="added" 
+                     class="fixed top-6 left-1/2 -translate-x-1/2 z-[100] 
+                            bg-brand-green text-white px-5 py-3.5 rounded-2xl shadow-[0_8px_30px_rgba(12,84,44,0.4)]
+                            flex items-center gap-3 font-bold text-[14px] w-auto max-w-sm border border-brand-green2">
+                    <div class="w-7 h-7 rounded-full bg-white flex items-center justify-center shrink-0">
+                        <CheckIcon class="w-4 h-4 text-brand-green font-black" />
+                    </div>
+                    <span>¡Producto agregado al carrito!</span>
+                </div>
+            </Transition>
+        </Teleport>
+    </div>  
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch} from 'vue'
+import { ref, computed, onMounted, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProductsStore } from '@/stores/products'
 import { useCartStore } from '@/stores/cart'
@@ -515,6 +534,7 @@ const selections = ref<Map<number, CartCustomization>>(new Map())
 const extrasMap = ref<Map<number, CartExtra>>(new Map())
 const sharedExtrasMap = ref<Map<number, CartExtra>>(new Map()) // ← extras_compartidos
 const errors = ref<Record<number, string>>({})
+const cartOpen = inject<any>('cartOpen')
 
 // ── Carga de Producto y Vigilancia de Rutas ────────────────
 async function loadProduct(slug: string) {
@@ -723,18 +743,17 @@ function addToCart() {
         ...Array.from(sharedExtrasMap.value.values()),
     ].filter(e => e.qty > 0)
 
-      cartStore.add(product.value, customization, extras, qty.value)
-    }
+    cartStore.add(product.value, customization, extras, qty.value)
 
     added.value = true
 
-    // En lugar de redirigir, solo quitamos el mensaje de "¡Agregado!" 
-    // después de 2 segundos para que puedan seguir comprando
+    // Abre el cajón del carrito inmediatamente
+    if (cartOpen) cartOpen.value = true
+
     setTimeout(() => {
         added.value = false
-        // Opcional: Si quieres que la cantidad vuelva a 1 tras agregar
-        // qty.value = 1 
     }, 2000)
+}
 
 
 

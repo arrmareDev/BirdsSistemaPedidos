@@ -213,6 +213,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAdminStore } from '@/stores/admin'
+import { Coffee } from 'lucide-vue-next'
 import {
   EnvelopeIcon,
   LockClosedIcon,
@@ -244,7 +245,7 @@ const fieldError = reactive({ email: '', password: '' })
 // ── Panel izquierdo: líneas de negocio (íconos Heroicons) ─
 const STATS = [
   { label: 'Florería', icon: SparklesIcon },
-  { label: 'Cafetería', icon: BeakerIcon },
+  { label: 'Cafetería', icon: Coffee  },
   { label: 'Menú', icon: ClipboardDocumentListIcon },
 ]
 

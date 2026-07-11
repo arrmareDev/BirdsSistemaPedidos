@@ -37,6 +37,7 @@ Proyecto: BirdsSistemaPedidos
 │   │   │   │   │   └── UserController.php
 │   │   │   │   └── Controller.php
 │   │   │   ├── Middleware
+│   │   │   │   ├── CheckPermission.php
 │   │   │   │   ├── CheckRole.php
 │   │   │   │   └── ForceJsonResponse.php
 │   │   │   ├── Requests
@@ -123,7 +124,9 @@ Proyecto: BirdsSistemaPedidos
 │   │   │   ├── 2026_07_07_000001_drop_orphan_extra_product_table.php
 │   │   │   ├── 2026_07_07_000002_create_shared_extras_table.php
 │   │   │   ├── 2026_07_08_000001_add_price_modifier_to_customization_options.php
-│   │   │   └── 2026_07_09_000001_dedupe_shared_extras.php
+│   │   │   ├── 2026_07_09_000001_dedupe_shared_extras.php
+│   │   │   ├── 2026_07_10_000001_add_permissions_to_users_table.php
+│   │   │   └── 2026_07_11_000001_restructure_user_roles.php
 │   │   └── seeders
 │   │       ├── DatabaseSeeder.php
 │   │       ├── DeliveryTariffSeeder.php
@@ -174,7 +177,8 @@ Proyecto: BirdsSistemaPedidos
 │   │   │   ├── delivery.jpeg
 │   │   │   ├── logobirds.png
 │   │   │   ├── ocacion.png
-│   │   │   └── rosasrojas.png
+│   │   │   ├── rosasrojas.png
+│   │   │   └── sombrerera.png
 │   │   └── robots.txt
 │   ├── src
 │   │   ├── App.vue

@@ -3,16 +3,63 @@ import { ref } from "vue";
 import api from "@/utils/api";
 import { useCartStore } from "./cart";
 
+const STORAGE_KEY = "birds_last_order";
+const EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 horas
+
 export const useOrderStore = defineStore("order", () => {
   const currentOrder = ref<any>(null);
   const orderNumber = ref<string | null>(null);
   const loading = ref(false);
 
+  // ── Restaurar desde localStorage al iniciar el store ─────
+  function restoreFromStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+
+      const saved = JSON.parse(raw);
+      const savedAt = saved.savedAt ?? 0;
+      const isExpired = Date.now() - savedAt > EXPIRATION_MS;
+
+      if (isExpired) {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+
+      currentOrder.value = saved.currentOrder ?? null;
+      orderNumber.value = saved.orderNumber ?? null;
+    } catch (e) {
+      console.error("Error al restaurar el último pedido:", e);
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+  restoreFromStorage();
+
+  // ── Guardar en localStorage ──────────────────────────────
+  function persistToStorage() {
+    try {
+      if (!currentOrder.value || !orderNumber.value) {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          currentOrder: currentOrder.value,
+          orderNumber: orderNumber.value,
+          savedAt: Date.now(), // ← marca de tiempo para expiración
+        })
+      );
+    } catch (e) {
+      console.error("Error al guardar el último pedido:", e);
+    }
+  }
+
   async function placeOrder(formData: {
     client_name: string;
     client_phone: string;
-    type: string; // local | recoger | delivery ← actualizado
-    mesa?: string; // ← NUEVO
+    type: string;
+    mesa?: string;
     address?: string;
     reference?: string;
     delivery_zone_id?: number;
@@ -21,7 +68,6 @@ export const useOrderStore = defineStore("order", () => {
     note?: string;
     lat?: number;
     lng?: number;
-    // ── Florería ─────────────────────────────────────────
     mensaje_tarjeta?: string;
     fecha_entrega?: string;
     hora_entrega?: string;
@@ -35,7 +81,7 @@ export const useOrderStore = defineStore("order", () => {
         client_name: formData.client_name,
         client_phone: formData.client_phone,
         type: formData.type,
-        mesa: formData.mesa || null, // ← NUEVO
+        mesa: formData.mesa || null,
         address: formData.address || null,
         reference: formData.reference || null,
         delivery_zone_id: formData.delivery_zone_id || null,
@@ -44,12 +90,10 @@ export const useOrderStore = defineStore("order", () => {
         note: formData.note || null,
         lat: formData.lat ?? null,
         lng: formData.lng ?? null,
-        // ── Florería ─────────────────────────────────────────
         mensaje_tarjeta: formData.mensaje_tarjeta || null,
         fecha_entrega: formData.fecha_entrega || null,
         hora_entrega: formData.hora_entrega || null,
         entrega_programada: formData.entrega_programada ?? false,
-        // ── Total ─────────────────────────────────────────────
         total: cartStore.total + (formData.delivery_fee ?? 0),
         items: cartStore.items.map((item) => ({
           product_id: item.productId,
@@ -71,12 +115,13 @@ export const useOrderStore = defineStore("order", () => {
         delivery_zone_id: formData.delivery_zone_id ?? null,
         reference: formData.reference ?? null,
         metodo_pago: formData.metodo_pago ?? null,
-        // ── Florería ─────────────────────────────────────────
         mensaje_tarjeta: formData.mensaje_tarjeta ?? null,
         fecha_entrega: formData.fecha_entrega ?? null,
         hora_entrega: formData.hora_entrega ?? null,
         entrega_programada: formData.entrega_programada ?? false,
       };
+
+      persistToStorage();
 
       cartStore.clear();
       return true;
@@ -91,6 +136,7 @@ export const useOrderStore = defineStore("order", () => {
   function clear() {
     currentOrder.value = null;
     orderNumber.value = null;
+    localStorage.removeItem(STORAGE_KEY);
   }
 
   return { currentOrder, orderNumber, loading, placeOrder, clear };

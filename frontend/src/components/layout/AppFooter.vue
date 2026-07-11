@@ -165,7 +165,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { PhoneIcon, MapPinIcon } from '@heroicons/vue/24/outline'
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon.vue'
 
-const logoUrl = '/images/logobirds.png'
+const logoUrl = '/images/birdsblanco.png'
 const year = new Date().getFullYear()
 
 // ── WhatsApp ──────────────────────────────────────────────
@@ -174,7 +174,7 @@ const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent('Hola Birds q
 
 // Y el array de horarios también:
 const HORARIOS = [
-    { dias: 'Lunes – Sábado', horas: '9:00 am – 10:00 pm' },
+    { dias: 'Lunes – Sábado', horas: '9:00 am – 9:00 pm' },
     { dias: 'Domingos', horas: 'Cerrado' },
 ]
 // ── Reloj + estado ────────────────────────────────────────
