@@ -62,13 +62,13 @@ class OrderController extends Controller
     }
 
     // GET /admin/orders/{id}
-public function show(int $id): JsonResponse
-{
-    $order = $this->orderRepository->findById($id);
-    if (!$order) return $this->notFound('Pedido no encontrado');
-    $order->load('items.product');   // ← ESTA LÍNEA FALTABA
-    return $this->success(new OrderResource($order));
-}
+    public function show(int $id): JsonResponse
+    {
+        $order = $this->orderRepository->findById($id);
+        if (!$order) return $this->notFound('Pedido no encontrado');
+        $order->load('items.product');   // ← ESTA LÍNEA FALTABA
+        return $this->success(new OrderResource($order));
+    }
 
     // POST /admin/orders — admin crea pedido manual
     public function adminStore(Request $request): JsonResponse
@@ -76,7 +76,7 @@ public function show(int $id): JsonResponse
         $data = $request->validate([
             // ── Cliente ───────────────────────────────────────────
             'client_name'  => 'required|string|max:150',
-            'client_phone' => 'required|string|max:20',
+            'client_phone' => 'nullable|required_unless:type,local|string|max:20',
 
             // ── Tipo ──────────────────────────────────────────────
             'type' => 'required|in:local,recoger,delivery',
@@ -94,8 +94,7 @@ public function show(int $id): JsonResponse
             'lng'              => 'nullable|numeric',
 
             // ── Pago ──────────────────────────────────────────────
-            'metodo_pago' => 'nullable|in:anticipado,contraentrega_efectivo,contraentrega_yape',
-
+            'metodo_pago' => 'nullable|in:anticipado,contraentrega_efectivo,contraentrega_yape,efectivo,yape,tarjeta',
             // ── Nota y florería ───────────────────────────────────
             'note'               => 'nullable|string|max:500',
             'mensaje_tarjeta'    => 'nullable|string|max:300',
@@ -136,6 +135,48 @@ public function show(int $id): JsonResponse
         $order = $this->orderService->updateStatus($order, $data['status']);
 
         return $this->success(new OrderResource($order));
+    }
+
+    // PATCH /admin/orders/{id}/cobrar — solo Local, marca método de pago y entrega el pedido
+    public function cobrar(Request $request, int $id): JsonResponse
+    {
+        $data = $request->validate([
+            'metodo_pago' => 'required|in:efectivo,yape,tarjeta',
+        ]);
+
+        $order = $this->orderRepository->findById($id);
+        if (!$order) return $this->notFound('Pedido no encontrado');
+
+        try {
+            $order = $this->orderService->cobrarLocal($order, $data['metodo_pago']);
+            return $this->success(new OrderResource($order));
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    // PUT /admin/orders/{id}/items
+    public function updateItems(Request $request, int $id): JsonResponse
+    {
+        $data = $request->validate([
+            'items'                  => 'required|array|min:1',
+            'items.*.product_id'     => 'required|exists:products,id',
+            'items.*.qty'            => 'required|integer|min:1',
+            'items.*.unit_price'     => 'required|numeric|min:0',
+            'items.*.customization'  => 'nullable|array',
+            'items.*.extras'         => 'nullable|array',
+            'items.*.custom_summary' => 'nullable|string|max:500',
+        ]);
+
+        $order = $this->orderRepository->findById($id);
+        if (!$order) return $this->notFound('Pedido no encontrado');
+
+        try {
+            $order = $this->orderService->updateItems($order, $data['items']);
+            return $this->success(new OrderResource($order));
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 422);
+        }
     }
 
     // DELETE /admin/orders/{id}
@@ -231,7 +272,7 @@ public function show(int $id): JsonResponse
     // ── Historia de estados ───────────────────────────────────
     // $type: 'local' | 'recoger' | 'delivery' — los pedidos que no son
     // delivery nunca pasan por "en_camino" (no hay motorizado de por medio).
-private function buildStatusHistory(string $currentStatus, string $type = 'delivery'): array
+    private function buildStatusHistory(string $currentStatus, string $type = 'delivery'): array
     {
         $flow = [
             'nuevo'      => ['label' => 'Pedido recibido',  'icon' => '📝'],

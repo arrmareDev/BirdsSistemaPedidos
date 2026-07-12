@@ -94,10 +94,13 @@
                     ->where('id', '[0-9]+');
             });
 
-            // Escritura: todos excepto Salón (solo lectura)
             Route::middleware(['role:admin,sistema,contador,atencion', 'permission:orders'])->group(function () {
                 Route::post('orders',              [OrderController::class, 'adminStore']);
-                Route::patch('orders/{id}/status', [OrderController::class, 'updateStatus'])
+                Route::patch('orders/{id}/status', [OrderController::class, 'updateStatus'])   // ← esta falta
+                    ->where('id', '[0-9]+');
+                Route::put('orders/{id}/items',    [OrderController::class, 'updateItems'])
+                    ->where('id', '[0-9]+');
+                Route::patch('orders/{id}/cobrar', [OrderController::class, 'cobrar'])
                     ->where('id', '[0-9]+');
             });
 

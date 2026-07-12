@@ -101,6 +101,13 @@ class Product extends Model
         }
     }
 
+    public function restaurarStock(int $cantidad): void
+    {
+        if ($this->controla_stock) {
+            $this->increment('stock', $cantidad);
+        }
+    }
+
     public function tieneStock(int $cantidad = 1): bool
     {
         if (!$this->controla_stock) return true;

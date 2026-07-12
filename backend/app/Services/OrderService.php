@@ -65,26 +65,29 @@ class OrderService
                 )
                 : 0.0;
 
-            // ── 4. Resolver cliente ───────────────────────────────
-            $phone  = preg_replace('/\D/', '', $data['client_phone']);
-            $client = Client::firstOrCreate(
-                ['phone' => $phone],
-                [
-                    'name'     => $data['client_name'],
-                    'address'  => $data['address']  ?? null,
-                    'district' => $data['district'] ?? null,
-                ]
-            );
+            // ── 4. Resolver cliente (opcional si no hay teléfono, ej. pedidos Local) ──
+            $client = null;
+            if (!empty($data['client_phone'])) {
+                $phone  = preg_replace('/\D/', '', $data['client_phone']);
+                $client = Client::firstOrCreate(
+                    ['phone' => $phone],
+                    [
+                        'name'     => $data['client_name'],
+                        'address'  => $data['address']  ?? null,
+                        'district' => $data['district'] ?? null,
+                    ]
+                );
 
-            $client->update([
-                'name'     => $data['client_name'],
-                'address'  => $data['address']  ?? $client->address,
-                'district' => $data['district'] ?? $client->district,
-            ]);
+                $client->update([
+                    'name'     => $data['client_name'],
+                    'address'  => $data['address']  ?? $client->address,
+                    'district' => $data['district'] ?? $client->district,
+                ]);
+            }
 
             // ── 5. Crear pedido ───────────────────────────────────
             $order = Order::create([
-                'client_id'          => $client->id,
+                'client_id'          => $client?->id,
                 'client_name'        => $data['client_name'],
                 'client_phone'       => $data['client_phone'],
                 'type'               => $channel->value,
@@ -131,14 +134,14 @@ class OrderService
 
             // ── 7. Actualizar preferencias del cliente ────────────
             try {
-                $client->updatePreferences($data);
+                $client?->updatePreferences($data);
             } catch (\Throwable $e) {
                 Log::warning('No se pudieron actualizar preferencias: ' . $e->getMessage());
             }
 
             Log::info('Order created', [
                 'order_id' => $order->id,
-                'client_id' => $client->id,
+                'client_id' => $client?->id,
                 'channel'  => $channel->value,
                 'zone_id'  => $data['delivery_zone_id'] ?? null,
             ]);
@@ -162,6 +165,89 @@ class OrderService
         ]);
 
         return $order->fresh(['items.product']);
+    }
+
+    public function updateItems(Order $order, array $items): Order
+    {
+        return DB::transaction(function () use ($order, $items) {
+
+            if ($order->isFinished() || $order->status === 'en_camino') {
+                throw new \Exception('No se puede editar un pedido que ya está en camino.');
+            }
+
+            // ── 1. Restaurar stock de los items actuales ──────────
+            $order->load('items');
+            foreach ($order->items as $oldItem) {
+                $product = Product::find($oldItem->product_id);
+                $product?->restaurarStock($oldItem->qty);
+            }
+
+            // ── 2. Validar stock de los items nuevos ──────────────
+            foreach ($items as $item) {
+                $product = Product::findOrFail($item['product_id']);
+                $qty     = (int) ($item['qty'] ?? 1);
+
+                if ($product->controla_stock && !$product->tieneStock($qty)) {
+                    throw new \Exception(
+                        "Stock insuficiente para: {$product->name}. " .
+                            "Disponible: {$product->stock}, solicitado: {$qty}"
+                    );
+                }
+            }
+
+            // ── 3. Reemplazar items ────────────────────────────────
+            $order->items()->delete();
+
+            $subtotal = 0;
+            foreach ($items as $item) {
+                $product      = Product::find($item['product_id']);
+                $qty          = (int)   ($item['qty']       ?? 1);
+                $price        = (float) ($item['unit_price'] ?? 0);
+                $itemSubtotal = $price * $qty;
+                $subtotal    += $itemSubtotal;
+
+                OrderItem::create([
+                    'order_id'       => $order->id,
+                    'product_id'     => $product->id,
+                    'qty'            => $qty,
+                    'unit_price'     => $price,
+                    'subtotal'       => $itemSubtotal,
+                    'customization'  => $item['customization']  ?? null,
+                    'extras'         => $item['extras']         ?? null,
+                    'custom_summary' => $item['custom_summary'] ?? null,
+                ]);
+
+                $product->reducirStock($qty);
+            }
+
+            // ── 4. Recalcular totales (mantiene el delivery_fee actual) ──
+            $order->update([
+                'subtotal' => $subtotal,
+                'total'    => $subtotal + $order->delivery_fee,
+            ]);
+
+            Log::info('Order items updated', [
+                'order_id'    => $order->id,
+                'items_count' => count($items),
+            ]);
+
+            return $order->fresh(['items.product']);
+        });
+    }
+
+    public function cobrarLocal(Order $order, string $metodoPago): Order
+    {
+        if ($order->type !== \App\Enums\SaleChannel::Local) {
+            throw new \Exception('Esta acción solo aplica a pedidos de tipo Local.');
+        }
+
+        if ($order->status !== 'listo') {
+            throw new \Exception('El pedido debe estar en estado "Listo" para cobrarse.');
+        }
+
+        $order->update(['metodo_pago' => $metodoPago]);
+
+        return $this->updateStatus($order, 'entregado');
     }
 
     private function registrarVentaEnCaja(Order $order): void
