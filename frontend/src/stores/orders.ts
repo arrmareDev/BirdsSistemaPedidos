@@ -114,6 +114,27 @@ export const useOrdersStore = defineStore("orders", () => {
     }
   }
 
+  async function updateItems(
+  id: number,
+  items: Array<{
+    product_id: number;
+    qty: number;
+    unit_price: number;
+    customization?: any[];
+    extras?: any[];
+    custom_summary?: string | null;
+  }>,
+): Promise<AdminOrder | null> {
+  try {
+    const { data } = await api.put(`/admin/orders/${id}/items`, { items });
+    const idx = orders.value.findIndex((o) => o.id === id);
+    if (idx !== -1) orders.value[idx] = data.data;
+    return data.data;
+  } catch (e) {
+    console.error("Error actualizando items:", e);
+    throw e; // re-lanzamos para que el modal muestre el mensaje del backend
+  }
+}
   async function cancelOrder(id: number): Promise<boolean> {
     const idx = orders.value.findIndex((o) => o.id === id);
     const prevStatus = idx !== -1 ? orders.value[idx].status : null;
@@ -142,6 +163,18 @@ export const useOrdersStore = defineStore("orders", () => {
     }
   }
 
+  async function cobrarLocal(id: number, metodoPago: string): Promise<AdminOrder | null> {
+  try {
+    const { data } = await api.patch(`/admin/orders/${id}/cobrar`, { metodo_pago: metodoPago });
+    const idx = orders.value.findIndex((o) => o.id === id);
+    if (idx !== -1) orders.value[idx] = data.data;
+    return data.data;
+  } catch (e) {
+    console.error("Error al cobrar pedido:", e);
+    throw e;
+  }
+} 
+
   return {
     orders,
     loading,
@@ -149,7 +182,9 @@ export const useOrdersStore = defineStore("orders", () => {
     fetch,
     getOne,
     updateStatus,
+    updateItems,
     cancelOrder,
     deleteOrder,
+    cobrarLocal,
   };
 });

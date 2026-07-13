@@ -30,7 +30,7 @@
                   <div>
                     <h2 class="font-black text-[17px] text-gray-900 m-0 leading-none"
                       style="font-family:'Plus Jakarta Sans',sans-serif;">
-                      Nuevo Pedido
+                      {{ isEditMode ? `Editar Pedido #${editingOrderId}` : 'Nuevo Pedido' }}
                     </h2>
                     <p class="text-[11px] text-gray-400 m-0 mt-0.5">
                       {{ cartItems.length > 0
@@ -49,7 +49,7 @@
               <div class="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
 
                 <!-- Col izquierda — datos del pedido -->
-                <div
+                <div v-if="!isEditMode"
                   class="lg:w-72 xl:w-80 shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-100 bg-white">
                   <div class="flex-1 overflow-y-auto p-4 sm:p-5 flex flex-col gap-4">
 
@@ -69,7 +69,7 @@
                       </div>
                     </div>
 
-                    <!-- Nombre + Teléfono -->
+                    <!-- Nombre + Teléfono (teléfono no aplica a pedidos Local) -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                       <div>
                         <label class="block text-[10.5px] font-black uppercase tracking-widest text-gray-400 mb-1.5">
@@ -77,7 +77,7 @@
                         </label>
                         <input v-model="form.client_name" placeholder="Nombre del cliente" class="modal-input" />
                       </div>
-                      <div>
+                      <div v-if="form.type !== 'local'">
                         <label class="block text-[10.5px] font-black uppercase tracking-widest text-gray-400 mb-1.5">
                           Teléfono *
                         </label>
@@ -227,6 +227,47 @@
                         class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       <CheckCircleIcon v-else class="w-4 h-4" />
                       {{ submitting ? 'Registrando...' : `Confirmar · S/ ${orderTotal.toFixed(2)}` }}
+                    </button>
+                  </div>
+                </div>
+                <div v-if="isEditMode" class="lg:w-72 xl:w-80 shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-100 bg-white">
+                  <div class="flex-1 overflow-y-auto p-4 sm:p-5">
+                    <p class="text-[13px] text-gray-500 leading-relaxed">
+                      Estás editando los productos del pedido <strong class="text-gray-900">#{{ editingOrderId }}</strong>.
+                      Los datos del cliente y entrega no se modifican aquí.
+                    </p>
+                  </div>
+                  <div class="p-4 sm:p-5 border-t border-gray-100 bg-white shrink-0">
+                    <div v-if="cartItems.length > 0" class="bg-gray-50 rounded-2xl p-3.5 mb-3 border border-gray-100">
+                      <div class="flex justify-between items-center">
+                        <span class="font-semibold text-[14px] text-gray-700">Nuevo total</span>
+                        <div class="flex items-baseline gap-1">
+                          <span class="text-[12px] font-semibold text-gray-400">S/</span>
+                          <span class="font-black text-[24px] text-brand-red leading-none"
+                            style="font-family:'Plus Jakarta Sans',sans-serif;">
+                            {{ orderTotal.toFixed(2) }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Transition enter-active-class="transition-all duration-150"
+                      enter-from-class="opacity-0 -translate-y-1" leave-to-class="opacity-0">
+                      <div v-if="modalError" class="px-3.5 py-3 rounded-2xl bg-red-50 border border-red-200
+                               text-[12px] text-red-600 mb-3 flex items-center gap-2">
+                        <ExclamationCircleIcon class="w-4 h-4 shrink-0" />
+                        {{ modalError }}
+                      </div>
+                    </Transition>
+                    <button @click="submitOrder" :disabled="!canSubmit || submitting" class="w-full py-4 rounded-2xl font-black text-[14px] text-white
+                             border-none cursor-pointer transition-all duration-200 uppercase tracking-wide bg-brand-red
+                             shadow-[0_4px_20px_rgba(196,30,30,0.3)] hover:bg-red-700 hover:-translate-y-0.5
+                             active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed
+                             disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+                      style="font-family:'Plus Jakarta Sans',sans-serif;">
+                      <span v-if="submitting"
+                        class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <CheckCircleIcon v-else class="w-4 h-4" />
+                      {{ submitting ? 'Guardando...' : 'Guardar cambios' }}
                     </button>
                   </div>
                 </div>
@@ -584,6 +625,73 @@
       </Transition>
     </Teleport>
 
+    <!-- ══ MODAL COBRAR (solo Local) ══ -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition-opacity duration-200"
+        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
+        <div v-if="cobroModal.show" class="fixed inset-0 z-[400] bg-black/50 backdrop-blur-sm
+             flex items-center justify-center p-4" @click.self="cobroModal.show = false">
+          <Transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 scale-95"
+            leave-to-class="opacity-0 scale-95">
+            <div v-if="cobroModal.show" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-7 text-center">
+              <div class="w-14 h-14 rounded-2xl bg-green-50 mx-auto mb-5 flex items-center justify-center">
+                <span class="text-2xl">💵</span>
+              </div>
+              <h3 class="font-black text-[19px] text-gray-900 m-0 mb-2"
+                style="font-family:'Plus Jakarta Sans',sans-serif;">
+                Cobrar pedido #{{ cobroModal.order?.id }}
+              </h3>
+              <p class="text-[13.5px] text-gray-400 m-0 mb-5 leading-relaxed">
+                Selecciona el método de pago para completar el pedido de
+                <strong class="text-gray-700">{{ cobroModal.order?.client_name }}</strong>.
+              </p>
+
+              <div class="grid grid-cols-3 gap-2 mb-6">
+                <button v-for="mp in METODOS_PAGO_LOCAL" :key="mp.id" @click="cobroModal.metodoPago = mp.id" class="flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2
+                         text-[12px] font-bold cursor-pointer transition-all duration-150" :class="cobroModal.metodoPago === mp.id
+                          ? 'border-brand-red bg-red-50 text-brand-red shadow-sm'
+                          : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-red-200'">
+                  <span class="text-xl leading-none">{{ mp.icon }}</span>
+                  {{ mp.label }}
+                </button>
+              </div>
+
+              <div class="flex justify-between items-center px-1 mb-6">
+                <span class="text-[13px] text-gray-500 font-medium">Total a cobrar</span>
+                <span class="font-black text-[20px] text-brand-red leading-none"
+                  style="font-family:'Plus Jakarta Sans',sans-serif;">
+                  S/ {{ parseFloat(cobroModal.order?.total ?? 0).toFixed(2) }}
+                </span>
+              </div>
+
+              <Transition enter-active-class="transition-all duration-150"
+                enter-from-class="opacity-0 -translate-y-1" leave-to-class="opacity-0">
+                <div v-if="cobroModal.error" class="px-3.5 py-3 rounded-2xl bg-red-50 border border-red-200
+                         text-[12px] text-red-600 mb-4 text-left">
+                  {{ cobroModal.error }}
+                </div>
+              </Transition>
+
+              <div class="flex gap-3">
+                <button @click="cobroModal.show = false"
+                  class="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600
+                         font-semibold text-[13.5px] cursor-pointer bg-white hover:border-gray-300 transition-all duration-150">
+                  Cancelar
+                </button>
+                <button @click="confirmarCobro" :disabled="!cobroModal.metodoPago || cobroModal.loading" class="flex-1 py-3 rounded-2xl text-white font-bold text-[13.5px] cursor-pointer border-none
+                         bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all duration-150
+                         flex items-center justify-center gap-2">
+                  <span v-if="cobroModal.loading"
+                    class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  {{ cobroModal.loading ? 'Cobrando...' : 'Confirmar cobro' }}
+                </button>
+              </div>
+            </div>
+          </Transition>
+        </div>
+      </Transition>
+    </Teleport>
+
     <!-- ══ LISTA PEDIDOS ══ -->
     <div class="flex-1 overflow-y-auto flex flex-col min-w-0">
 
@@ -743,6 +851,14 @@
                       Ya tengo →
                     </button>
                   </template>
+
+                  <!-- Local listo: cobrar y completar -->
+                  <button v-else-if="o.type === 'local' && o.status === 'listo'" @click.stop="abrirCobroModal(o)"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border
+                           cursor-pointer bg-green-50 border-green-300 text-green-700 hover:bg-green-100 transition-all duration-150">
+                    <span class="text-sm leading-none">💵</span>
+                    Cobrar
+                  </button>
 
                   <!-- Avanzar normal -->
                   <button v-else-if="o.status !== 'entregado' && o.status !== 'cancelado'" @click.stop="advanceOrder(o)"
@@ -931,6 +1047,14 @@
               </button>
             </template>
 
+            <button v-else-if="selected.type === 'local' && selected.status === 'listo'" @click="abrirCobroModal(selected)"
+              class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-green-600 border-none
+                     cursor-pointer shadow-sm hover:bg-green-700 transition-all duration-150
+                     flex items-center justify-center gap-2">
+              <span class="text-base leading-none">💵</span>
+              Cobrar pedido
+            </button>
+
             <button v-else @click="advanceOrder(selected)"
               :disabled="selected.status === 'entregado' || selected.status === 'cancelado'" class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-brand-red border-none
                      cursor-pointer shadow-sm hover:bg-red-700 transition-all duration-150
@@ -939,7 +1063,16 @@
               {{ nextStatusLabel(selected.status, selected.type) }}
             </button>
           </template>
-
+          <template v-if="can.writeOrders">
+            <button v-if="selected.status !== 'entregado' && selected.status !== 'cancelado' && selected.status !== 'en_camino'"
+              @click="openEditItemsModal(selected)"
+              class="w-full py-2.5 rounded-xl font-semibold text-[13px] text-gray-700 bg-white
+                     border border-gray-200 cursor-pointer hover:border-brand-red hover:text-brand-red
+                     transition-all duration-150 flex items-center justify-center gap-2">
+              <TagIcon class="w-4 h-4" />
+              Editar productos
+            </button>
+          </template>
           <button @click="sendWA(selected)" class="w-full py-2.5 rounded-xl font-semibold text-[13px] text-white bg-[#25D366]
                    border-none cursor-pointer hover:bg-[#128C7E] transition-all duration-150
                    flex items-center justify-center gap-2">
@@ -1031,6 +1164,8 @@ const submitting = ref(false)
 const modalError = ref('')
 const rightTab = ref<'catalogo' | 'carrito'>('catalogo')
 const activeCat = ref('all')
+const editingOrderId = ref<number | null>(null)
+const isEditMode = computed(() => editingOrderId.value !== null)
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 let refreshInterval: ReturnType<typeof setInterval> | null = null
@@ -1049,6 +1184,10 @@ const despachoModal = reactive({
 
 const yaTengoModal = reactive({
   show: false, order: null as any, loading: false,
+})
+
+const cobroModal = reactive({
+  show: false, order: null as any, metodoPago: '', loading: false, error: '',
 })
 
 // ── Form nuevo pedido — florería ──────────────────────────
@@ -1131,17 +1270,27 @@ const CATS = [
   { id: 'globos', icon: '🎈', label: 'Globos' },
 ]
 
+// Métodos de pago disponibles para pedidos tipo Local
+const METODOS_PAGO_LOCAL = [
+  { id: 'efectivo', icon: '💵', label: 'Efectivo' },
+  { id: 'yape', icon: '📱', label: 'Yape/Plin' },
+  { id: 'tarjeta', icon: '💳', label: 'Tarjeta' },
+]
+
 // ── Computed ──────────────────────────────────────────────
 const cartItems = computed(() => cartStore.items)
 const orderTotal = computed(() => cartItems.value.reduce((s, i) => s + i.price * i.qty, 0))
 
-const canSubmit = computed(() =>
-  form.client_name.trim() &&
-  form.client_phone.trim() &&
-  cartItems.value.length > 0 &&
-  (form.type !== 'local' || !!form.mesa.trim()) &&
-  (!form.entrega_programada || !!form.fecha_entrega)
-)
+const canSubmit = computed(() => {
+  if (isEditMode.value) return cartItems.value.length > 0
+  return (
+    form.client_name.trim() &&
+    (form.type === 'local' || form.client_phone.trim()) &&
+    cartItems.value.length > 0 &&
+    (form.type !== 'local' || !!form.mesa.trim()) &&
+    (!form.entrega_programada || !!form.fecha_entrega)
+  )
+})
 
 const filteredCatalog = computed(() => {
   const all = productsStore.products
@@ -1203,6 +1352,36 @@ function debouncedSearch() {
   searchTimer = setTimeout(() => { currentPage.value = 1; loadOrders(1) }, 400)
 }
 
+function openEditItemsModal(order: any) {
+  if (!can.value.writeOrders) return
+  if (order.status === 'entregado' || order.status === 'cancelado' || order.status === 'en_camino') return
+
+  editingOrderId.value = order.id
+
+  const mapped = (order.items ?? []).map((i: any) => ({
+    _uid: crypto.randomUUID(),
+    productId: i.product_id,
+    name: i.product?.name ?? 'Producto',
+    emoji: i.product?.emoji ?? null,
+    imageUrl: i.product?.image_url ?? null,
+    businessLine: null,
+    basePrice: parseFloat(i.unit_price),
+    modifiersPrice: 0,
+    extrasPrice: 0,
+    price: parseFloat(i.unit_price),
+    qty: i.qty,
+    customization: i.customization ?? [],
+    extras: i.extras ?? [],
+    customSummary: i.custom_summary ?? '',
+  }))
+
+  cartStore.loadItems(mapped)
+  showModal.value = true
+  modalError.value = ''
+  rightTab.value = 'carrito'
+  activeCat.value = 'all'
+}
+
 // ── Modal nuevo pedido ────────────────────────────────────
 function openModal() {
   // Defensa extra: el rol "salón" no puede registrar pedidos, aunque
@@ -1214,6 +1393,7 @@ function openModal() {
 
 function closeModal() {
   showModal.value = false; modalError.value = ''; cartStore.clear(); resetForm()
+  editingOrderId.value = null
 }
 
 function resetForm() {
@@ -1233,6 +1413,22 @@ async function submitOrder() {
   if (!canSubmit.value || !can.value.writeOrders) return
   submitting.value = true; modalError.value = ''
   try {
+    if (isEditMode.value) {
+      const updated = await ordersStore.updateItems(editingOrderId.value!, cartItems.value.map(i => ({
+        product_id: i.productId,
+        qty: i.qty,
+        unit_price: i.price,
+        customization: i.customization ?? [],
+        extras: i.extras ?? [],
+        custom_summary: i.customSummary ?? null,
+      })))
+      if (selected.value?.id === editingOrderId.value && updated) {
+        selected.value = updated
+      }
+      closeModal(); loadOrders()
+      return
+    }
+
     await api.post('/admin/orders', {
       client_name: form.client_name,
       client_phone: form.client_phone,
@@ -1258,7 +1454,7 @@ async function submitOrder() {
     })
     closeModal(); loadOrders()
   } catch (e: any) {
-    modalError.value = e.response?.data?.message ?? 'Error al registrar el pedido'
+    modalError.value = e.response?.data?.message ?? (isEditMode.value ? 'Error al actualizar los items' : 'Error al registrar el pedido')
   } finally {
     submitting.value = false
   }
@@ -1297,6 +1493,30 @@ async function confirmarYaTengo() {
   yaTengoModal.loading = true
   try { await advanceOrder(yaTengoModal.order); yaTengoModal.show = false }
   finally { yaTengoModal.loading = false }
+}
+
+// ── Cobrar pedido Local ───────────────────────────────────
+function abrirCobroModal(o: any) {
+  if (!can.value.writeOrders) return
+  cobroModal.order = o; cobroModal.metodoPago = ''
+  cobroModal.show = true; cobroModal.loading = false; cobroModal.error = ''
+}
+
+async function confirmarCobro() {
+  if (!cobroModal.order || !cobroModal.metodoPago) return
+  cobroModal.loading = true; cobroModal.error = ''
+  try {
+    const updated = await ordersStore.cobrarLocal(cobroModal.order.id, cobroModal.metodoPago)
+    if (selected.value?.id === cobroModal.order.id && updated) {
+      selected.value = updated
+    }
+    cobroModal.show = false
+    loadOrders()
+  } catch (e: any) {
+    cobroModal.error = e.response?.data?.message ?? 'Error al registrar el cobro'
+  } finally {
+    cobroModal.loading = false
+  }
 }
 
 // ── Acciones pedidos ──────────────────────────────────────
@@ -1404,7 +1624,14 @@ function statusCls(s: string): string {
 }
 
 function metodoPagoLabel(m: string): string {
-  return { anticipado: '💳 Pagado', contraentrega_efectivo: '💵 Efectivo', contraentrega_yape: '📱 Yape/Plin' }[m] ?? m
+  return {
+    anticipado: '💳 Pagado',
+    contraentrega_efectivo: '💵 Efectivo',
+    contraentrega_yape: '📱 Yape/Plin',
+    efectivo: '💵 Efectivo',
+    yape: '📱 Yape/Plin',
+    tarjeta: '💳 Tarjeta',
+  }[m] ?? m
 }
 
 function metodoPagoCls(m: string): string {
@@ -1412,6 +1639,9 @@ function metodoPagoCls(m: string): string {
     anticipado: 'bg-green-50  text-green-700  border-green-200',
     contraentrega_efectivo: 'bg-amber-50  text-amber-700  border-amber-200',
     contraentrega_yape: 'bg-purple-50 text-purple-700 border-purple-200',
+    efectivo: 'bg-amber-50  text-amber-700  border-amber-200',
+    yape: 'bg-purple-50 text-purple-700 border-purple-200',
+    tarjeta: 'bg-blue-50   text-blue-700   border-blue-200',
   }[m] ?? 'bg-gray-50 text-gray-600 border-gray-200'
 }
 </script>

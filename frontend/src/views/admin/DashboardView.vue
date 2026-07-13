@@ -202,6 +202,8 @@
 import { computed, onMounted } from 'vue'
 import { useDashboardStore } from '@/stores/dashboard'
 import { useOrdersStore } from '@/stores/orders'
+import { useAdminStore } from '@/stores/admin'   // ← nueva línea
+
 import {
   TrophyIcon,
   ClipboardDocumentListIcon,
@@ -214,6 +216,8 @@ import {
 
 const dashStore = useDashboardStore()
 const ordersStore = useOrdersStore()
+const adminStore = useAdminStore()   // ← nueva línea
+
 
 onMounted(() => {
   if (adminStore.can.reports) dashStore.fetch()

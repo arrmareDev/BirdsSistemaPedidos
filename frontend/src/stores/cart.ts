@@ -157,6 +157,11 @@ function add(
     items.value = [];
   }
 
+  // ── Carga items directamente (para editar un pedido existente) ──
+function loadItems(newItems: CartItem[]) {
+  items.value = newItems;
+}
+
   return {
     items,
     count,
@@ -165,6 +170,7 @@ function add(
     hasFloreria,
     add,
     updateItem,
+    loadItems,
     incrementQty,
     decrementQty,
     remove,
