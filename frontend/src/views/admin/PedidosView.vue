@@ -326,7 +326,6 @@
                               class="absolute top-2 right-0 bg-pink-400 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-l-md">
                               Popular
                             </div>
-                            <!-- Badge stock bajo -->
                             <div v-if="p.controla_stock && p.stock > 0 && p.stock <= 5"
                               class="absolute bottom-1 left-1 bg-amber-400 text-amber-900 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md">
                               Últimos {{ p.stock }}
@@ -338,7 +337,6 @@
                           </div>
                           <div class="p-3">
                             <p class="font-semibold text-[13px] text-gray-900 m-0 leading-snug mb-1">{{ p.name }}</p>
-                            <!-- Tags florería -->
                             <div v-if="p.ocasion || p.color || p.tamano" class="flex flex-wrap gap-1 mb-2">
                               <span v-if="p.tamano"
                                 class="text-[9px] px-1.5 py-0.5 rounded-full bg-pink-50 text-pink-600 border border-pink-100 font-medium">
@@ -457,7 +455,7 @@
       </Transition>
     </Teleport>
 
-    <!-- ══ MODAL CONFIRMAR CANCELAR/ELIMINAR ══ -->
+    <!-- ══ MODAL CONFIRMAR CANCELAR/ELIMINAR/FORZAR ══ -->
     <Teleport to="body">
       <Transition enter-active-class="transition-opacity duration-200"
         leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
@@ -473,7 +471,9 @@
               </div>
               <h3 class="font-black text-[19px] text-gray-900 m-0 mb-2"
                 style="font-family:'Plus Jakarta Sans',sans-serif;">
-                {{ confirmModal.type === 'cancelar' ? '¿Cancelar pedido?' : '¿Eliminar pedido?' }}
+                {{ confirmModal.type === 'cancelar' ? '¿Cancelar pedido?'
+                  : confirmModal.type === 'forzar' ? '¿Eliminar definitivamente?'
+                  : '¿Eliminar pedido?' }}
               </h3>
               <p class="text-[13.5px] text-gray-400 m-0 mb-6 leading-relaxed">
                 <template v-if="confirmModal.type === 'cancelar'">
@@ -481,10 +481,14 @@
                   de <strong class="text-gray-700">{{ confirmModal.order?.client_name }}</strong>
                   será marcado como cancelado.
                 </template>
+                <template v-else-if="confirmModal.type === 'forzar'">
+                  El pedido <strong class="text-gray-700">#{{ confirmModal.order?.id }}</strong>
+                  se borrará <strong class="text-red-600">para siempre</strong> de la base de datos, junto con sus productos.
+                  Esta acción <strong class="text-red-600">no se puede deshacer</strong>.
+                </template>
                 <template v-else>
                   El pedido <strong class="text-gray-700">#{{ confirmModal.order?.id }}</strong>
-                  será eliminado permanentemente.
-                  Esta acción <strong class="text-red-600">no se puede deshacer</strong>.
+                  se moverá a la papelera. Podrás restaurarlo después desde "Eliminados".
                 </template>
               </p>
               <div class="flex gap-3">
@@ -499,7 +503,9 @@
                   :class="confirmModal.type === 'cancelar' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-red-600 hover:bg-red-700'">
                   <span v-if="confirmModal.loading"
                     class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  {{ confirmModal.type === 'cancelar' ? 'Sí, cancelar' : 'Sí, eliminar' }}
+                  {{ confirmModal.type === 'cancelar' ? 'Sí, cancelar'
+                    : confirmModal.type === 'forzar' ? 'Sí, eliminar para siempre'
+                    : 'Sí, eliminar' }}
                 </button>
               </div>
             </div>
@@ -542,7 +548,6 @@
                     {{ despachoModal.order.address }}
                   </span>
                 </div>
-                <!-- Entrega programada en modal despacho -->
                 <div v-if="despachoModal.order?.entrega_programada && despachoModal.order?.fecha_entrega"
                   class="flex justify-between text-[13px]">
                   <span class="text-gray-500">Entrega</span>
@@ -697,9 +702,10 @@
 
       <!-- Filtros -->
       <div class="flex items-center gap-2 mb-4 flex-wrap">
-        <select v-model="filter" @change="setFilter(filter)"
+        <select v-model="filter" @change="setFilter(filter)" :disabled="showTrashed"
           class="px-3.5 py-1.5 rounded-xl border border-gray-200 bg-white text-[13px] text-gray-900
-                 outline-none cursor-pointer focus:border-brand-red transition-all duration-200 font-semibold text-gray-600">
+                 outline-none cursor-pointer focus:border-brand-red transition-all duration-200 font-semibold text-gray-600
+                 disabled:opacity-40 disabled:cursor-not-allowed">
           <option v-for="s in STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
         </select>
 
@@ -724,7 +730,14 @@
                    outline-none w-52 focus:border-brand-red transition-all duration-200 placeholder:text-gray-300" />
         </div>
 
-        <button v-if="can.writeOrders" @click="openModal" class="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-brand-red text-white font-bold
+        <button v-if="can.delete" @click="toggleTrashed" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[13px] font-semibold
+                 border cursor-pointer transition-all duration-150"
+          :class="showTrashed ? 'bg-gray-800 text-white border-gray-800' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'">
+          <TrashIcon class="w-3.5 h-3.5" />
+          {{ showTrashed ? 'Ver activos' : 'Eliminados' }}
+        </button>
+
+        <button v-if="can.writeOrders && !showTrashed" @click="openModal" class="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-brand-red text-white font-bold
                  text-[13px] border-none cursor-pointer shadow-sm hover:bg-red-700 transition-all duration-150">
           <PlusIcon class="w-3.5 h-3.5" />
           Nuevo
@@ -732,24 +745,24 @@
       </div>
 
       <!-- Skeleton -->
-      <div v-if="ordersStore.loading" class="flex flex-col gap-3">
+      <div v-if="displayedLoading" class="flex flex-col gap-3">
         <div v-for="n in 4" :key="n" class="h-36 rounded-2xl bg-gray-100 animate-pulse" />
       </div>
 
       <!-- Empty -->
-      <div v-else-if="ordersStore.orders.length === 0" class="flex flex-col items-center py-20 text-gray-400 gap-4">
+      <div v-else-if="displayedOrders.length === 0" class="flex flex-col items-center py-20 text-gray-400 gap-4">
         <div class="w-20 h-20 rounded-2xl bg-gray-100 flex items-center justify-center">
           <ClipboardDocumentListIcon class="w-10 h-10 text-gray-300" />
         </div>
         <div class="text-center">
           <p class="m-0 text-[15px] font-bold text-gray-600">
-            {{ search ? 'Sin resultados' : 'Sin pedidos' }}
+            {{ showTrashed ? 'Papelera vacía' : search ? 'Sin resultados' : 'Sin pedidos' }}
           </p>
           <p class="m-0 text-[13px] mt-1">
-            {{ search ? `No encontramos pedidos para "${search}"` : filter ? 'No hay pedidos con este estado' : 'Aún no hay pedidos registrados' }}
+            {{ showTrashed ? 'No hay pedidos eliminados' : search ? `No encontramos pedidos para "${search}"` : filter ? 'No hay pedidos con este estado' : 'Aún no hay pedidos registrados' }}
           </p>
         </div>
-        <button v-if="!search && !filter && can.writeOrders" @click="openModal" class="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-brand-red text-white font-bold
+        <button v-if="!showTrashed && !search && !filter && can.writeOrders" @click="openModal" class="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-brand-red text-white font-bold
                  text-[13px] border-none cursor-pointer shadow-sm hover:bg-red-700 transition-all duration-150">
           <PlusIcon class="w-4 h-4" />
           Registrar primer pedido
@@ -758,7 +771,7 @@
 
       <!-- Cards -->
       <div v-else class="flex flex-col gap-3">
-        <div v-for="o in ordersStore.orders" :key="o.id"
+        <div v-for="o in displayedOrders" :key="o.id"
           class="bg-white rounded-2xl border-2 cursor-pointer transition-all duration-150 shadow-sm overflow-hidden"
           :class="selected?.id === o.id ? 'border-brand-red shadow-[0_0_0_1px_rgba(196,30,30,0.1)]' : 'border-gray-100 hover:border-red-200 hover:shadow-sm'"
           @click="selectOrder(o)">
@@ -784,7 +797,6 @@
                   class="hidden sm:inline text-[10.5px] font-bold px-2 py-0.5 rounded-full shrink-0 border">
                   {{ metodoPagoLabel(o.metodo_pago) }}
                 </span>
-                <!-- Badge entrega programada -->
                 <span v-if="o.entrega_programada && o.fecha_entrega" class="hidden sm:inline text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0
                          bg-pink-50 text-pink-700 border border-pink-200">
                   📅 {{ o.fecha_entrega }}
@@ -835,51 +847,60 @@
               </span>
               <div class="flex gap-1.5 ml-auto">
 
-                <template v-if="can.writeOrders">
-                  <!-- Delivery listo: repartidor propio o delivery central -->
-                  <template v-if="o.type === 'delivery' && o.status === 'listo'">
-                    <button @click.stop="abrirDespachoModal(o)"
-                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border
-                             cursor-pointer bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 transition-all duration-150">
-                      <TruckIcon class="w-3.5 h-3.5" />
-                      Repartidor
-                    </button>
-                    <button @click.stop="askYaTengo(o)"
-                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border
-                             cursor-pointer bg-green-50 border-green-300 text-green-700 hover:bg-green-100 transition-all duration-150">
-                      <CheckCircleIcon class="w-3.5 h-3.5" />
-                      Ya tengo →
-                    </button>
-                  </template>
-
-                  <!-- Local listo: cobrar y completar -->
-                  <button v-else-if="o.type === 'local' && o.status === 'listo'" @click.stop="abrirCobroModal(o)"
-                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border
+                <template v-if="showTrashed">
+                  <button @click.stop="handleRestore(o)" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border
                            cursor-pointer bg-green-50 border-green-300 text-green-700 hover:bg-green-100 transition-all duration-150">
-                    <span class="text-sm leading-none">💵</span>
-                    Cobrar
+                    <ArrowUturnLeftIcon class="w-3.5 h-3.5" />
+                    Restaurar
                   </button>
-
-                  <!-- Avanzar normal -->
-                  <button v-else-if="o.status !== 'entregado' && o.status !== 'cancelado'" @click.stop="advanceOrder(o)"
-                    class="px-3 py-1.5 rounded-xl text-[12px] font-bold border border-gray-200 bg-white
-                           text-gray-600 cursor-pointer hover:border-brand-red hover:text-brand-red transition-all duration-150">
-                    {{ nextStatusLabel(o.status, o.type) }} →
-                  </button>
-
-                  <!-- Cancelar -->
-                  <button v-if="o.status !== 'entregado' && o.status !== 'cancelado'" @click.stop="askCancel(o)" class="w-8 h-8 rounded-xl flex items-center justify-center border border-gray-200
-                           bg-white text-gray-400 cursor-pointer hover:border-amber-300 hover:text-amber-500
-                           transition-all duration-150" title="Cancelar pedido">
-                    <XCircleIcon class="w-4 h-4" />
+                  <button v-if="can.delete" @click.stop="askForceDelete(o)" class="w-8 h-8 rounded-xl flex items-center justify-center border border-red-200
+                           bg-white text-red-500 cursor-pointer hover:bg-red-50 transition-all duration-150" title="Eliminar definitivamente">
+                    <TrashIcon class="w-4 h-4" />
                   </button>
                 </template>
 
-                <!-- WhatsApp: solo lectura/comunicación, disponible para todos los roles con acceso a pedidos -->
-                <button @click.stop="sendWA(o)" class="w-8 h-8 rounded-xl flex items-center justify-center bg-[#25D366] text-white
-                         border-none cursor-pointer hover:bg-[#128C7E] transition-colors" title="WhatsApp">
-                  <WhatsAppIcon :size="15" />
-                </button>
+                <template v-else>
+                  <template v-if="can.writeOrders">
+                    <template v-if="o.type === 'delivery' && o.status === 'listo'">
+                      <button @click.stop="abrirDespachoModal(o)"
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border
+                               cursor-pointer bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 transition-all duration-150">
+                        <TruckIcon class="w-3.5 h-3.5" />
+                        Repartidor
+                      </button>
+                      <button @click.stop="askYaTengo(o)"
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border
+                               cursor-pointer bg-green-50 border-green-300 text-green-700 hover:bg-green-100 transition-all duration-150">
+                        <CheckCircleIcon class="w-3.5 h-3.5" />
+                        Ya tengo →
+                      </button>
+                    </template>
+
+                    <button v-else-if="o.type === 'local' && o.status === 'listo'" @click.stop="abrirCobroModal(o)"
+                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border
+                             cursor-pointer bg-green-50 border-green-300 text-green-700 hover:bg-green-100 transition-all duration-150">
+                      <span class="text-sm leading-none">💵</span>
+                      Cobrar
+                    </button>
+
+                    <button v-else-if="o.status !== 'entregado' && o.status !== 'cancelado'" @click.stop="advanceOrder(o)"
+                      class="px-3 py-1.5 rounded-xl text-[12px] font-bold border border-gray-200 bg-white
+                             text-gray-600 cursor-pointer hover:border-brand-red hover:text-brand-red transition-all duration-150">
+                      {{ nextStatusLabel(o.status, o.type) }} →
+                    </button>
+
+                    <button v-if="o.status !== 'entregado' && o.status !== 'cancelado'" @click.stop="askCancel(o)" class="w-8 h-8 rounded-xl flex items-center justify-center border border-gray-200
+                             bg-white text-gray-400 cursor-pointer hover:border-amber-300 hover:text-amber-500
+                             transition-all duration-150" title="Cancelar pedido">
+                      <XCircleIcon class="w-4 h-4" />
+                    </button>
+                  </template>
+
+                  <button @click.stop="sendWA(o)" class="w-8 h-8 rounded-xl flex items-center justify-center bg-[#25D366] text-white
+                           border-none cursor-pointer hover:bg-[#128C7E] transition-colors" title="WhatsApp">
+                    <WhatsAppIcon :size="15" />
+                  </button>
+                </template>
               </div>
             </div>
           </div>
@@ -887,21 +908,21 @@
       </div>
 
       <!-- Paginación -->
-      <div v-if="ordersStore.meta && ordersStore.meta.last_page > 1"
+      <div v-if="displayedMeta && displayedMeta.last_page > 1"
         class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
         <span class="text-[12.5px] text-gray-400">
-          Página {{ ordersStore.meta.current_page }} de {{ ordersStore.meta.last_page }}
-          · {{ ordersStore.meta.total }} pedidos
+          Página {{ displayedMeta.current_page }} de {{ displayedMeta.last_page }}
+          · {{ displayedMeta.total }} pedidos
         </span>
         <div class="flex gap-2">
-          <button @click="changePage(ordersStore.meta.current_page - 1)" :disabled="ordersStore.meta.current_page === 1"
+          <button @click="changePage(displayedMeta.current_page - 1)" :disabled="displayedMeta.current_page === 1"
             class="px-3 py-1.5 rounded-xl border border-gray-200 text-[12px] font-semibold text-gray-600
                    cursor-pointer bg-white hover:border-gray-300 disabled:opacity-40
                    disabled:cursor-not-allowed transition-all duration-150">
             ← Anterior
           </button>
-          <button @click="changePage(ordersStore.meta.current_page + 1)"
-            :disabled="ordersStore.meta.current_page === ordersStore.meta.last_page" class="px-3 py-1.5 rounded-xl border border-gray-200 text-[12px] font-semibold text-gray-600
+          <button @click="changePage(displayedMeta.current_page + 1)"
+            :disabled="displayedMeta.current_page === displayedMeta.last_page" class="px-3 py-1.5 rounded-xl border border-gray-200 text-[12px] font-semibold text-gray-600
                    cursor-pointer bg-white hover:border-gray-300 disabled:opacity-40
                    disabled:cursor-not-allowed transition-all duration-150">
             Siguiente →
@@ -913,9 +934,9 @@
     <!-- ══ PANEL DETALLE ══ -->
     <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0 translate-x-4"
       leave-active-class="transition-all duration-150" leave-to-class="opacity-0 translate-x-4">
-   <div v-if="selected" class="fixed inset-0 z-[150] flex flex-col bg-white
-         lg:static lg:z-auto lg:w-72 xl:w-80 lg:shrink-0 lg:rounded-2xl
-         lg:border lg:border-gray-100 lg:shadow-sm overflow-hidden">
+      <div v-if="selected" class="fixed inset-0 z-[150] flex flex-col bg-white
+           lg:static lg:z-auto lg:w-72 xl:w-80 lg:shrink-0 lg:rounded-2xl
+           lg:border lg:border-gray-100 lg:shadow-sm overflow-hidden">
 
         <div class="px-5 py-4 border-b border-gray-100">
           <div class="flex items-start justify-between mb-3">
@@ -949,7 +970,6 @@
               <BuildingStorefrontIcon class="w-3.5 h-3.5 shrink-0" />
               Mesa {{ selected.mesa }}
             </p>
-            <!-- Entrega programada en detalle -->
             <div v-if="selected.entrega_programada && selected.fecha_entrega"
               class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-pink-50 border border-pink-200">
               <span class="text-sm">📅</span>
@@ -961,7 +981,6 @@
                 </p>
               </div>
             </div>
-            <!-- Mensaje tarjeta en detalle -->
             <div v-if="selected.mensaje_tarjeta" class="px-2.5 py-1.5 rounded-xl bg-purple-50 border border-purple-200">
               <p class="text-[10px] font-black text-purple-600 m-0 mb-0.5">💌 Mensaje tarjeta</p>
               <p class="text-[11px] text-purple-800 m-0 italic">"{{ selected.mensaje_tarjeta }}"</p>
@@ -989,7 +1008,6 @@
               <p class="font-semibold text-[13px] text-gray-900 m-0">
                 {{ item.product?.name ?? 'Producto' }}
               </p>
-              <!-- Tags del producto florería -->
               <div v-if="item.product?.tamano || item.product?.color" class="flex gap-1 mt-0.5">
                 <span v-if="item.product?.tamano"
                   class="text-[9px] px-1.5 py-0.5 rounded-full bg-pink-50 text-pink-600 border border-pink-100">
@@ -1031,70 +1049,92 @@
             </div>
           </div>
 
-          <template v-if="can.writeOrders">
-            <template v-if="selected.type === 'delivery' && selected.status === 'listo'">
-              <button @click="abrirDespachoModal(selected)" class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-blue-600
-                       border-none cursor-pointer hover:bg-blue-700 transition-all duration-150
+          <!-- Modo papelera: solo Restaurar / Eliminar definitivo -->
+          <template v-if="showTrashed">
+            <button @click="handleRestore(selected)" class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-green-600 border-none
+                     cursor-pointer shadow-sm hover:bg-green-700 transition-all duration-150
+                     flex items-center justify-center gap-2">
+              <ArrowUturnLeftIcon class="w-4 h-4" />
+              Restaurar pedido
+            </button>
+            <button v-if="can.delete" @click="askForceDelete(selected)"
+              class="w-full py-2.5 rounded-xl font-semibold text-[12px] text-red-600 bg-transparent
+                     border border-red-200 cursor-pointer hover:bg-red-50 hover:border-red-300
+                     transition-all duration-150 flex items-center justify-center gap-1.5">
+              <TrashIcon class="w-3.5 h-3.5" />
+              Eliminar definitivamente
+            </button>
+          </template>
+
+          <!-- Modo normal -->
+          <template v-else>
+            <template v-if="can.writeOrders">
+              <template v-if="selected.type === 'delivery' && selected.status === 'listo'">
+                <button @click="abrirDespachoModal(selected)" class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-blue-600
+                         border-none cursor-pointer hover:bg-blue-700 transition-all duration-150
+                         flex items-center justify-center gap-2">
+                  <TruckIcon class="w-4 h-4" />
+                  Solicitar repartidor
+                </button>
+                <button @click="askYaTengo(selected)" class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-green-600
+                         border-none cursor-pointer hover:bg-green-700 transition-all duration-150
+                         flex items-center justify-center gap-2">
+                  <CheckCircleIcon class="w-4 h-4" />
+                  Ya tengo repartidor
+                </button>
+              </template>
+
+              <button v-else-if="selected.type === 'local' && selected.status === 'listo'" @click="abrirCobroModal(selected)"
+                class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-green-600 border-none
+                       cursor-pointer shadow-sm hover:bg-green-700 transition-all duration-150
                        flex items-center justify-center gap-2">
-                <TruckIcon class="w-4 h-4" />
-                Solicitar repartidor
+                <span class="text-base leading-none">💵</span>
+                Cobrar pedido
               </button>
-              <button @click="askYaTengo(selected)" class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-green-600
-                       border-none cursor-pointer hover:bg-green-700 transition-all duration-150
-                       flex items-center justify-center gap-2">
-                <CheckCircleIcon class="w-4 h-4" />
-                Ya tengo repartidor
+
+              <button v-else @click="advanceOrder(selected)"
+                :disabled="selected.status === 'entregado' || selected.status === 'cancelado'" class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-brand-red border-none
+                       cursor-pointer shadow-sm hover:bg-red-700 transition-all duration-150
+                       flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                <ArrowRightCircleIcon class="w-4 h-4" />
+                {{ nextStatusLabel(selected.status, selected.type) }}
               </button>
             </template>
 
-            <button v-else-if="selected.type === 'local' && selected.status === 'listo'" @click="abrirCobroModal(selected)"
-              class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-green-600 border-none
-                     cursor-pointer shadow-sm hover:bg-green-700 transition-all duration-150
+            <template v-if="can.writeOrders">
+              <button v-if="selected.status !== 'entregado' && selected.status !== 'cancelado' && selected.status !== 'en_camino'"
+                @click="openEditItemsModal(selected)"
+                class="w-full py-2.5 rounded-xl font-semibold text-[13px] text-gray-700 bg-white
+                       border border-gray-200 cursor-pointer hover:border-brand-red hover:text-brand-red
+                       transition-all duration-150 flex items-center justify-center gap-2">
+                <TagIcon class="w-4 h-4" />
+                Editar productos
+              </button>
+            </template>
+
+            <button @click="sendWA(selected)" class="w-full py-2.5 rounded-xl font-semibold text-[13px] text-white bg-[#25D366]
+                     border-none cursor-pointer hover:bg-[#128C7E] transition-all duration-150
                      flex items-center justify-center gap-2">
-              <span class="text-base leading-none">💵</span>
-              Cobrar pedido
+              <WhatsAppIcon :size="16" />
+              WhatsApp al cliente
             </button>
 
-            <button v-else @click="advanceOrder(selected)"
-              :disabled="selected.status === 'entregado' || selected.status === 'cancelado'" class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-brand-red border-none
-                     cursor-pointer shadow-sm hover:bg-red-700 transition-all duration-150
-                     flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
-              <ArrowRightCircleIcon class="w-4 h-4" />
-              {{ nextStatusLabel(selected.status, selected.type) }}
-            </button>
-          </template>
-          <template v-if="can.writeOrders">
-            <button v-if="selected.status !== 'entregado' && selected.status !== 'cancelado' && selected.status !== 'en_camino'"
-              @click="openEditItemsModal(selected)"
-              class="w-full py-2.5 rounded-xl font-semibold text-[13px] text-gray-700 bg-white
-                     border border-gray-200 cursor-pointer hover:border-brand-red hover:text-brand-red
-                     transition-all duration-150 flex items-center justify-center gap-2">
-              <TagIcon class="w-4 h-4" />
-              Editar productos
-            </button>
-          </template>
-          <button @click="sendWA(selected)" class="w-full py-2.5 rounded-xl font-semibold text-[13px] text-white bg-[#25D366]
-                   border-none cursor-pointer hover:bg-[#128C7E] transition-all duration-150
-                   flex items-center justify-center gap-2">
-            <WhatsAppIcon :size="16" />
-            WhatsApp al cliente
-          </button>
+            <template v-if="can.writeOrders">
+              <button v-if="selected.status !== 'entregado' && selected.status !== 'cancelado'" @click="askCancel(selected)"
+                class="w-full py-2 rounded-xl font-semibold text-[12px] text-amber-600 bg-transparent
+                       border border-amber-200 cursor-pointer hover:bg-amber-50 hover:border-amber-300
+                       transition-all duration-150 flex items-center justify-center gap-1.5">
+                <XCircleIcon class="w-3.5 h-3.5" />
+                Cancelar pedido
+              </button>
 
-          <template v-if="can.writeOrders">
-            <button v-if="selected.status !== 'entregado' && selected.status !== 'cancelado'" @click="askCancel(selected)"
-              class="w-full py-2 rounded-xl font-semibold text-[12px] text-amber-600 bg-transparent
-                     border border-amber-200 cursor-pointer hover:bg-amber-50 hover:border-amber-300
-                     transition-all duration-150 flex items-center justify-center gap-1.5">
-              <XCircleIcon class="w-3.5 h-3.5" />
-              Cancelar pedido
-            </button>
-
-            <button v-if="selected.status === 'cancelado' || selected.status === 'entregado'" @click="askDelete(selected)" class="w-full py-2 rounded-xl font-semibold text-[12px] text-gray-400 bg-transparent
-                     border border-gray-100 cursor-pointer hover:bg-red-50 hover:text-red-500
-                     hover:border-red-200 transition-all duration-150 flex items-center justify-center gap-1.5">
-              <TrashIcon class="w-3.5 h-3.5" />
-              Eliminar pedido
-            </button>
+              <button v-if="selected.status === 'cancelado' || selected.status === 'entregado'" @click="askDelete(selected)" class="w-full py-2 rounded-xl font-semibold text-[12px] text-gray-400 bg-transparent
+                       border border-gray-100 cursor-pointer hover:bg-red-50 hover:text-red-500
+                       hover:border-red-200 transition-all duration-150 flex items-center justify-center gap-1.5">
+                <TrashIcon class="w-3.5 h-3.5" />
+                Eliminar pedido
+              </button>
+            </template>
           </template>
         </div>
       </div>
@@ -1110,7 +1150,7 @@
         <p class="font-bold text-gray-600 text-[14px] m-0">Selecciona un pedido</p>
         <p class="text-[12px] m-0 mt-1">para ver el detalle completo</p>
       </div>
-      <button v-if="can.writeOrders" @click="openModal" class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-red text-white font-bold
+      <button v-if="can.writeOrders && !showTrashed" @click="openModal" class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-red text-white font-bold
                text-[12.5px] border-none cursor-pointer shadow-sm hover:bg-red-700 transition-all duration-150">
         <PlusIcon class="w-3.5 h-3.5" />
         Nuevo pedido
@@ -1126,7 +1166,7 @@ import {
   PlusIcon, XMarkIcon, TrashIcon, CheckIcon,
   MagnifyingGlassIcon, ClockIcon, PhoneIcon,
   ExclamationTriangleIcon, ExclamationCircleIcon,
-  CheckCircleIcon, ArrowRightCircleIcon,
+  CheckCircleIcon, ArrowRightCircleIcon, ArrowUturnLeftIcon,
   MapPinIcon, ClipboardDocumentListIcon, XCircleIcon,
   ShoppingCartIcon, TagIcon, TruckIcon,
   ShoppingBagIcon, BuildingStorefrontIcon,
@@ -1147,7 +1187,6 @@ const productsStore = useProductsStore()
 const cartStore = useCartStore()
 const adminStore = useAdminStore()
 const { can } = storeToRefs(adminStore)
-// acceso reactivo a permisos (writeOrders, etc.)
 
 const customizerRef = ref<InstanceType<typeof CustomizerModal> | null>(null)
 const registerCta = inject<(fn: () => void) => void>('registerCta')
@@ -1166,6 +1205,7 @@ const rightTab = ref<'catalogo' | 'carrito'>('catalogo')
 const activeCat = ref('all')
 const editingOrderId = ref<number | null>(null)
 const isEditMode = computed(() => editingOrderId.value !== null)
+const showTrashed = ref(false)
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 let refreshInterval: ReturnType<typeof setInterval> | null = null
@@ -1175,7 +1215,7 @@ const fechaMinima = computed(() => new Date().toISOString().split('T')[0])
 
 // ── Modales ───────────────────────────────────────────────
 const confirmModal = reactive({
-  show: false, type: '' as 'cancelar' | 'eliminar', order: null as any, loading: false,
+  show: false, type: '' as 'cancelar' | 'eliminar' | 'forzar', order: null as any, loading: false,
 })
 
 const despachoModal = reactive({
@@ -1229,7 +1269,6 @@ const STEPS = [
 
 const FLOW = ['nuevo', 'confirmado', 'preparando', 'listo', 'en_camino', 'entregado']
 
-// ── Flujo dinámico: local/recoger saltan "en_camino" (no hay motorizado) ──
 function flowFor(type: string): string[] {
   return type === 'delivery' ? FLOW : FLOW.filter(s => s !== 'en_camino')
 }
@@ -1259,7 +1298,6 @@ const HORARIOS = [
   { value: '17:00', label: '5:00 PM - 6:00 PM' },
 ]
 
-// Categorías de florería
 const CATS = [
   { id: 'all', icon: '💐', label: 'Todo' },
   { id: 'ramos', icon: '🌹', label: 'Ramos' },
@@ -1270,7 +1308,6 @@ const CATS = [
   { id: 'globos', icon: '🎈', label: 'Globos' },
 ]
 
-// Métodos de pago disponibles para pedidos tipo Local
 const METODOS_PAGO_LOCAL = [
   { id: 'efectivo', icon: '💵', label: 'Efectivo' },
   { id: 'yape', icon: '📱', label: 'Yape/Plin' },
@@ -1298,6 +1335,22 @@ const filteredCatalog = computed(() => {
   return all.filter(p => p.category?.slug === activeCat.value)
 })
 
+// ── Papelera ──────────────────────────────────────────────
+const displayedOrders = computed(() => showTrashed.value ? ordersStore.trashedOrders : ordersStore.orders)
+const displayedLoading = computed(() => showTrashed.value ? ordersStore.loadingTrashed : ordersStore.loading)
+const displayedMeta = computed(() => showTrashed.value ? ordersStore.trashedMeta : ordersStore.meta)
+
+function toggleTrashed() {
+  showTrashed.value = !showTrashed.value
+  selected.value = null
+  currentPage.value = 1
+  if (showTrashed.value) {
+    ordersStore.fetchTrashed({ search: search.value || undefined, page: 1 })
+  } else {
+    loadOrders(1)
+  }
+}
+
 // ── Lifecycle ─────────────────────────────────────────────
 onMounted(() => {
   if (can.value.writeOrders) registerCta?.(() => openModal())
@@ -1310,6 +1363,7 @@ onUnmounted(() => { if (refreshInterval) clearInterval(refreshInterval) })
 
 // ── Refresh silencioso ────────────────────────────────────
 async function silentRefresh() {
+  if (showTrashed.value) return
   try {
     const { data } = await api.get('/admin/orders', {
       params: {
@@ -1340,16 +1394,33 @@ function loadOrders(page = currentPage.value) {
 
 function clearFilters() {
   filter.value = ''; search.value = ''; dateFrom.value = ''; dateTo.value = ''
-  currentPage.value = 1; loadOrders(1)
+  currentPage.value = 1
+  if (showTrashed.value) ordersStore.fetchTrashed({ page: 1 })
+  else loadOrders(1)
 }
 
-function changePage(page: number) { currentPage.value = page; loadOrders(page) }
+function changePage(page: number) {
+  currentPage.value = page
+  if (showTrashed.value) {
+    ordersStore.fetchTrashed({ search: search.value || undefined, page })
+  } else {
+    loadOrders(page)
+  }
+}
 
-function setFilter(value: string) { filter.value = value; currentPage.value = 1; loadOrders(1) }
+function setFilter(value: string) {
+  filter.value = value; currentPage.value = 1
+  if (showTrashed.value) ordersStore.fetchTrashed({ search: search.value || undefined, page: 1 })
+  else loadOrders(1)
+}
 
 function debouncedSearch() {
   clearTimeout(searchTimer!)
-  searchTimer = setTimeout(() => { currentPage.value = 1; loadOrders(1) }, 400)
+  searchTimer = setTimeout(() => {
+    currentPage.value = 1
+    if (showTrashed.value) ordersStore.fetchTrashed({ search: search.value || undefined, page: 1 })
+    else loadOrders(1)
+  }, 400)
 }
 
 function openEditItemsModal(order: any) {
@@ -1384,8 +1455,6 @@ function openEditItemsModal(order: any) {
 
 // ── Modal nuevo pedido ────────────────────────────────────
 function openModal() {
-  // Defensa extra: el rol "salón" no puede registrar pedidos, aunque
-  // el botón esté oculto en la UI (por si se dispara desde otro lado).
   if (!can.value.writeOrders) return
   cartStore.clear(); showModal.value = true; modalError.value = ''
   rightTab.value = 'catalogo'; activeCat.value = 'all'; resetForm()
@@ -1520,7 +1589,14 @@ async function confirmarCobro() {
 }
 
 // ── Acciones pedidos ──────────────────────────────────────
-async function selectOrder(o: any) { selected.value = await ordersStore.getOne(o.id) }
+async function selectOrder(o: any) {
+  if (showTrashed.value) {
+    // Ya viene con items cargados desde paginateTrashed()
+    selected.value = o
+    return
+  }
+  selected.value = await ordersStore.getOne(o.id)
+}
 
 async function advanceOrder(o: any) {
   if (!can.value.writeOrders) return
@@ -1545,6 +1621,20 @@ function askDelete(o: any) {
   confirmModal.show = true; confirmModal.loading = false
 }
 
+function askForceDelete(o: any) {
+  if (!can.value.delete) return
+  confirmModal.order = o; confirmModal.type = 'forzar'
+  confirmModal.show = true; confirmModal.loading = false
+}
+
+async function handleRestore(o: any) {
+  const ok = await ordersStore.restoreOrder(o.id)
+  if (ok) {
+    if (selected.value?.id === o.id) selected.value = null
+    ordersStore.fetchTrashed({ search: search.value || undefined, page: currentPage.value })
+  }
+}
+
 async function executeConfirm() {
   if (!confirmModal.order) return
   confirmModal.loading = true
@@ -1554,6 +1644,10 @@ async function executeConfirm() {
       if (selected.value?.id === confirmModal.order.id) {
         selected.value = { ...selected.value, status: 'cancelado' }
       }
+    } else if (confirmModal.type === 'forzar') {
+      await ordersStore.forceDeleteOrder(confirmModal.order.id)
+      if (selected.value?.id === confirmModal.order.id) selected.value = null
+      ordersStore.fetchTrashed({ search: search.value || undefined, page: currentPage.value })
     } else {
       await ordersStore.deleteOrder(confirmModal.order.id)
       if (selected.value?.id === confirmModal.order.id) selected.value = null

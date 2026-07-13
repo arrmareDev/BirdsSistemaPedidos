@@ -104,8 +104,15 @@
                     ->where('id', '[0-9]+');
             });
 
-            Route::middleware(['role:admin,sistema', 'permission:orders'])->group(function () {
+            Route::middleware(['role:admin,sistema,atencion', 'permission:orders'])->group(function () {
                 Route::delete('orders/{id}', [OrderController::class, 'destroy'])
+                    ->where('id', '[0-9]+');
+
+                Route::get('orders/trashed', [OrderController::class, 'trashed']);
+                Route::post('orders/{id}/restore', [OrderController::class, 'restore'])
+                    ->where('id', '[0-9]+');
+
+                Route::delete('orders/{id}/force', [OrderController::class, 'forceDestroy'])
                     ->where('id', '[0-9]+');
             });
 

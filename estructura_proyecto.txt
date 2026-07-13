@@ -126,7 +126,9 @@ Proyecto: BirdsSistemaPedidos
 │   │   │   ├── 2026_07_08_000001_add_price_modifier_to_customization_options.php
 │   │   │   ├── 2026_07_09_000001_dedupe_shared_extras.php
 │   │   │   ├── 2026_07_10_000001_add_permissions_to_users_table.php
-│   │   │   └── 2026_07_11_000001_restructure_user_roles.php
+│   │   │   ├── 2026_07_11_000001_restructure_user_roles.php
+│   │   │   ├── 2026_07_11_000002_change_metodo_pago_to_string.php
+│   │   │   └── 2026_07_12_003559_drop_metodo_pago_check_constraint.php
 │   │   └── seeders
 │   │       ├── DatabaseSeeder.php
 │   │       ├── DeliveryTariffSeeder.php
@@ -172,7 +174,9 @@ Proyecto: BirdsSistemaPedidos
 │   ├── postcss.config.mjs
 │   ├── public
 │   │   ├── images
+│   │   │   ├── birdsblanco.png
 │   │   │   ├── birdsflores.png
+│   │   │   ├── birdsnegro.png
 │   │   │   ├── cajarosas.png
 │   │   │   ├── delivery.jpeg
 │   │   │   ├── logobirds.png

@@ -188,6 +188,47 @@ class OrderController extends Controller
         return $this->success(null, 'Pedido eliminado');
     }
 
+    // GET /admin/orders/trashed
+    public function trashed(Request $request): JsonResponse
+    {
+        $orders = $this->orderRepository->paginateTrashed(
+            filters: [
+                'search'    => $request->get('search'),
+                'date_from' => $request->get('date_from'),
+                'date_to'   => $request->get('date_to'),
+            ],
+            perPage: $request->integer('per_page', 10)
+        );
+
+        return $this->success(
+            OrderResource::collection($orders)->response()->getData(true)
+        );
+    }
+
+    // DELETE /admin/orders/{id}/force — borrado definitivo, solo desde la papelera
+    public function forceDestroy(int $id): JsonResponse
+    {
+        $order = $this->orderRepository->findTrashedById($id);
+        if (!$order) return $this->notFound('Pedido eliminado no encontrado');
+
+        // Borra los items asociados para no dejar registros huérfanos
+        $order->items()->delete();
+        $order->forceDelete();
+
+        return $this->success(null, 'Pedido eliminado definitivamente');
+    }
+
+    // POST /admin/orders/{id}/restore
+    public function restore(int $id): JsonResponse
+    {
+        $order = $this->orderRepository->findTrashedById($id);
+        if (!$order) return $this->notFound('Pedido eliminado no encontrado');
+
+        $order->restore();
+
+        return $this->success(new OrderResource($order), 'Pedido restaurado');
+    }
+
     // GET /orders/{id}/track — público (seguimiento del cliente)
     public function track(Request $request, int $id): JsonResponse
     {

@@ -83,7 +83,7 @@ class AuthController extends Controller
                 'can_manage_catalog' => $user->canManageCatalog(),      // solo admin/sistema
                 'can_manage_users'   => $user->canManageUsers(),        // solo admin/sistema
                 'can_cobrar'         => $user->hasRole(['admin', 'sistema']),
-                'can_delete'         => !$user->isAtencion() && !$user->isSalon(),
+                'can_delete' => !$user->isSalon(), // ← antes excluía también a atención
                 'can_write_orders'   => $user->canWriteOrders(),        // false solo para 'salon'
             ],
         ];

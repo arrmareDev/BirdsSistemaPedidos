@@ -702,10 +702,10 @@ function waLink(c: Client, tipo: 'saludo' | 'promo' | 'reactivar' | 'cumple'): s
   const crema = c.preferences?.salsas?.[0] ?? 'crema especial'
 
   const mensajes: Record<string, string> = {
-    saludo: `Hola ${nombre} ¡Gracias por ser cliente de Mahoma Chicken! ¿Cómo estás?`,
+    saludo: `Hola ${nombre} ¡Gracias por ser cliente de Birds! ¿Cómo estás?`,
     promo: `Hola ${nombre} ¡Tenemos una oferta especial para ti! Esta semana 10% de descuento en tu próximo pedido. ¿Te animás? `,
-    reactivar: `Hola ${nombre} ¡Te extrañamos en Mahoma Chicken! Han pasado unos días y queremos invitarte a volver. Recuerda que nos puedes pedir a domicilio. ¡Te esperamos!`,
-    cumple: `Hola ${nombre} Desde Mahoma Chicken te deseamos un día increíble. Sabemos que te gusta la ${crema} ¡así que hoy es el mejor día para un pollito!`,
+    reactivar: `Hola ${nombre} ¡Te extrañamos en Birds! Han pasado unos días y queremos invitarte a volver. Recuerda que nos puedes pedir a domicilio. ¡Te esperamos!`,
+    cumple: `Hola ${nombre} Desde Birds te deseamos un día increíble. Sabemos que te gusta la ${crema} ¡así que hoy es el mejor día para unas deliciosas alas de pollo!`,
   }
 
   return `https://wa.me/${c.phone.replace(/\D/g, '')}?text=${encodeURIComponent(mensajes[tipo])}`

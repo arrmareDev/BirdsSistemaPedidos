@@ -216,7 +216,7 @@
                   ¡Pedido entregado!
                 </p>
                 <p class="text-[12px] text-green-600 m-0">
-                  Gracias por elegir Mahoma Chicken 🍗
+                  Gracias por elegir Birds. Esperamos que disfrutes tu pedido.
                 </p>
               </div>
             </div>

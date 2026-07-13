@@ -6,8 +6,8 @@ export interface AdminOrder {
   id: number;
   client_name: string;
   client_phone: string;
-  type: "local" | "recoger" | "delivery"; // ← actualizado
-  mesa: string | null; // ← NUEVO
+  type: "local" | "recoger" | "delivery";
+  mesa: string | null;
   status: string;
   address: string | null;
   reference: string | null;
@@ -19,7 +19,6 @@ export interface AdminOrder {
   subtotal: number;
   delivery_fee: number;
   total: number;
-  // ── Florería ─────────────────────────────────────────────
   mensaje_tarjeta: string | null;
   fecha_entrega: string | null;
   hora_entrega: string | null;
@@ -51,13 +50,18 @@ export const useOrdersStore = defineStore("orders", () => {
   const loading = ref(false);
   const meta = ref<any>(null);
 
+  // ── Papelera ──────────────────────────────────────────────
+  const trashedOrders = ref<AdminOrder[]>([]);
+  const trashedMeta = ref<any>(null);
+  const loadingTrashed = ref(false);
+
   async function fetch(params?: {
     status?: string;
     search?: string;
     date?: string;
     date_from?: string;
     date_to?: string;
-    type?: string; // ← NUEVO — filtro por canal en el panel admin
+    type?: string;
     page?: number;
     per_page?: number;
   }) {
@@ -78,6 +82,52 @@ export const useOrdersStore = defineStore("orders", () => {
       orders.value = [];
     } finally {
       loading.value = false;
+    }
+  }
+
+  async function fetchTrashed(params?: {
+    search?: string;
+    date_from?: string;
+    date_to?: string;
+    page?: number;
+    per_page?: number;
+  }) {
+    loadingTrashed.value = true;
+    try {
+      const { data } = await api.get("/admin/orders/trashed", { params });
+      if (data.data?.data) {
+        trashedOrders.value = data.data.data;
+        trashedMeta.value = data.data.meta;
+      } else {
+        trashedOrders.value = [];
+      }
+    } catch (e) {
+      console.error("Error cargando pedidos eliminados:", e);
+      trashedOrders.value = [];
+    } finally {
+      loadingTrashed.value = false;
+    }
+  }
+
+  async function restoreOrder(id: number): Promise<boolean> {
+    try {
+      await api.post(`/admin/orders/${id}/restore`);
+      trashedOrders.value = trashedOrders.value.filter((o) => o.id !== id);
+      return true;
+    } catch (e) {
+      console.error("Error restaurando pedido:", e);
+      return false;
+    }
+  }
+
+  async function forceDeleteOrder(id: number): Promise<boolean> {
+    try {
+      await api.delete(`/admin/orders/${id}/force`);
+      trashedOrders.value = trashedOrders.value.filter((o) => o.id !== id);
+      return true;
+    } catch (e) {
+      console.error("Error eliminando pedido definitivamente:", e);
+      return false;
     }
   }
 
@@ -115,26 +165,27 @@ export const useOrdersStore = defineStore("orders", () => {
   }
 
   async function updateItems(
-  id: number,
-  items: Array<{
-    product_id: number;
-    qty: number;
-    unit_price: number;
-    customization?: any[];
-    extras?: any[];
-    custom_summary?: string | null;
-  }>,
-): Promise<AdminOrder | null> {
-  try {
-    const { data } = await api.put(`/admin/orders/${id}/items`, { items });
-    const idx = orders.value.findIndex((o) => o.id === id);
-    if (idx !== -1) orders.value[idx] = data.data;
-    return data.data;
-  } catch (e) {
-    console.error("Error actualizando items:", e);
-    throw e; // re-lanzamos para que el modal muestre el mensaje del backend
+    id: number,
+    items: Array<{
+      product_id: number;
+      qty: number;
+      unit_price: number;
+      customization?: any[];
+      extras?: any[];
+      custom_summary?: string | null;
+    }>,
+  ): Promise<AdminOrder | null> {
+    try {
+      const { data } = await api.put(`/admin/orders/${id}/items`, { items });
+      const idx = orders.value.findIndex((o) => o.id === id);
+      if (idx !== -1) orders.value[idx] = data.data;
+      return data.data;
+    } catch (e) {
+      console.error("Error actualizando items:", e);
+      throw e;
+    }
   }
-}
+
   async function cancelOrder(id: number): Promise<boolean> {
     const idx = orders.value.findIndex((o) => o.id === id);
     const prevStatus = idx !== -1 ? orders.value[idx].status : null;
@@ -164,22 +215,28 @@ export const useOrdersStore = defineStore("orders", () => {
   }
 
   async function cobrarLocal(id: number, metodoPago: string): Promise<AdminOrder | null> {
-  try {
-    const { data } = await api.patch(`/admin/orders/${id}/cobrar`, { metodo_pago: metodoPago });
-    const idx = orders.value.findIndex((o) => o.id === id);
-    if (idx !== -1) orders.value[idx] = data.data;
-    return data.data;
-  } catch (e) {
-    console.error("Error al cobrar pedido:", e);
-    throw e;
+    try {
+      const { data } = await api.patch(`/admin/orders/${id}/cobrar`, { metodo_pago: metodoPago });
+      const idx = orders.value.findIndex((o) => o.id === id);
+      if (idx !== -1) orders.value[idx] = data.data;
+      return data.data;
+    } catch (e) {
+      console.error("Error al cobrar pedido:", e);
+      throw e;
+    }
   }
-} 
 
   return {
     orders,
     loading,
     meta,
+    trashedOrders,
+    trashedMeta,
+    loadingTrashed,
     fetch,
+    fetchTrashed,
+    restoreOrder,
+    forceDeleteOrder,
     getOne,
     updateStatus,
     updateItems,
