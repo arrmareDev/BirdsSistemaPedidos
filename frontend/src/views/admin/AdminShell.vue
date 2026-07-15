@@ -284,7 +284,7 @@ const supportLink = computed(() => {
   const phone = (import.meta.env.VITE_WA_PHONE ?? '51969943657').replace(/\D/g, '')
   const nombre = admin.user?.name ?? 'Admin'
   // ← MARCA: reemplaza el nombre del negocio en el mensaje
-  const mensaje = `Hola, soy *${nombre}* (Panel Admin de la Florería). Necesito soporte técnico.`
+  const mensaje = `Hola, soy *${nombre}* de Birds. Necesito soporte técnico.`
   return `https://wa.me/${phone}?text=${encodeURIComponent(mensaje)}`
 })
 
