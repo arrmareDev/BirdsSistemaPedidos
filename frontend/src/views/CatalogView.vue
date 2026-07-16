@@ -149,12 +149,94 @@
             <div v-for="n in 8" :key="n" class="rounded-2xl animate-pulse skeleton-card" style="aspect-ratio:3/4;" />
           </div>
 
-          <!-- Grid productos -->
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4">
+<!-- Grid productos Agrupado (Cuando es "Todo") -->
+          <div v-if="!productsStore.loading && productsStore.activeCategory === 'all' && groupedProducts" class="flex flex-col gap-10">
+            <div v-for="(group, index) in groupedProducts" :key="group.slug">
+              
+              <!-- Título de la Categoría, Línea divisora y Botón superior -->
+              <div class="flex items-center gap-4 mb-5">
+                <h3 class="font-black text-[20px] text-ink m-0" style="font-family:'Plus Jakarta Sans',sans-serif;">
+                  {{ group.name }}
+                </h3>
+                <div class="h-px flex-1 bg-gray-200"></div>
+                <button v-if="group.total > group.products.length" @click="productsStore.setCategory(group.slug)" 
+                        class="hidden sm:block text-[12.5px] font-bold text-brand-red cursor-pointer bg-red-50 hover:bg-red-100 px-4 py-1.5 rounded-full transition-colors border-none shrink-0">
+                  Ver todo ({{ group.total }})
+                </button>
+              </div>
 
+              <!-- Cuadrícula de 6 productos -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4">
+                <div v-for="product in group.products" :key="product.id"
+                  @click="product.available && openProduct(product)" class="product-card group rounded-2xl overflow-hidden flex flex-col transition-all duration-300 relative"
+                  :class="product.available ? 'cursor-pointer product-card--available' : 'opacity-50 cursor-default'">
+
+                  <!-- Imagen -->
+                  <div class="relative overflow-hidden product-img-wrap" style="aspect-ratio:4/3;">
+                    <img v-if="product.image_url" :src="product.image_url" :alt="product.name"
+                      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    <div v-else class="w-full h-full flex items-center justify-center product-emoji-bg">
+                      <span class="text-[56px] sm:text-[64px] leading-none transition-all duration-300 group-hover:scale-110 group-hover:-rotate-3">
+                        {{ product.emoji || '💐' }}
+                      </span>
+                    </div>
+                    <div class="absolute inset-0 product-img-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <span v-if="product.popular" class="badge-popular absolute top-2.5 left-0">⭐ Popular</span>
+                    <div v-if="!product.available" class="absolute inset-0 flex items-center justify-center backdrop-blur-[1px] bg-white/70">
+                      <span class="sold-out-badge">Agotado</span>
+                    </div>
+
+                    <!-- Botón + flotante en hover -->
+                    <div class="absolute bottom-3 right-3 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200">
+                      <button v-if="product.available" @click.stop="handleAddToCart(product, $event)" class="float-add-btn w-10 h-10 rounded-full flex items-center justify-center text-white text-2xl font-black border-none cursor-pointer leading-none transition-all duration-150 hover:scale-110 active:scale-95">
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Info del producto -->
+                  <div class="flex flex-col flex-1 p-3 sm:p-4 product-info">
+                    <h3 class="font-bold text-[14px] sm:text-[15px] leading-snug m-0 mb-1.5 line-clamp-2 product-name">
+                      {{ product.name }}
+                    </h3>
+                    <p class="text-[12px] sm:text-[12.5px] leading-relaxed m-0 line-clamp-2 flex-1 mb-3 product-desc">
+                      {{ product.description }}
+                    </p>
+                    <div class="flex items-center justify-between gap-2 mt-auto">
+                      <div class="flex items-baseline gap-0.5">
+                        <span class="text-[11px] font-bold product-currency">S/</span>
+                        <span class="font-black text-[22px] sm:text-[24px] leading-none product-price" style="font-family:'Plus Jakarta Sans',sans-serif;">
+                          {{ product.price.toFixed(2) }}
+                        </span>
+                      </div>
+                      <button v-if="product.available" @click.stop="handleAddToCart(product, $event)" class="pedir-btn flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-full font-bold text-[12px] border-none cursor-pointer hover:-translate-y-0.5 active:scale-95 transition-all duration-150 shrink-0 uppercase tracking-wide">
+                        <span class="text-[14px] leading-none font-black">+</span>
+                        <span>Pedir</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botón grande para celulares para Ver Más -->
+              <div v-if="group.total > group.products.length" class="flex justify-center mt-5 sm:hidden">
+                <button @click="productsStore.setCategory(group.slug)" class="w-full py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-bold text-[13px] bg-white cursor-pointer active:scale-95 transition-all">
+                  Explorar todos los {{ group.name }} →
+                </button>
+              </div>
+
+              <!-- Separador Aves (Excepto en la última categoría) -->
+              <div v-if="index < groupedProducts.length - 1" class="flex justify-center mt-12 mb-2 opacity-50">
+                <img src="/images/birdsnegro.png" alt="Separador Birds" class="h-10 sm:h-12 object-contain" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Grid Clásico (Cuando se filtra por una categoría específica) -->
+          <div v-else-if="!productsStore.loading" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4">
+            
             <div v-for="product in productsStore.filtered" :key="product.id"
-              @click="product.available && openProduct(product)" class="product-card group rounded-2xl overflow-hidden flex flex-col
-                     transition-all duration-300 relative"
+              @click="product.available && openProduct(product)" class="product-card group rounded-2xl overflow-hidden flex flex-col transition-all duration-300 relative"
               :class="product.available ? 'cursor-pointer product-card--available' : 'opacity-50 cursor-default'">
 
               <!-- Imagen -->
@@ -162,32 +244,19 @@
                 <img v-if="product.image_url" :src="product.image_url" :alt="product.name"
                   class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                 <div v-else class="w-full h-full flex items-center justify-center product-emoji-bg">
-                  <span class="text-[56px] sm:text-[64px] leading-none transition-all duration-300
-                               group-hover:scale-110 group-hover:-rotate-3">
+                  <span class="text-[56px] sm:text-[64px] leading-none transition-all duration-300 group-hover:scale-110 group-hover:-rotate-3">
                     {{ product.emoji || '💐' }}
                   </span>
                 </div>
-
-                <div class="absolute inset-0 product-img-overlay opacity-0 group-hover:opacity-100
-                            transition-opacity duration-300" />
-
-                <span v-if="product.popular" class="badge-popular absolute top-2.5 left-0">
-                  ⭐ Popular
-                </span>
-
-                <div v-if="!product.available" class="absolute inset-0 flex items-center justify-center
-                         backdrop-blur-[1px] bg-white/70">
+                <div class="absolute inset-0 product-img-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <span v-if="product.popular" class="badge-popular absolute top-2.5 left-0">⭐ Popular</span>
+                <div v-if="!product.available" class="absolute inset-0 flex items-center justify-center backdrop-blur-[1px] bg-white/70">
                   <span class="sold-out-badge">Agotado</span>
                 </div>
 
                 <!-- Botón + flotante en hover -->
-                <div class="absolute bottom-3 right-3 opacity-0 translate-y-2
-                            group-hover:opacity-100 group-hover:translate-y-0
-                            transition-all duration-200">
-                  <button v-if="product.available" @click.stop="handleAddToCart(product, $event)" class="float-add-btn w-10 h-10 rounded-full flex items-center
-                           justify-center text-white text-2xl font-black border-none
-                           cursor-pointer leading-none transition-all duration-150
-                           hover:scale-110 active:scale-95">
+                <div class="absolute bottom-3 right-3 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200">
+                  <button v-if="product.available" @click.stop="handleAddToCart(product, $event)" class="float-add-btn w-10 h-10 rounded-full flex items-center justify-center text-white text-2xl font-black border-none cursor-pointer leading-none transition-all duration-150 hover:scale-110 active:scale-95">
                     +
                   </button>
                 </div>
@@ -195,35 +264,27 @@
 
               <!-- Info del producto -->
               <div class="flex flex-col flex-1 p-3 sm:p-4 product-info">
-                <h3 class="font-bold text-[14px] sm:text-[15px] leading-snug
-                           m-0 mb-1.5 line-clamp-2 product-name">
+                <h3 class="font-bold text-[14px] sm:text-[15px] leading-snug m-0 mb-1.5 line-clamp-2 product-name">
                   {{ product.name }}
                 </h3>
-                <p class="text-[12px] sm:text-[12.5px] leading-relaxed m-0
-                          line-clamp-2 flex-1 mb-3 product-desc">
+                <p class="text-[12px] sm:text-[12.5px] leading-relaxed m-0 line-clamp-2 flex-1 mb-3 product-desc">
                   {{ product.description }}
                 </p>
-
                 <div class="flex items-center justify-between gap-2 mt-auto">
                   <div class="flex items-baseline gap-0.5">
                     <span class="text-[11px] font-bold product-currency">S/</span>
-                    <span class="font-black text-[22px] sm:text-[24px] leading-none product-price"
-                      style="font-family:'Plus Jakarta Sans',sans-serif;">
+                    <span class="font-black text-[22px] sm:text-[24px] leading-none product-price" style="font-family:'Plus Jakarta Sans',sans-serif;">
                       {{ product.price.toFixed(2) }}
                     </span>
                   </div>
-
-                  <button v-if="product.available" @click.stop="handleAddToCart(product, $event)" class="pedir-btn flex items-center gap-1.5 px-3 sm:px-3.5 py-2
-                           rounded-full font-bold text-[12px] border-none cursor-pointer
-                           hover:-translate-y-0.5 active:scale-95 transition-all duration-150
-                           shrink-0 uppercase tracking-wide">
+                  <button v-if="product.available" @click.stop="handleAddToCart(product, $event)" class="pedir-btn flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-full font-bold text-[12px] border-none cursor-pointer hover:-translate-y-0.5 active:scale-95 transition-all duration-150 shrink-0 uppercase tracking-wide">
                     <span class="text-[14px] leading-none font-black">+</span>
                     <span>Pedir</span>
                   </button>
                 </div>
               </div>
             </div>
-
+          </div>
             <!-- Empty state -->
             <div v-if="productsStore.filtered.length === 0"
               class="col-span-full flex flex-col items-center py-20 gap-4">
@@ -237,7 +298,7 @@
             </div>
           </div>
         </div>
-      </div>
+      
 
       <!-- ══ SIDEBAR CARRITO DESKTOP ══ -->
       <aside class="hidden lg:flex flex-col w-[360px] xl:w-[400px] shrink-0
@@ -440,7 +501,7 @@
         {{ p.emoji }}
       </div>
     </Teleport>
-  </div>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -553,6 +614,35 @@ const categoryLabel = computed(() => {
 const categoriesForActiveLine = computed(() =>
   productsStore.categoriesByLine(productsStore.activeLine)
 )
+
+// ── Agrupación por Categorías (Catálogo Resumido) ─────────
+const groupedProducts = computed(() => {
+  // Solo agrupamos si estamos viendo "Todo"
+  if (productsStore.activeCategory !== 'all') return null
+
+  // Usamos un mapa para agrupar y contar los totales reales
+  const groupsMap = new Map<string, { name: string, slug: string, products: Product[], total: number }>()
+
+  productsStore.filtered.forEach(product => {
+    const catSlug = product.category?.slug || 'otros'
+    const catName = product.category?.name || 'Otros'
+
+    if (!groupsMap.has(catSlug)) {
+      groupsMap.set(catSlug, { name: catName, slug: catSlug, products: [], total: 0 })
+    }
+
+    const group = groupsMap.get(catSlug)!
+    group.total++ // Contamos el total real de esta categoría
+
+    // Mostramos máximo 6 para no cansar la vista
+    if (group.products.length < 6) {
+      group.products.push(product)
+    }
+  })
+
+  // Retornamos la lista de grupos
+  return Array.from(groupsMap.values())
+})
 
 // ── Lifecycle ─────────────────────────────────────────────
 onMounted(() => productsStore.fetch(

@@ -2,11 +2,25 @@
     <footer class="footer-root relative overflow-hidden">
 
         <!-- Fondo animado -->
-        <div class="footer-bg" aria-hidden="true">
-            <div class="footer-blob footer-blob-1" />
-            <div class="footer-blob footer-blob-2" />
-            <div class="footer-grid" />
-        </div>
+       <!-- Fondo animado -->
+<div class="footer-bg" aria-hidden="true">
+    <div class="footer-blob footer-blob-1" />
+    <div class="footer-blob footer-blob-2" />
+    <div class="footer-grid" />
+    <svg class="footer-birds" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+        <defs>
+            <pattern id="birdPattern" x="0" y="0" width="120" height="90" patternUnits="userSpaceOnUse">
+                <path d="M10,45 C16,32 24,34 30,42 C34,36 40,36 44,42 C50,34 58,32 64,45
+                         C56,40 48,42 44,47 C40,43 34,43 30,47 C24,42 16,40 10,45 Z"
+                      fill="#F5C518" />
+                <path d="M75,20 C79,13 84,14 87,18 C90,15 94,15 96,18 C100,14 105,13 109,20
+                         C104,17 99,18 96,21 C94,19 90,19 87,21 C84,18 79,17 75,20 Z"
+                      fill="#F5C518" opacity="0.7" />
+            </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#birdPattern)" />
+    </svg>
+</div>
 
         <!-- Contenido -->
         <div class="relative z-10 max-w-7xl mx-auto px-6 pt-14 pb-8">
@@ -51,53 +65,53 @@
                     </div>
                 </div>
 
-                <!-- Info contacto -->
-                <div class="flex flex-col gap-4">
-                    <p class="section-label">Contacto</p>
+ <!-- Info contacto -->
+<div class="flex flex-col items-center gap-4 text-center">
+    <p class="section-label">Contacto</p>
 
-                    <a href="tel:+51984199340" class="contact-link flex items-center gap-3 group w-fit">
-                        <div class="contact-icon-wrap w-9 h-9 rounded-xl flex items-center
-                        justify-center shrink-0 transition-all duration-200
-                        group-hover:scale-110">
-                            <PhoneIcon class="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                            <p class="text-[13px] text-white/50 m-0 leading-none mb-0.5">Teléfono</p>
-                            <p class="text-[15px] font-bold text-white m-0 leading-none
-                         group-hover:text-brand-yellow transition-colors">
-                                984199340
-                            </p>
-                        </div>
-                    </a>
+    <a href="tel:+51984199340" class="contact-link flex items-center gap-3 group w-fit mx-auto">
+        <div class="contact-icon-wrap w-9 h-9 rounded-xl flex items-center
+                justify-center shrink-0 transition-all duration-200
+                group-hover:scale-110">
+            <PhoneIcon class="w-4 h-4 text-white" />
+        </div>
+        <div>
+            <p class="text-[13px] text-white/50 m-0 leading-none mb-0.5">Teléfono</p>
+            <p class="text-[15px] font-bold text-white m-0 leading-none
+                 group-hover:text-brand-yellow transition-colors">
+                984199340
+            </p>
+        </div>
+    </a>
 
-                    <a :href="waLink" target="_blank" class="contact-link flex items-center gap-3 group w-fit">
-                        <div class="contact-icon-wrap wa w-9 h-9 rounded-xl flex items-center
-                        justify-center shrink-0 transition-all duration-200
-                        group-hover:scale-110">
-                            <WhatsAppIcon :size="16" />
-                        </div>
-                        <div>
-                            <p class="text-[13px] text-white/50 m-0 leading-none mb-0.5">WhatsApp</p>
-                            <p class="text-[15px] font-bold text-white m-0 leading-none
-                         group-hover:text-[#25D366] transition-colors">
-                                Pedir por WhatsApp
-                            </p>
-                        </div>
-                    </a>
+    <a :href="waLink" target="_blank" class="contact-link flex items-center gap-3 group w-fit mx-auto">
+        <div class="contact-icon-wrap wa w-9 h-9 rounded-xl flex items-center
+                justify-center shrink-0 transition-all duration-200
+                group-hover:scale-110">
+            <WhatsAppIcon :size="16" />
+        </div>
+        <div>
+            <p class="text-[13px] text-white/50 m-0 leading-none mb-0.5">WhatsApp</p>
+            <p class="text-[15px] font-bold text-white m-0 leading-none
+                 group-hover:text-[#25D366] transition-colors">
+                Pedir por WhatsApp
+            </p>
+        </div>
+    </a>
 
-                    <div class="flex items-center gap-3">
-                        <div class="contact-icon-wrap w-9 h-9 rounded-xl flex items-center
-                        justify-center shrink-0">
-                            <MapPinIcon class="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                            <p class="text-[13px] text-white/50 m-0 leading-none mb-0.5">Ubicación</p>
-                            <p class="text-[15px] font-bold text-white m-0 leading-none">
-                                Chiclayo, Torres Paz N° 361
-                            </p>
-                        </div>
-                    </div>
-                </div>
+    <div class="flex items-center gap-3 mx-auto">
+        <div class="contact-icon-wrap w-9 h-9 rounded-xl flex items-center
+                justify-center shrink-0">
+            <MapPinIcon class="w-4 h-4 text-white" />
+        </div>
+        <div>
+            <p class="text-[13px] text-white/50 m-0 leading-none mb-0.5">Ubicación</p>
+            <p class="text-[15px] font-bold text-white m-0 leading-none">
+                Chiclayo, Torres Paz N° 361
+            </p>
+        </div>
+    </div>
+</div>
 
                 <!-- Horarios + estado -->
                 <div class="flex flex-col gap-4">
@@ -261,6 +275,12 @@ onUnmounted(() => {
     70% {
         transform: translate(-20px, 20px) scale(0.94);
     }
+}
+.footer-birds {
+    position: absolute;
+    inset: 0;
+    opacity: 0.07;
+    pointer-events: none;
 }
 
 .footer-grid {

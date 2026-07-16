@@ -128,7 +128,8 @@ Proyecto: BirdsSistemaPedidos
 │   │   │   ├── 2026_07_10_000001_add_permissions_to_users_table.php
 │   │   │   ├── 2026_07_11_000001_restructure_user_roles.php
 │   │   │   ├── 2026_07_11_000002_change_metodo_pago_to_string.php
-│   │   │   └── 2026_07_12_003559_drop_metodo_pago_check_constraint.php
+│   │   │   ├── 2026_07_12_003559_drop_metodo_pago_check_constraint.php
+│   │   │   └── 2026_07_13_000001_add_soft_deletes_to_orders_table.php
 │   │   └── seeders
 │   │       ├── DatabaseSeeder.php
 │   │       ├── DeliveryTariffSeeder.php
