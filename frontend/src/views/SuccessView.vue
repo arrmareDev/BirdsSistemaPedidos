@@ -281,6 +281,16 @@ function sendWA() {
     L.push(`*Quedo atento a las indicaciones para el pago anticipado.*`)
   }
 
+  // ── Link de seguimiento ───────────────────────────────────
+  // Mismos datos que usa el botón "Ver estado del pedido →" (seguimientoLink):
+  // el número de pedido y el teléfono del cliente, ya validados en `order`.
+  const clientPhone = o?.client_phone
+  if (clientPhone) {
+    const tel = String(clientPhone).replace(/\D/g, '')
+    L.push(``)
+    L.push(`${SYM.arrow} Sigue tu pedido aquí: ${window.location.origin}/seguimiento/${numero}?tel=${tel}`)
+  }
+
   window.open(
     `https://wa.me/${phone}?text=${encodeURIComponent(L.join('\n'))}`,
     '_blank',
