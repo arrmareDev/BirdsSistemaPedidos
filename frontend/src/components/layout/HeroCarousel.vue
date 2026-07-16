@@ -170,7 +170,7 @@ const paused = ref(false)
 const progress = ref(0)
 
 const waPhone = import.meta.env.VITE_WA_PHONE ?? '51984199340'
-const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent('¡Hola! Quisiera hacer un pedido de flores 💐')}`
+const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent('¡Hola! Quisiera hacer un pedido')}`
 
 
 const progressWidth = computed(() =>

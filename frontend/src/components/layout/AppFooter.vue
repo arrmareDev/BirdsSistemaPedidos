@@ -29,39 +29,18 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
 
                 <!-- Brand -->
-                <div class="flex flex-col gap-5">
-                    <div class="flex items-center gap-3.5">
-                        <div class="logo-wrap w-16 h-16 overflow-hidden shrink-0
-                        flex items-center justify-center">
-                            <!-- ← MARCA -->
-                            <img :src="logoUrl" alt="Florería" class="w-full h-full object-contain"
-                                @error="(e) => (e.target as HTMLImageElement).style.display = 'none'" />
-
-                        </div>
-                        <div>
-                            <!-- ← MARCA: nombre real -->
-                            <p class="font-black text-[19px] text-white leading-none uppercase
-                         tracking-wide m-0">
-                                Florería
-                            </p>
-                            <p class="text-[10px] tracking-[2px] uppercase m-0 mt-1 brand-sub">
-                                Flores & Detalles
-                            </p>
-                        </div>
+                <div class="flex flex-col gap-5 items-left text-center">
+                    <div class="logo-wrap w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-24 
+              overflow-hidden shrink-0 flex items-center justify-center">
+                        <img :src="logoUrl" alt="Café Flores y Café" class="w-full h-full object-contain"
+                            @error="(e) => (e.target as HTMLImageElement).style.display = 'none'" />
                     </div>
 
-                    <p class="text-[13.5px] text-white/50 leading-relaxed m-0 max-w-[260px]">
-                        Las flores más frescas de Chiclayo.
-                        Diseños que emocionan para cada ocasión especial. 💐
-                    </p>
-
-                    <!-- Rating decorativo -->
-                    <div class="rating-pill flex items-center gap-2.5 w-fit
-                      px-4 py-2.5 rounded-2xl">
-                        <div class="flex gap-0.5">
-                            <span v-for="i in 5" :key="i" class="text-[14px] star-icon">⭐</span>
-                        </div>
-                        <span class="text-[12px] font-bold text-white/80">4.9 · +500 reseñas</span>
+                    <div class="flex flex-col gap-5 items-end text-left">
+                        <p class="text-white/70">
+                            El aroma del café más especial de Chiclayo.<br>
+                            La frescura de las flores que emocionan cada ocasión.
+                        </p>
                     </div>
                 </div>
 
@@ -144,7 +123,7 @@
                    py-3 rounded-2xl no-underline font-bold text-[14px]
                    text-white transition-all duration-200
                    hover:-translate-y-0.5 active:scale-[0.98]">
-                        💐 Ver el catálogo
+                        Ver el catálogo
                     </RouterLink>
                 </div>
             </div>

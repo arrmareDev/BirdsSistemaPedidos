@@ -225,9 +225,9 @@
                 </button>
               </div>
 
-              <!-- Separador Aves (Excepto en la última categoría) -->
+               <!--Separador Aves (Excepto en la última categoría)-->
               <div v-if="index < groupedProducts.length - 1" class="flex justify-center mt-12 mb-2 opacity-50">
-                <img src="/images/birdsnegro.png" alt="Separador Birds" class="h-10 sm:h-12 object-contain" />
+                <img src="/images/pajaros.png" alt="Separador Birds" class="h-10 sm:h-12 object-contain" />
               </div>
             </div>
           </div>
