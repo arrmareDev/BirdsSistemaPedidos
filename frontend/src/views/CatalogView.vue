@@ -533,8 +533,8 @@ const cartStore = useCartStore()
 const BUSINESS_LINES = [
   // { value: 'all', icon: '🛍️', label: 'Todo' },
   { value: 'floreria', icon: '💐', label: 'Chiclayo' },
-  { value: 'cafeteria', icon: '☕', label: 'Cafetería' },
-  { value: 'menu', icon: '🍽️', label: 'Menú' },
+  { value: 'cafeteria', icon: '☕', label: 'Lima' },
+  { value: 'menu', icon: '🍽️', label: 'Chimbote' },
 ] as const
 
 function changeLine(line: string) {
