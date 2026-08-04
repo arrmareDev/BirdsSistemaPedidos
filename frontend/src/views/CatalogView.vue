@@ -532,9 +532,9 @@ const cartStore = useCartStore()
 // ── Líneas de negocio ─────────────────────────────────────
 const BUSINESS_LINES = [
   // { value: 'all', icon: '🛍️', label: 'Todo' },
-  { value: 'floreria', icon: '', label: 'Chiclayo' },
-  { value: 'cafeteria', icon: '', label: 'Lima' },
-  { value: 'menu', icon: '', label: 'Chimbote' },
+  { value: 'floreria', label: 'Chiclayo' },
+  { value: 'cafeteria', label: 'Lima' },
+  { value: 'menu', label: 'Chimbote' },
 ] as const
 
 function changeLine(line: string) {
