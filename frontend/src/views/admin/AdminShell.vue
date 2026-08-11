@@ -141,6 +141,18 @@
           <span class="hidden sm:inline">Activar sonido de pedidos</span>
         </button>
 
+        <!-- Activar notificaciones push (funcionan con la pestaña cerrada) -->
+        <button v-if="admin.can.orders && pushSupported && pushPermission !== 'granted'" @click="enablePush"
+          :disabled="enablingPush" class="flex items-center gap-1.5 px-3 py-2 rounded-xl
+                 bg-blue-50 border border-blue-200 text-blue-700
+                 font-semibold text-[12px] cursor-pointer shrink-0
+                 hover:bg-blue-100 transition-all duration-150 disabled:opacity-50">
+          <span v-if="enablingPush"
+            class="w-3.5 h-3.5 border-2 border-blue-300 border-t-blue-700 rounded-full animate-spin" />
+          <DevicePhoneMobileIcon v-else class="w-3.5 h-3.5" />
+          <span class="hidden sm:inline">{{ enablingPush ? 'Activando...' : 'Activar notificaciones' }}</span>
+        </button>
+
         <!-- Soporte WhatsApp -->
         <a :href="supportLink" target="_blank" class="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl
                  bg-[#25D366]/10 border border-[#25D366]/30 text-[#128C7E]
@@ -239,7 +251,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAdminStore } from '@/stores/admin'
 import api from '@/utils/api'
 import {
-  Bars3Icon, ClockIcon, BellAlertIcon,
+  Bars3Icon, ClockIcon, BellAlertIcon, DevicePhoneMobileIcon,
   ArrowRightOnRectangleIcon, ArrowTopRightOnSquareIcon,
   HomeIcon, ClipboardDocumentListIcon,
   TagIcon, BanknotesIcon, UsersIcon,
@@ -309,7 +321,15 @@ function playNotificationOnce() {
 
 function playNewOrderSound() {
   if (!soundEnabled.value) return
-  playNotificationOnce()
+  let count = 0
+  const playNext = () => {
+    if (count >= 3) return
+    count++
+    const audio = new Audio(NOTIFICATION_SOUND_URL)
+    if (count < 3) audio.addEventListener('ended', playNext)
+    audio.play().catch(() => { })
+  }
+  playNext()
 }
 
 // Botón explícito del banner — esta sí cuenta como interacción real
@@ -318,6 +338,58 @@ function enableSound() {
   soundEnabled.value = true
   localStorage.setItem('birds_admin_sound', '1')
   playNotificationOnce() // confirmación audible de que quedó activado
+}
+
+// ── Notificaciones push (funcionan con la pestaña cerrada/pantalla apagada) ──
+const pushSupported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
+const pushPermission = ref<NotificationPermission>(pushSupported ? Notification.permission : 'denied')
+const enablingPush = ref(false)
+
+// El navegador entrega la llave VAPID en base64url — PushManager necesita
+// un Uint8Array, no el string tal cual.
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)))
+}
+
+async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+  if (!pushSupported) return null
+  try {
+    return await navigator.serviceWorker.register('/sw.js')
+  } catch {
+    return null
+  }
+}
+
+async function enablePush() {
+  if (!pushSupported || enablingPush.value) return
+  enablingPush.value = true
+  try {
+    const permission = await Notification.requestPermission()
+    pushPermission.value = permission
+    if (permission !== 'granted') return
+
+    const registration = await registerServiceWorker()
+    if (!registration) return
+
+    const { data } = await api.get('/vapid-public-key')
+    const publicKey = data.data?.public_key
+    if (!publicKey) return
+
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
+    })
+
+    await api.post('/admin/push/subscribe', subscription.toJSON())
+  } catch {
+    // El usuario canceló el permiso, o algo falló — no rompe nada,
+    // simplemente el botón sigue visible para reintentar.
+  } finally {
+    enablingPush.value = false
+  }
 }
 
 let lastSeenOrderId: number | null = null
@@ -346,6 +418,7 @@ onMounted(() => {
   if (admin.can.orders) {
     checkForNewOrders()
     orderPollTimer = setInterval(checkForNewOrders, 20_000)
+    if (pushSupported) registerServiceWorker()
   }
 })
 onUnmounted(() => {

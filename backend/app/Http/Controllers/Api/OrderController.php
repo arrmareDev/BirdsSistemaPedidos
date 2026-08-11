@@ -36,12 +36,21 @@ class OrderController extends Controller
         );
     }
 
-    // POST /orders — público (cliente hace pedido desde la web)
     public function store(StoreOrderRequest $request): JsonResponse
     {
         try {
             $order = $this->orderService->create($request->validated());
             $order->load('items.product');
+            try {
+                $staff = \App\Models\User::all()->filter(fn($u) => $u->hasViewAccess('orders'));
+                \Illuminate\Support\Facades\Notification::send(
+                    $staff,
+                    new \App\Notifications\NewOrderNotification($order)
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('No se pudo enviar notificación push: ' . $e->getMessage());
+            }
+
             return $this->created(new OrderResource($order));
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 422);

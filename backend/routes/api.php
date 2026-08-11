@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ExtraController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\CajaController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\PushSubscriptionController;
 use App\Http\Controllers\Api\SistemaController;
 use App\Http\Controllers\Api\DespachoController;
 use App\Http\Controllers\Api\DespachoWebhookController;
@@ -40,6 +41,7 @@ Route::prefix('v1')->group(function () {
     Route::get('delivery-zones', [DeliveryZoneController::class, 'index']);
 
     Route::get('branding', [SistemaController::class, 'getBranding']);
+    Route::get('vapid-public-key', [PushSubscriptionController::class, 'publicKey']);
     Route::get('pedido-config', [SistemaController::class, 'getPedidoConfig']);
 
     Route::post('webhooks/despacho', [DespachoWebhookController::class, 'handle']);
@@ -55,6 +57,9 @@ Route::prefix('v1/admin')
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::get('auth/me',      [AuthController::class, 'me']);
         Route::put('auth/password', [AuthController::class, 'changePassword']);
+
+        Route::post('push/subscribe', [PushSubscriptionController::class, 'subscribe']);
+        Route::post('push/unsubscribe', [PushSubscriptionController::class, 'unsubscribe']);
 
         // ══ CATÁLOGO ══════════════════════════════════════════
 
