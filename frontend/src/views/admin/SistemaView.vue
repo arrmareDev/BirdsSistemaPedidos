@@ -622,7 +622,7 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useAdminStore } from '@/stores/admin'
 import { useBrandingStore } from '@/stores/branding'
-import { usePedidoConfigStore } from '@/stores/pedidoConfig'
+import { usePedidoConfigStore } from '@/stores/pedidoconfig'
 import api from '@/utils/api'
 import { Palette, TriangleAlert, ClipboardList } from 'lucide-vue-next'
 import {
