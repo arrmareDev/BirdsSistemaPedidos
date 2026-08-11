@@ -9,9 +9,11 @@ export interface Client {
   address: string | null;
   district: string | null;
   preferences: {
-    salsas?: string[];
-    ensalada?: string;
-    papas?: string;
+    secciones?: Record<string, {
+      label: string;
+      top: string;
+      counts: Record<string, number>;
+    }>;
   } | null;
   orders_count: number;
   total_spent: number;

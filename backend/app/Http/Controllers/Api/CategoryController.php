@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\BusinessLine;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use Illuminate\Http\JsonResponse;
@@ -12,24 +11,27 @@ use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
-    // GET /api/v1/categories?linea=cafeteria — público
+    // GET /api/v1/categories?parent_id=3 — público
+    // Sin parent_id devuelve todas las categorías activas (raíces + subcategorías).
     public function index(Request $request): JsonResponse
     {
-        $query = Category::where('active', true)
+        $query = Category::with('parent')
+            ->where('active', true)
             ->orderBy('sort_order');
 
-        $this->applyBusinessLineFilter($query, $request);
+        $this->applyParentFilter($query, $request);
 
         return $this->success(CategoryResource::collection($query->get()));
     }
 
-    // GET /api/v1/admin/categories?linea=cafeteria — admin
+    // GET /api/v1/admin/categories?parent_id=3 — admin
     public function adminIndex(Request $request): JsonResponse
     {
-        $query = Category::withCount('products')
+        $query = Category::with('parent')
+            ->withCount('products')
             ->orderBy('sort_order');
 
-        $this->applyBusinessLineFilter($query, $request);
+        $this->applyParentFilter($query, $request);
 
         return $this->success(CategoryResource::collection($query->get()));
     }
@@ -38,12 +40,14 @@ class CategoryController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'          => 'required|string|max:100',
-            'business_line' => ['required', Rule::enum(BusinessLine::class)],
-            'emoji'         => 'nullable|string|max:10',
-            'sort_order'    => 'nullable|integer',
-            'active'        => 'nullable|boolean',
+            'name'       => 'required|string|max:100',
+            'parent_id'  => ['nullable', Rule::exists('categories', 'id')],
+            'icon'       => 'nullable|string|max:50',
+            'sort_order' => 'nullable|integer',
+            'active'     => 'nullable|boolean',
         ]);
+
+        $this->assertParentIsRoot($data['parent_id'] ?? null);
 
         $data['slug'] = Str::slug($data['name']);
 
@@ -58,12 +62,22 @@ class CategoryController extends Controller
         $category = Category::findOrFail($id);
 
         $data = $request->validate([
-            'name'          => 'sometimes|string|max:100',
-            'business_line' => ['sometimes', Rule::enum(BusinessLine::class)],
-            'emoji'         => 'nullable|string|max:10',
-            'sort_order'    => 'nullable|integer',
-            'active'        => 'nullable|boolean',
+            'name'       => 'sometimes|string|max:100',
+            'parent_id'  => ['nullable', Rule::exists('categories', 'id')],
+            'icon'       => 'nullable|string|max:50',
+            'sort_order' => 'nullable|integer',
+            'active'     => 'nullable|boolean',
         ]);
+
+        if (array_key_exists('parent_id', $data)) {
+            if ((int) $data['parent_id'] === $category->id) {
+                return $this->error('Una categoría no puede ser su propia subcategoría', 422);
+            }
+            if ($category->children()->exists() && $data['parent_id']) {
+                return $this->error('Esta categoría tiene subcategorías, no puede pasar a ser subcategoría de otra', 422);
+            }
+            $this->assertParentIsRoot($data['parent_id']);
+        }
 
         if (isset($data['name'])) {
             $data['slug'] = Str::slug($data['name']);
@@ -86,18 +100,44 @@ class CategoryController extends Controller
             );
         }
 
+        if ($category->children()->exists()) {
+            return $this->error(
+                'No puedes eliminar una categoría con subcategorías',
+                422
+            );
+        }
+
         $category->delete();
 
         return $this->success(null, 'Categoría eliminada');
     }
 
     // ── Helpers ───────────────────────────────────────────
-    private function applyBusinessLineFilter($query, Request $request): void
-    {
-        $linea = $request->get('linea');
 
-        if ($linea && in_array($linea, array_column(BusinessLine::cases(), 'value'))) {
-            $query->where('business_line', $linea);
+    private function applyParentFilter($query, Request $request): void
+    {
+        if (!$request->has('parent_id')) return;
+
+        $value = $request->get('parent_id');
+
+        // parent_id=null (o vacío) → solo categorías principales (raíz)
+        if ($value === null || $value === '' || $value === 'null') {
+            $query->whereNull('parent_id');
+        } else {
+            $query->where('parent_id', $value);
+        }
+    }
+
+    // Solo se permite jerarquía de 2 niveles: una subcategoría no puede
+    // colgar de otra subcategoría, solo de una categoría raíz.
+    private function assertParentIsRoot(?int $parentId): void
+    {
+        if (!$parentId) return;
+
+        $parent = Category::find($parentId);
+
+        if ($parent && !$parent->isRoot()) {
+            abort(422, 'La categoría padre debe ser una categoría principal (no otra subcategoría)');
         }
     }
 }

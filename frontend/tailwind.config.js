@@ -41,10 +41,10 @@ export default {
           border: "#F0E8DC",
           strong: "#E8D8C8",
         },
-        // ── Rojo de marca (POS / catálogo florería) ──
+        // ── Rojo de marca (POS / catálogo) — configurable desde el panel ──
         "brand-red": {
-          DEFAULT: "#C41E1E",
-          dark: "#9B1717",
+          DEFAULT: "var(--color-brand-primary, #C41E1E)",
+          dark: "var(--color-brand-primary-dark, #9B1717)",
           light: "#FDEDED",
         },
       },
@@ -58,8 +58,10 @@ export default {
         "green-sm": "0 2px 12px rgba(12,84,44,0.25)",
         "green-md": "0 4px 24px rgba(12,84,44,0.35)",
         "green-lg": "0 8px 40px rgba(12,84,44,0.45)",
-        "red-sm": "0 2px 12px rgba(196,30,30,0.25)",
-        "red-md": "0 4px 24px rgba(196,30,30,0.35)",
+        "red-sm":
+          "0 2px 12px rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.25)",
+        "red-md":
+          "0 4px 24px rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.35)",
       },
       borderRadius: {
         "4xl": "2rem",

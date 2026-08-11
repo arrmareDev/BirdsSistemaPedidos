@@ -63,7 +63,7 @@
                            border-gray-100 bg-gray-50 text-[14px] text-gray-900
                            outline-none placeholder:text-gray-300
                            focus:border-brand-red focus:bg-white
-                           focus:shadow-[0_0_0_4px_rgba(196,30,30,0.08)]
+                           focus:shadow-[0_0_0_4px_rgba(var(--color-brand-primary-rgb,196,30,30),0.08)]
                            transition-all duration-200" />
                 </div>
               </div>
@@ -80,7 +80,7 @@
                            border-gray-100 bg-gray-50 text-[14px] text-gray-900
                            outline-none placeholder:text-gray-300
                            focus:border-brand-red focus:bg-white
-                           focus:shadow-[0_0_0_4px_rgba(196,30,30,0.08)]
+                           focus:shadow-[0_0_0_4px_rgba(var(--color-brand-primary-rgb,196,30,30),0.08)]
                            transition-all duration-200" />
                 </div>
               </div>
@@ -97,7 +97,7 @@
               <button @click="doSearch" :disabled="searching || !searchForm.orderId || !searchForm.phone" class="w-full py-4 rounded-2xl font-black text-[15px] text-white
                        border-none cursor-pointer transition-all duration-200
                        uppercase tracking-wide bg-brand-red
-                       shadow-[0_6px_24px_rgba(196,30,30,0.3)]
+                       shadow-[0_6px_24px_rgba(var(--color-brand-primary-rgb,196,30,30),0.3)]
                        hover:bg-red-700 hover:-translate-y-0.5
                        active:scale-[0.98]
                        disabled:opacity-40 disabled:cursor-not-allowed
@@ -125,8 +125,8 @@
       <div v-else-if="error && orderId" class="bg-white rounded-3xl border border-gray-100
                shadow-[0_4px_24px_rgba(0,0,0,0.06)] p-10 text-center">
         <div class="w-20 h-20 rounded-full bg-red-50 flex items-center
-                    justify-center mx-auto mb-5">
-          <span class="text-5xl">😔</span>
+                    justify-center mx-auto mb-5 text-red-300">
+          <SearchX :size="40" :stroke-width="1.5" />
         </div>
         <h2 class="font-black text-[20px] text-gray-900 m-0 mb-2" style="font-family:'Plus Jakarta Sans',sans-serif;">
           No encontramos tu pedido
@@ -147,7 +147,7 @@
                    rounded-2xl bg-brand-red text-white font-bold
                    text-[13.5px] no-underline
                    hover:bg-red-700 transition-all duration-150">
-            🍗 Ir al menú
+            <Store :size="16" /> Ir al catálogo
           </RouterLink>
         </div>
       </div>
@@ -266,14 +266,14 @@
                           justify-center shrink-0 transition-all duration-300" :class="{
                             'bg-green-500 border-green-500 text-white shadow-[0_0_0_4px_rgba(34,197,94,0.15)]':
                               step.state === 'done' || (step.state === 'active' && step.status === 'entregado'),
-                            'bg-red-50 border-brand-red shadow-[0_0_0_4px_rgba(196,30,30,0.12)]':
+                            'bg-red-50 border-brand-red shadow-[0_0_0_4px_rgba(var(--color-brand-primary-rgb,196,30,30),0.12)]':
                               step.state === 'active' && step.status !== 'entregado',
                             'bg-white border-gray-200 text-gray-400':
                               step.state === 'pending',
                           }">
                 <CheckIcon v-if="step.state === 'done' || (step.state === 'active' && step.status === 'entregado')"
                   class="w-4 h-4 text-white" />
-                <span v-else class="text-[15px] leading-none">{{ step.icon }}</span>
+                <AppIcon v-else :name="step.icon" :size="16" />
               </div>
 
               <div class="pt-1.5 flex-1 min-w-0">
@@ -301,7 +301,9 @@
               </div>
               <div v-if="step.state === 'active' && step.status === 'entregado'" class="shrink-0 mt-1.5 px-2.5 py-1 rounded-full
                        bg-green-50 border border-green-200">
-                <span class="text-[11px] font-bold text-green-600">✓ Completado</span>
+                <span class="text-[11px] font-bold text-green-600 inline-flex items-center gap-1">
+                  <Check :size="11" :stroke-width="3" /> Completado
+                </span>
               </div>
             </div>
           </div>
@@ -327,8 +329,8 @@
           <div class="divide-y divide-gray-50">
             <div v-for="(item, i) in order.items" :key="i" class="flex items-center gap-3.5 px-5 py-4">
               <div class="w-11 h-11 rounded-2xl bg-orange-50 border border-orange-100
-                          flex items-center justify-center text-2xl shrink-0">
-                {{ item.emoji }}
+                          flex items-center justify-center text-orange-400 shrink-0">
+                <AppIcon :name="item.icon" :size="20" />
               </div>
               <div class="flex-1 min-w-0">
                 <p class="font-semibold text-[13.5px] text-gray-900 m-0 leading-snug">
@@ -383,7 +385,7 @@
           <RouterLink to="/" class="flex items-center justify-center gap-2 w-full py-4
                    rounded-2xl no-underline bg-brand-red text-white
                    font-black text-[15px] uppercase tracking-wide
-                   shadow-[0_6px_24px_rgba(196,30,30,0.3)]
+                   shadow-[0_6px_24px_rgba(var(--color-brand-primary-rgb,196,30,30),0.3)]
                    hover:bg-red-700 hover:-translate-y-0.5
                    active:scale-[0.98] transition-all duration-200"
             style="font-family:'Plus Jakarta Sans',sans-serif;">
@@ -417,6 +419,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/utils/api'
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import {
   ArrowLeftIcon, ArrowPathIcon, MagnifyingGlassIcon,
   PhoneIcon, CheckIcon, CheckCircleIcon, XCircleIcon,
@@ -424,6 +427,7 @@ import {
   ClipboardDocumentListIcon, ChatBubbleBottomCenterTextIcon,
   ExclamationCircleIcon, HashtagIcon,
 } from '@heroicons/vue/24/outline'
+import { SearchX, Store, Check } from 'lucide-vue-next'
 
 const route = useRoute()
 
@@ -453,10 +457,10 @@ const tiempoEstimado = computed(() => {
   const m: Record<string, string> = {
     nuevo: 'Esperando confirmación del local...',
     confirmado: 'Confirmado · Preparación en ~20 minutos',
-    preparando: '👨‍🍳 Alistando tu pedido · ~15 minutos',
-    listo: '✅ ¡Tu pedido está listo para entregar!',
-    en_camino: '🛵 En camino a tu dirección · ~10 minutos',
-    entregado: '🏠 Pedido entregado',
+    preparando: 'Alistando tu pedido · ~15 minutos',
+    listo: '¡Tu pedido está listo para entregar!',
+    en_camino: 'En camino a tu dirección · ~10 minutos',
+    entregado: 'Pedido entregado',
   }
   return m[order.value?.status] ?? ''
 })
@@ -554,7 +558,7 @@ function stepSubtitle(step: any): string {
       preparando: 'Alistando con amor! ~15 min',
       listo: '¡Listo para entregar!',
       en_camino: 'En camino a tu dirección',
-      entregado: '¡Que lo disfrutes! 💐',
+      entregado: '¡Que lo disfrutes!',
     }
     return m[step.status] ?? 'En proceso...'
   }

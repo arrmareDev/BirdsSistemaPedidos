@@ -23,7 +23,7 @@
           <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-2xl bg-brand-bg border border-brand-accent/30
                         flex items-center justify-center">
-              <span class="text-[18px]">🛒</span>
+              <ShoppingCart :size="18" :stroke-width="2" />
             </div>
             <div>
               <h2 class="font-black text-[17px] text-gray-900 m-0 leading-none">
@@ -54,8 +54,8 @@
           <div v-if="cart.isEmpty" class="flex flex-col items-center justify-center
                     py-16 px-6 text-center gap-4">
             <div class="w-20 h-20 rounded-full bg-gray-50 border border-gray-100
-                        flex items-center justify-center text-4xl">
-              🛒
+                        flex items-center justify-center text-gray-300">
+              <ShoppingCart :size="36" :stroke-width="1.5" />
             </div>
             <div>
               <p class="text-gray-800 font-bold text-[15px] m-0">Carrito vacío</p>
@@ -67,7 +67,7 @@
                      font-bold text-[13px] border-none cursor-pointer
                      hover:bg-brand-green2 transition-all duration-150
                      uppercase tracking-wide">
-              Ver catálogo 🌸
+              Ver catálogo
             </button>
           </div>
 
@@ -78,7 +78,7 @@
                             flex items-center justify-center text-2xl shrink-0
                             overflow-hidden">
                   <img v-if="item.imageUrl" :src="item.imageUrl" class="w-full h-full object-cover" />
-                  <span v-else>{{ item.emoji }}</span>
+                  <AppIcon v-else :name="item.icon" :size="20" />
                 </div>
 
                 <div class="flex-1 min-w-0">
@@ -112,8 +112,8 @@
               <div v-if="item.customization.length > 0" class="ml-[3.75rem] pl-3 border-l-2 border-gray-100
                        mb-2.5 flex flex-col gap-1">
                 <div v-for="sec in item.customization" :key="sec.section_id" class="flex items-start gap-1.5">
-                  <span class="text-[12px] shrink-0 mt-0.5">
-                    {{ getSectionEmoji(sec.seccion) }}
+                  <span class="shrink-0 mt-0.5 text-gray-400">
+                    <Dot :size="14" :stroke-width="3" />
                   </span>
                   <p class="text-[12px] text-gray-500 m-0 leading-relaxed">
                     <span class="font-semibold text-gray-600">{{ sec.label }}:</span>
@@ -126,7 +126,7 @@
                 <div v-for="extra in item.extras" :key="extra.extra_id" class="flex items-center justify-between px-3 py-2
                          rounded-xl bg-brand-bg border border-brand-accent/30">
                   <div class="flex items-center gap-1.5">
-                    <span class="text-[13px]">➕</span>
+                    <Plus :size="12" :stroke-width="3" />
                     <span class="text-[12.5px] font-semibold text-gray-700">
                       {{ extra.qty > 1 ? `${extra.name} ×${extra.qty}` : extra.name }}
                     </span>
@@ -226,6 +226,8 @@ import { useCartStore } from '@/stores/cart'
 import { useProductsStore } from '@/stores/products'
 import type { CartItem } from '@/stores/cart'
 import { XMarkIcon, TrashIcon, PencilIcon } from '@heroicons/vue/24/outline'
+import { ShoppingCart, Dot, Plus } from 'lucide-vue-next'
+import AppIcon from '@/components/AppIcon.vue'
 
 const cart = useCartStore()
 const productsStore = useProductsStore()
@@ -254,13 +256,6 @@ function goToCheckout() {
   router.push('/checkout')
 }
 
-function getSectionEmoji(seccion: string): string {
-  const m: Record<string, string> = {
-    envoltura: '🎁', lazo: '🎀', follaje: '🌿',
-    dedicatoria: '✍️', presentacion: '🪴', complemento: '🧸',
-  }
-  return m[seccion] ?? '🌸'
-}
 </script>
 
 <style scoped>

@@ -19,14 +19,11 @@
       <img v-if="product.image_url && !imgError" :src="product.image_url" :alt="product.name" class="w-full h-full object-cover transition-transform duration-500
                group-hover:scale-105" @error="imgError = true" />
 
-      <!-- Placeholder neumórfico con emoji -->
-      <div v-else class="w-full h-full flex items-center justify-center"
-        style="background: linear-gradient(145deg, #F8F4EF, #E5E0D8);">
-        <span class="text-5xl transition-transform duration-300
-                     group-hover:scale-110 group-hover:rotate-3"
-          :class="layout === 'list' ? 'text-4xl' : 'text-5xl sm:text-6xl'">
-          {{ product.emoji || '💐' }}
-        </span>
+      <!-- Placeholder neumórfico con ícono -->
+      <div v-else class="w-full h-full flex items-center justify-center transition-transform duration-300
+                   group-hover:scale-110 group-hover:rotate-3"
+        style="background: linear-gradient(145deg, #F8F4EF, #E5E0D8); color: #C03E0D;">
+        <AppIcon :name="product.icon" :size="layout === 'list' ? 40 : 52" :stroke-width="1.5" />
       </div>
 
       <!-- Overlay suave en hover -->
@@ -37,14 +34,14 @@
       <div v-if="product.popular" class="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full
                text-[10px] font-black uppercase tracking-wide text-white" style="background: linear-gradient(135deg, #E8521A, #C03E0D);
                box-shadow: 2px 2px 8px rgba(232,82,26,0.4);">
-        ⭐ Popular
+        <Star :size="11" :stroke-width="2.5" fill="currentColor" /> Popular
       </div>
 
       <!-- Badge nuevo -->
-      <div v-if="product.isNew" class="absolute top-3 right-3 px-2.5 py-1 rounded-full
+      <div v-if="product.isNew" class="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full
                text-[10px] font-black uppercase tracking-wide" style="background: #EDE8E0; color: #E8521A;
                box-shadow: 2px 2px 6px #C8C3BB, -2px -2px 6px #F8F4EF;">
-        ✨ Nuevo
+        <Sparkles :size="11" :stroke-width="2.5" /> Nuevo
       </div>
 
       <!-- Agotado overlay -->
@@ -101,6 +98,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { Star, Sparkles } from 'lucide-vue-next'
+import AppIcon from '@/components/AppIcon.vue'
 import type { Product } from '@/types'
 
 const props = withDefaults(defineProps<{

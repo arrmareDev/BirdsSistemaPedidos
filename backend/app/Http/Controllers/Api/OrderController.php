@@ -88,14 +88,14 @@ class OrderController extends Controller
             'address'          => 'nullable|string|max:255',
             'reference'        => 'nullable|string|max:255',
             'district'         => 'nullable|string|max:100',
-            'delivery_zone_id' => 'nullable|exists:delivery_zones,id',
+            'delivery_zone_id' => 'nullable|exists:delivery_tariffs,id',
             'delivery_fee'     => 'nullable|numeric|min:0',
             'lat'              => 'nullable|numeric',
             'lng'              => 'nullable|numeric',
 
             // ── Pago ──────────────────────────────────────────────
             'metodo_pago' => 'nullable|in:anticipado,contraentrega_efectivo,contraentrega_yape,efectivo,yape,tarjeta',
-            // ── Nota y florería ───────────────────────────────────
+            // ── Nota y entrega personalizada ───────────────────────
             'note'               => 'nullable|string|max:500',
             'mensaje_tarjeta'    => 'nullable|string|max:300',
             'fecha_entrega'      => 'nullable|date|after_or_equal:today',
@@ -262,7 +262,7 @@ class OrderController extends Controller
             'district'           => $order->district,
             'lat'                => $order->lat,
             'lng'                => $order->lng,
-            // ── Florería ──────────────────────────────────────────
+            // ── Entrega programada / mensaje personalizado ─────────
             'mensaje_tarjeta'    => $order->mensaje_tarjeta,
             'fecha_entrega'      => $order->fecha_entrega?->format('Y-m-d'),
             'hora_entrega'       => $order->hora_entrega,
@@ -270,8 +270,8 @@ class OrderController extends Controller
             'created_at'         => $order->created_at?->toISOString(),
             'updated_at'         => $order->updated_at?->toISOString(),
             'items'              => $order->items->map(fn($i) => [
-                'name'           => $i->product?->name  ?? 'Producto',
-                'emoji'          => $i->product?->emoji ?? '💐',
+                'name'           => $i->product?->name ?? 'Producto',
+                'icon'           => $i->product?->icon ?? 'package',
                 'qty'            => (int)   $i->qty,
                 'unit_price'     => (float) $i->unit_price,
                 'subtotal'       => (float) $i->subtotal,
@@ -316,17 +316,17 @@ class OrderController extends Controller
     private function buildStatusHistory(string $currentStatus, string $type = 'delivery'): array
     {
         $flow = [
-            'nuevo'      => ['label' => 'Pedido recibido',  'icon' => '📝'],
-            'confirmado' => ['label' => 'Confirmado',       'icon' => '✅'],
-            'preparando' => ['label' => 'Alistando pedido', 'icon' => '💐'], // ← LÍNEA MODIFICADA
-            'listo'      => ['label' => $type === 'delivery' ? 'Listo para entrega' : 'Acercate a recoger tu pedido', 'icon' => '🎉'],
+            'nuevo'      => ['label' => 'Pedido recibido',  'icon' => 'clipboard-list'],
+            'confirmado' => ['label' => 'Confirmado',       'icon' => 'check-circle'],
+            'preparando' => ['label' => 'Alistando pedido', 'icon' => 'package'],
+            'listo'      => ['label' => $type === 'delivery' ? 'Listo para entrega' : 'Acercate a recoger tu pedido', 'icon' => 'party-popper'],
         ];
 
         if ($type === 'delivery') {
-            $flow['en_camino'] = ['label' => 'En camino', 'icon' => '🛵'];
+            $flow['en_camino'] = ['label' => 'En camino', 'icon' => 'bike'];
         }
 
-        $flow['entregado'] = ['label' => 'Entregado', 'icon' => '🏠'];
+        $flow['entregado'] = ['label' => 'Entregado', 'icon' => 'home'];
 
         $statuses   = array_keys($flow);
         $currentIdx = array_search($currentStatus, $statuses);

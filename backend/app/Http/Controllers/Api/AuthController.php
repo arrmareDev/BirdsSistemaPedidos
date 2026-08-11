@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Requests\LoginRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 
 class AuthController extends Controller
@@ -24,7 +26,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
             RateLimiter::hit($key, 60);
             return $this->error('Credenciales incorrectas', 401);
         }
@@ -54,6 +56,30 @@ class AuthController extends Controller
         return $this->success(null, 'Sesión cerrada');
     }
 
+    // PUT /me/password — el propio usuario cambia su contraseña
+    // (obligatorio cuando must_change_password está activo, pero
+    // cualquier usuario puede usarlo también para cambiarla porque sí)
+    public function changePassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'current_password' => 'required|string',
+            'password'         => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = auth()->user();
+
+        if (!Hash::check($data['current_password'], $user->password)) {
+            return $this->error('La contraseña actual es incorrecta', 422);
+        }
+
+        $user->update([
+            'password'             => Hash::make($data['password']),
+            'must_change_password' => false,
+        ]);
+
+        return $this->success(null, 'Contraseña actualizada');
+    }
+
     public function me(): JsonResponse
     {
         return $this->success($this->formatUser(auth()->user()));
@@ -68,6 +94,7 @@ class AuthController extends Controller
             'name'  => $user->name,
             'email' => $user->email,
             'role'  => $user->role,
+            'must_change_password' => $user->must_change_password,
             'permissions' => [
                 // ── Navegación (según vistas habilitadas para este usuario) ──
                 'dashboard' => $user->canViewDashboard(),
@@ -82,7 +109,7 @@ class AuthController extends Controller
                 // ── Escritura (ligada al rol, no a los checkboxes de vista) ──
                 'can_manage_catalog' => $user->canManageCatalog(),      // solo admin/sistema
                 'can_manage_users'   => $user->canManageUsers(),        // solo admin/sistema
-                'can_cobrar'         => $user->hasRole(['admin', 'sistema']),
+                'can_cobrar'         => $user->isSistema(),
                 'can_delete' => !$user->isSalon(), // ← antes excluía también a atención
                 'can_write_orders'   => $user->canWriteOrders(),        // false solo para 'salon'
             ],

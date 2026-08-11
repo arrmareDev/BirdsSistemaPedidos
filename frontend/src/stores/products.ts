@@ -5,7 +5,8 @@ import api from "@/utils/api";
 export interface CustomizationOption {
   id: number;
   name: string;
-  price_modifier: number; // ← NUEVO
+  price_modifier: number;
+  image_url: string | null;
 }
 
 export interface CustomizationSection {
@@ -28,126 +29,395 @@ export interface Product {
   name: string;
   slug: string;
   description: string | null;
-  emoji: string | null;
+  icon: string | null;
   image_url: string | null;
+
+  images?: {
+    id: number;
+    image_url: string;
+    sort_order: number;
+  }[];
+
   price: number;
   popular: boolean;
   available: boolean;
+
   category: {
     id: number;
     name: string;
     slug: string;
-    business_line: string | null; // ← NUEVO
+    parent_id: number | null;
+    root_slug: string | null;
   } | null;
+
   customization_sections: CustomizationSection[];
 
-  ocasion?: string | null;
-  color?: string | null;
-  tamano?: string | null;
   stock?: number;
   controla_stock?: boolean;
 
   extras: ProductExtra[];
-  extras_compartidos: ProductExtra[]; // ← NUEVO — extras reutilizables (cafetería/menú)
+  extras_compartidos: ProductExtra[];
 }
 
 export interface Category {
   id: number;
   name: string;
   slug: string;
-  business_line: string; // ← NUEVO — 'floreria' | 'cafeteria' | 'menu'
-  emoji: string | null;
+  parent_id: number | null;
+  parent: {
+    id: number;
+    name: string;
+    slug: string;
+  } | null;
+  icon: string | null;
   sort_order: number;
   active: boolean;
+  products_count?: number;
 }
+
+interface PageMeta {
+  current_page: number;
+  last_page: number;
+  total: number;
+  per_page: number;
+}
+
+// La vista "Todo" agrupa por categoría y muestra unos pocos por grupo —
+// para que esa vista previa no quede vacía en categorías que caigan
+// "más atrás" en el orden, pedimos un lote más grande solo ahí (no es
+// "traer todo el catálogo", sigue acotado).
+const OVERVIEW_PER_PAGE = 100;
+const DEFAULT_PER_PAGE = 24;
+const ADMIN_PER_PAGE = 30;
 
 export const useProductsStore = defineStore("products", () => {
   const products = ref<Product[]>([]);
   const categories = ref<Category[]>([]);
-  const activeCategory = ref<string>("all");
-  const activeLine = ref<string>("all"); // ← NUEVO — 'all' | 'floreria' | 'cafeteria' | 'menu'
+  const activeCategory = ref("all");
+  const activeGroup = ref("all");
   const loading = ref(false);
+  const loadingMore = ref(false);
+  const meta = ref<PageMeta | null>(null);
 
-  const filtered = computed((): Product[] => {
-    let result = products.value;
+  // ============================================================
+  // NORMALIZACIÓN — cualquier dato que llegue del API se pasa por
+  // acá antes de entrar al store, así el resto de la app nunca
+  // recibe un precio en string, un booleano indefinido, etc.
+  // ============================================================
 
-    if (activeLine.value !== "all") {
-      result = result.filter(
-        (p) => p.category?.business_line === activeLine.value,
-      );
+  function normalizeNumber(value: unknown, fallback = 0): number {
+    if (value === null || value === undefined || value === "") {
+      return fallback;
     }
-    if (activeCategory.value !== "all") {
-      result = result.filter((p) => p.category?.slug === activeCategory.value);
+    const number = Number(value);
+    return Number.isFinite(number) ? number : fallback;
+  }
+
+  function normalizeProduct(product: any): Product {
+    return {
+      ...product,
+
+      price: normalizeNumber(product?.price),
+      popular: Boolean(product?.popular),
+      available: product?.available !== false,
+
+      category: product?.category
+        ? {
+            ...product.category,
+            parent_id:
+              product.category.parent_id !== undefined
+                ? product.category.parent_id
+                : null,
+          }
+        : null,
+
+      images: Array.isArray(product?.images)
+        ? product.images.map((image: any) => ({
+            id: normalizeNumber(image?.id),
+            image_url: image?.image_url ?? "",
+            sort_order: normalizeNumber(image?.sort_order),
+          }))
+        : [],
+
+      customization_sections: Array.isArray(product?.customization_sections)
+        ? product.customization_sections.map((section: any) => ({
+            ...section,
+            required: Boolean(section?.required),
+            multiple: Boolean(section?.multiple),
+            options: Array.isArray(section?.options)
+              ? section.options.map((option: any) => ({
+                  ...option,
+                  id: normalizeNumber(option?.id),
+                  name: option?.name ?? "",
+                  price_modifier: normalizeNumber(option?.price_modifier),
+                  image_url: option?.image_url ?? null,
+                }))
+              : [],
+          }))
+        : [],
+
+      extras: Array.isArray(product?.extras)
+        ? product.extras.map((extra: any) => ({
+            ...extra,
+            id: normalizeNumber(extra?.id),
+            name: extra?.name ?? "",
+            price: normalizeNumber(extra?.price),
+          }))
+        : [],
+
+      extras_compartidos: Array.isArray(product?.extras_compartidos)
+        ? product.extras_compartidos.map((extra: any) => ({
+            ...extra,
+            id: normalizeNumber(extra?.id),
+            name: extra?.name ?? "",
+            price: normalizeNumber(extra?.price),
+          }))
+        : [],
+
+      stock:
+        product?.stock !== undefined && product?.stock !== null
+          ? normalizeNumber(product.stock)
+          : undefined,
+
+      controla_stock:
+        product?.controla_stock !== undefined
+          ? Boolean(product.controla_stock)
+          : undefined,
+    };
+  }
+
+  // Recibe el array plano de productos (ya extraído de la respuesta
+  // paginada) y lo normaliza. Si por algún motivo no es un array,
+  // avisa en consola y devuelve una lista vacía en vez de romper la app.
+  function normalizeProducts(data: unknown): Product[] {
+    if (!Array.isArray(data)) {
+      console.warn("La API no devolvió un array de productos:", data);
+      return [];
     }
-    return result;
+    return data.map(normalizeProduct);
+  }
+
+  // ============================================================
+  // CATEGORÍAS PRINCIPALES / POR GRUPO
+  // ============================================================
+
+  const rootCategories = computed((): Category[] =>
+    categories.value.filter((c) => c.parent_id === null),
+  );
+
+  const categoriesByGroup = computed(() => (groupSlug: string): Category[] => {
+    if (groupSlug === "all") return categories.value;
+    return categories.value.filter((c) => c.parent?.slug === groupSlug);
   });
 
-  const categoriesByLine = computed(() => (line: string): Category[] => {
-    if (line === "all") return categories.value;
-    return categories.value.filter((c) => c.business_line === line);
-  });
+  // `products` ya viene filtrado y paginado desde el servidor — este
+  // alias se mantiene por compatibilidad con el resto de la app.
+  const filtered = computed((): Product[] => products.value);
+
+  const hasMore = computed(
+    () => !!meta.value && meta.value.current_page < meta.value.last_page,
+  );
 
   const popular = computed((): Product[] =>
     products.value.filter((p) => p.popular && p.available).slice(0, 6),
   );
 
-  // ── Catálogo público — solo disponibles ───────────────
-  async function fetch(linea?: string) {
-    loading.value = true;
+  // ============================================================
+  // CATÁLOGO PÚBLICO — paginado real de servidor
+  // ============================================================
+
+  async function fetch(
+    opts: {
+      grupo?: string;
+      category?: string;
+      q?: string;
+      perPage?: number;
+      append?: boolean;
+    } = {},
+  ) {
+    const isOverview =
+      (!opts.grupo || opts.grupo === "all") &&
+      (!opts.category || opts.category === "all") &&
+      !opts.q;
+    const perPage =
+      opts.perPage ?? (isOverview ? OVERVIEW_PER_PAGE : DEFAULT_PER_PAGE);
+    const page = opts.append ? (meta.value?.current_page ?? 0) + 1 : 1;
+
+    if (opts.append) loadingMore.value = true;
+    else loading.value = true;
+
     try {
-      const params = linea && linea !== "all" ? { linea } : {};
-      const [prodRes, catRes] = await Promise.all([
-        api.get("/products", { params }),
-        api.get("/categories", { params }),
-      ]);
-      products.value = prodRes.data.data;
-      categories.value = catRes.data.data;
+      const params: Record<string, string | number> = {
+        page,
+        per_page: perPage,
+      };
+      if (opts.grupo && opts.grupo !== "all") params.grupo = opts.grupo;
+      if (opts.category && opts.category !== "all")
+        params.category = opts.category;
+      if (opts.q) params.q = opts.q;
+
+      const requests: Promise<any>[] = [api.get("/products", { params })];
+      if (!opts.append) requests.push(api.get("/categories"));
+      const [prodRes, catRes] = await Promise.all(requests);
+
+      // Respuesta paginada de Laravel: { data: [...], links, meta }
+      const page_ = prodRes.data?.data;
+      const list = normalizeProducts(page_?.data);
+      products.value = opts.append ? [...products.value, ...list] : list;
+      meta.value = page_?.meta ?? null;
+
+      if (catRes) {
+        categories.value = Array.isArray(catRes.data?.data)
+          ? catRes.data.data
+          : [];
+      }
     } catch (e) {
       console.error("Error cargando catálogo:", e);
+      if (!opts.append) {
+        products.value = [];
+        categories.value = [];
+      }
     } finally {
       loading.value = false;
+      loadingMore.value = false;
     }
   }
 
-  // ── Admin — todos los productos sin filtrar ───────────
-  async function fetchAdmin(linea?: string) {
-    loading.value = true;
+  // Búsqueda de texto del catálogo público (server-side)
+  const searchQuery = ref("");
+
+  // Trae la siguiente página respetando los filtros activos actuales.
+  async function loadMore() {
+    if (!hasMore.value || loadingMore.value || loading.value) return;
+    await fetch({
+      grupo: activeGroup.value,
+      category: activeCategory.value,
+      q: searchQuery.value || undefined,
+      perPage: meta.value?.per_page,
+      append: true,
+    });
+  }
+
+  // ============================================================
+  // ADMIN — paginado real + búsqueda/filtro de servidor
+  // ============================================================
+
+  async function fetchAdmin(
+    opts: {
+      grupo?: string;
+      categoryId?: number | string;
+      q?: string;
+      perPage?: number;
+      append?: boolean;
+    } = {},
+  ) {
+    const perPage = opts.perPage ?? ADMIN_PER_PAGE;
+    const page = opts.append ? (meta.value?.current_page ?? 0) + 1 : 1;
+
+    if (opts.append) loadingMore.value = true;
+    else loading.value = true;
+
     try {
-      const params = linea && linea !== "all" ? { linea } : {};
-      const [prodRes, catRes] = await Promise.all([
-        api.get("/admin/products", { params }),
-        api.get("/admin/categories", { params }),
-      ]);
-      products.value = prodRes.data.data;
-      categories.value = catRes.data.data;
+      const params: Record<string, string | number> = {
+        page,
+        per_page: perPage,
+      };
+      if (opts.grupo && opts.grupo !== "all") params.grupo = opts.grupo;
+      if (opts.categoryId) params.category_id = opts.categoryId;
+      if (opts.q) params.q = opts.q;
+
+      const requests: Promise<any>[] = [api.get("/admin/products", { params })];
+      if (!opts.append) requests.push(api.get("/admin/categories"));
+      const [prodRes, catRes] = await Promise.all(requests);
+
+      const page_ = prodRes.data?.data;
+      const list = normalizeProducts(page_?.data);
+      products.value = opts.append ? [...products.value, ...list] : list;
+      meta.value = page_?.meta ?? null;
+
+      if (catRes) {
+        categories.value = Array.isArray(catRes.data?.data)
+          ? catRes.data.data
+          : [];
+      }
     } catch (e) {
       console.error("Error cargando catálogo admin:", e);
+      if (!opts.append) {
+        products.value = [];
+        categories.value = [];
+      }
     } finally {
       loading.value = false;
+      loadingMore.value = false;
     }
   }
 
-  function setCategory(slug: string) {
-    activeCategory.value = slug;
+  async function loadMoreAdmin() {
+    if (!hasMore.value || loadingMore.value || loading.value) return;
+    await fetchAdmin({
+      grupo: activeGroup.value,
+      categoryId:
+        activeCategory.value !== "all" ? activeCategory.value : undefined,
+      perPage: meta.value?.per_page,
+      append: true,
+    });
   }
 
-  function setLine(line: string) {
-    activeLine.value = line;
-    activeCategory.value = "all"; // reset categoría al cambiar de línea
+  // ============================================================
+  // FILTROS — cambiar de categoría/grupo dispara un fetch nuevo,
+  // ya no filtra en el cliente (el catálogo completo ya no vive
+  // en memoria una vez que hay paginación real).
+  // ============================================================
+
+  async function setCategory(slug: string) {
+    activeCategory.value = slug;
+    searchQuery.value = "";
+    await fetch({ grupo: activeGroup.value, category: slug });
+  }
+
+  async function setGroup(group: string) {
+    activeGroup.value = group;
+    activeCategory.value = "all";
+    searchQuery.value = "";
+    await fetch({ grupo: group, category: "all" });
+  }
+
+  // Búsqueda general: es independiente de las pestañas de categoría —
+  // al buscar, se muestran resultados de todo el catálogo (no solo de
+  // la categoría que estuviera activa), para no confundir "busco esto
+  // en toda la tienda" con "busco esto en Ramos".
+  async function search(term: string) {
+    searchQuery.value = term.trim();
+    if (searchQuery.value) {
+      activeGroup.value = "all";
+      activeCategory.value = "all";
+    }
+    await fetch({ q: searchQuery.value || undefined });
   }
 
   return {
     products,
     categories,
     activeCategory,
-    activeLine,
+    activeGroup,
     loading,
+    loadingMore,
+    meta,
+    hasMore,
+    searchQuery,
+
+    rootCategories,
+    categoriesByGroup,
     filtered,
-    categoriesByLine,
     popular,
+
     fetch,
+    loadMore,
     fetchAdmin,
+    loadMoreAdmin,
+    search,
+
     setCategory,
-    setLine,
+    setGroup,
   };
 });

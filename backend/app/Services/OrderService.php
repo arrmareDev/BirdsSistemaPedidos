@@ -8,7 +8,7 @@ use App\Models\CajaMovimiento;
 use App\Models\Client;
 use App\Models\Comision;
 use App\Models\ConfiguracionSistema;
-use App\Models\DeliveryZone;
+use App\Models\DeliveryTariff;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -101,7 +101,7 @@ class OrderService
                 'note'               => $data['note']             ?? null,
                 'lat'                => $data['lat']              ?? null,
                 'lng'                => $data['lng']              ?? null,
-                // ── Florería ──────────────────────────────────────
+                // ── Entrega programada / mensaje personalizado ─────
                 'mensaje_tarjeta'    => $data['mensaje_tarjeta']    ?? null,
                 'fecha_entrega'      => $data['fecha_entrega']      ?? null,
                 'hora_entrega'       => $data['hora_entrega']       ?? null,
@@ -311,10 +311,11 @@ class OrderService
         ?float  $deliveryFee,
         ?string $district,
     ): float {
+
         if ($zoneId) {
-            $zone = DeliveryZone::find($zoneId);
-            if ($zone && $zone->activo) {
-                return (float) $zone->precio;
+            $tarifa = DeliveryTariff::find($zoneId);
+            if ($tarifa && $tarifa->activo) {
+                return (float) $tarifa->precio;
             }
         }
 
@@ -322,13 +323,6 @@ class OrderService
             return (float) $deliveryFee;
         }
 
-        return match ($district) {
-            'Chiclayo'            => 3.00,
-            'José Leonardo Ortiz' => 4.00,
-            'La Victoria'         => 4.00,
-            'Pimentel'            => 6.00,
-            'San José'            => 7.00,
-            default               => 5.00,
-        };
+        return (float) ConfiguracionSistema::get('delivery_fee_fallback', '5.00');
     }
 }

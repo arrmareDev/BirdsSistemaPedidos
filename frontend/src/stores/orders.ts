@@ -37,10 +37,7 @@ export interface AdminOrder {
     product?: {
       id: number;
       name: string;
-      emoji: string;
-      ocasion: string | null;
-      color: string | null;
-      tamano: string | null;
+      icon: string;
     } | null;
   }>;
 }
@@ -214,9 +211,14 @@ export const useOrdersStore = defineStore("orders", () => {
     }
   }
 
-  async function cobrarLocal(id: number, metodoPago: string): Promise<AdminOrder | null> {
+  async function cobrarLocal(
+    id: number,
+    metodoPago: string,
+  ): Promise<AdminOrder | null> {
     try {
-      const { data } = await api.patch(`/admin/orders/${id}/cobrar`, { metodo_pago: metodoPago });
+      const { data } = await api.patch(`/admin/orders/${id}/cobrar`, {
+        metodo_pago: metodoPago,
+      });
       const idx = orders.value.findIndex((o) => o.id === id);
       if (idx !== -1) orders.value[idx] = data.data;
       return data.data;

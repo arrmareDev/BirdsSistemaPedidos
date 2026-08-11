@@ -36,7 +36,7 @@ class OrderResource extends JsonResource
             // ── Nota general ──────────────────────────────────────
             'note' => $this->note,
 
-            // ── Florería ──────────────────────────────────────────
+            // ── Entrega programada / mensaje personalizado ─────────
             'mensaje_tarjeta'    => $this->mensaje_tarjeta,
             'fecha_entrega'      => $this->fecha_entrega?->format('Y-m-d'),
             'hora_entrega'       => $this->hora_entrega,
@@ -56,10 +56,10 @@ class OrderResource extends JsonResource
                     'product'        => $item->product ? [
                         'id'      => $item->product->id,
                         'name'    => $item->product->name,
-                        'emoji'   => $item->product->emoji,
-                        'ocasion' => $item->product->ocasion,
-                        'color'   => $item->product->color,
-                        'tamano'  => $item->product->tamano,
+                        'icon'    => $item->product->icon,
+                        'atributo_1' => $item->product->atributo_1,
+                        'atributo_2' => $item->product->atributo_2,
+                        'atributo_3' => $item->product->atributo_3,
                     ] : null,
                     'qty'            => (int)   $item->qty,
                     'unit_price'     => (float) $item->unit_price,

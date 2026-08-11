@@ -20,9 +20,9 @@
 
         <!-- Info del local -->
         <div class="bg-blue-50 rounded-2xl border border-blue-100 p-4 flex items-start gap-3">
-            <span class="text-xl shrink-0">📍</span>
+            <MapPin :size="20" class="shrink-0 text-blue-600" />
             <div>
-                <p class="font-bold text-[13px] text-blue-800 m-0">Local: Av. Cajamarca 749, Chiclayo</p>
+                <p class="font-bold text-[13px] text-blue-800 m-0">Torres Paz Mz.144 - Lt.30 - Chiclayo</p>
                 <p class="text-[11.5px] text-blue-600 m-0 mt-0.5">
                     Todas las tarifas se calculan desde este punto usando distancia real en línea recta
                 </p>
@@ -91,7 +91,7 @@
                             <button @click="askEliminar(t)" class="px-3 py-1.5 rounded-xl text-[11.5px] font-bold border
                                        border-red-200 bg-red-50 text-red-600 cursor-pointer
                                        hover:bg-red-100 transition-all duration-150">
-                                ✕
+                                <X :size="13" />
                             </button>
                         </div>
                     </div>
@@ -152,8 +152,8 @@
                                 <Transition enter-active-class="transition-all duration-150"
                                     enter-from-class="opacity-0 -translate-y-1" leave-to-class="opacity-0">
                                     <div v-if="modalError" class="px-3.5 py-3 rounded-2xl bg-red-50 border border-red-200
-                                               text-[13px] text-red-600">
-                                        ⚠️ {{ modalError }}
+                                               text-[13px] text-red-600 flex items-center gap-2">
+                                        <TriangleAlert :size="15" class="shrink-0" /> {{ modalError }}
                                     </div>
                                 </Transition>
                             </div>
@@ -190,6 +190,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { MapPin, X, TriangleAlert } from 'lucide-vue-next'
 import api from '@/utils/api'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 

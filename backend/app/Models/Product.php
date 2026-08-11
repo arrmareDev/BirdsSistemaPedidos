@@ -15,10 +15,10 @@ class Product extends Model
         'name',
         'slug',
         'description',
-        'emoji',
-        'ocasion',
-        'color',
-        'tamano',
+        'icon',
+        'atributo_1',
+        'atributo_2',
+        'atributo_3',
         'stock',
         'controla_stock',
         'price',
@@ -79,14 +79,20 @@ class Product extends Model
             ->orderBy('sort_order');
     }
 
-    // ── Extras viejos (1 extra = 1 producto, florería) ────────
+    // Galería de fotos generales del producto (distintos ángulos, etc.)
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('sort_order');
+    }
+
+    // ── Extras únicos por producto (relación 1 a 1) ────────────
     public function extras(): HasMany
     {
         return $this->hasMany(ProductExtra::class)
             ->orderBy('sort_order');
     }
 
-    // ── Extras compartidos (nuevo, cafetería/menú) ────────────
+    // ── Extras compartidos (un mismo extra puede aplicar a varios productos) ──
     public function extrasCompartidos(): BelongsToMany
     {
         return $this->belongsToMany(Extra::class, 'extra_product')

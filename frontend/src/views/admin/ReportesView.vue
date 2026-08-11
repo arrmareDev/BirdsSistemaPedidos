@@ -156,13 +156,13 @@
                             : i === 1 ? 'bg-gray-200 text-gray-600'
                               : i === 2 ? 'bg-orange-200 text-orange-700'
                                 : 'bg-gray-100 text-gray-500'">
-                {{ i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1 }} </div>
+                {{ i + 1 }} </div>
 
                   <!-- Barra -->
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between mb-1.5">
-                      <span class="text-[13.5px] font-semibold text-gray-900">
-                        {{ p.emoji }} {{ p.product }}
+                      <span class="text-[13.5px] font-semibold text-gray-900 inline-flex items-center gap-1.5">
+                        <AppIcon :name="p.icon" :size="14" class="text-gray-400" /> {{ p.product }}
                       </span>
                       <div class="flex items-center gap-3 shrink-0">
                         <span class="text-[11.5px] font-semibold text-green-600">
@@ -200,23 +200,16 @@
           </p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div v-if="!loadingCustom && seccionesData.length === 0"
+          class="py-14 text-center text-gray-400 text-[13px]">
+          Todavía no hay pedidos con personalización registrada.
+        </div>
 
-          <!-- Cremas -->
-          <RankingCard title="Cremas más pedidas" icon="🫙" :items="salsas" :loading="loadingCustom"
-            color-class="bg-orange-500" empty-text="Sin datos de cremas" />
-
-          <!-- Ensaladas -->
-          <RankingCard title="Ensaladas preferidas" icon="🥗" :items="ensaladas" :loading="loadingCustom"
-            color-class="bg-green-500" empty-text="Sin datos de ensaladas" />
-
-          <!-- Papas -->
-          <RankingCard title="Tipo de papas" icon="🍟" :items="papas" :loading="loadingCustom"
-            color-class="bg-yellow-500" empty-text="Sin datos de papas" />
-
-          <!-- Término -->
-          <RankingCard title="Término de cocción" icon="🔥" :items="terminos" :loading="loadingCustom"
-            color-class="bg-red-500" empty-text="Sin datos de término" />
+        <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <RankingCard v-for="(sec, i) in seccionesData" :key="sec.seccion"
+            :title="sec.label" icon="sliders-horizontal" :items="sec.options" :loading="loadingCustom"
+            :color-class="RANKING_COLORS[i % RANKING_COLORS.length]"
+            :empty-text="`Sin datos de ${sec.label.toLowerCase()}`" />
         </div>
       </div>
     </div>
@@ -224,6 +217,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, defineComponent, h } from 'vue'
+import AppIcon from '@/components/AppIcon.vue'
 import api from '@/utils/api'
 import {
   ChartBarIcon,
@@ -278,7 +272,7 @@ const RankingCard = defineComponent({
       h('div', {
         class: 'flex items-center gap-3 px-5 py-4 border-b border-gray-100',
       }, [
-        h('span', { class: 'text-xl' }, props.icon),
+        h(AppIcon, { name: props.icon, size: 18, class: 'text-gray-400 shrink-0' }),
         h('h3', {
           class: 'font-black text-[15px] text-gray-900 m-0',
           style: "font-family:'Plus Jakarta Sans',sans-serif;",
@@ -403,10 +397,8 @@ const KPIs = computed(() => {
 })
 
 // ── Computed personalizaciones ────────────────────────────
-const salsas = computed(() => customData.value?.salsas ?? [])
-const ensaladas = computed(() => customData.value?.ensaladas ?? [])
-const papas = computed(() => customData.value?.papas ?? [])
-const terminos = computed(() => customData.value?.terminos ?? [])
+const seccionesData = computed(() => customData.value?.secciones ?? [])
+const RANKING_COLORS = ['bg-brand-red', 'bg-orange-500', 'bg-green-500', 'bg-blue-500', 'bg-purple-500', 'bg-amber-500']
 
 // ── Helpers ───────────────────────────────────────────────
 function formatMonto(n: number): string {

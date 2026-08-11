@@ -29,11 +29,15 @@ import AppFooter from '@/components/layout/AppFooter.vue'
 import CartDrawer from '@/components/cart/CartDrawer.vue'
 import CustomizerModal from '@/components/catalog/CustomizerModal.vue'
 import { useProductsStore } from '@/stores/products'
+import { useBrandingStore } from '@/stores/branding'
+import { usePedidoConfigStore } from '@/stores/pedidoconfig'
 import type { Product } from '@/stores/products'
 import type { CartItem } from '@/stores/cart'
 
 const route = useRoute()
 const productsStore = useProductsStore()
+const brandingStore = useBrandingStore()
+const pedidoConfigStore = usePedidoConfigStore()
 const cartOpen = ref(false)
 const customizerRef = ref<InstanceType<typeof CustomizerModal> | null>(null)
 
@@ -51,6 +55,8 @@ provide('openCart', () => { cartOpen.value = true })
 provide('closeCart', () => { cartOpen.value = false })
 
 onMounted(() => {
+  brandingStore.fetch()
+  pedidoConfigStore.fetch()
   if (!isAdminRoute.value) productsStore.fetch()
 })
 

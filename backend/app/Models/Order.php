@@ -58,9 +58,13 @@ class Order extends Model
         return $this->belongsTo(Client::class);
     }
 
-    public function deliveryZone()
+    // Nota: la columna se llama delivery_zone_id por historia, pero en
+    // realidad referencia una DeliveryTariff (tarifa por distancia) — es
+    // lo que usa el checkout real. Antes apuntaba a DeliveryZone (tabla
+    // vieja de distritos, nunca poblada desde el flujo real).
+    public function deliveryTariff()
     {
-        return $this->belongsTo(DeliveryZone::class);
+        return $this->belongsTo(DeliveryTariff::class, 'delivery_zone_id');
     }
 
     public function comision()

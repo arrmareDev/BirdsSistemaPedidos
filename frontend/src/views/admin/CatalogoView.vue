@@ -32,17 +32,24 @@
                   <input v-model="catForm.name" placeholder="Ej: Ramos" class="modal-input w-full" />
                 </div>
                 <div class="flex flex-col gap-1.5">
-                  <label class="field-label">Emoji</label>
-                  <input v-model="catForm.emoji" placeholder="💐" class="modal-input w-20 text-center text-[20px]" />
+                  <label class="field-label">Ícono</label>
+                  <div class="flex items-center gap-2">
+                    <div class="w-11 h-11 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 text-gray-500">
+                      <AppIcon :name="catForm.icon" :size="20" />
+                    </div>
+                    <input v-model="catForm.icon" placeholder="flower-2" class="modal-input w-24 text-center text-[12px]" />
+                  </div>
                 </div>
               </div>
 
               <div class="flex flex-col gap-1.5">
-                <label class="field-label">Línea de negocio *</label>
-                <select v-model="catForm.business_line" class="modal-input w-full cursor-pointer">
-                  <option value="floreria">💐 Florería</option>
-                  <option value="cafeteria">☕ Cafetería</option>
-                  <option value="menu">🍽️ Menú</option>
+                <label class="field-label">Categoría padre</label>
+                <select v-model="catForm.parent_id" class="modal-input w-full cursor-pointer">
+                  <option :value="null">Ninguna — es una categoría principal</option>
+                  <option v-for="root in rootCategories" :key="root.id" :value="root.id"
+                    :disabled="editingCat?.id === root.id">
+                    {{ root.name }}
+                  </option>
                 </select>
               </div>
 
@@ -190,8 +197,13 @@
                       <input v-model="form.name" placeholder="Ej: Ramo de 12 Rosas Rojas" class="modal-input w-full" />
                     </div>
                     <div class="flex flex-col gap-1.5">
-                      <label class="field-label">Emoji</label>
-                      <input v-model="form.emoji" placeholder="🌹" class="modal-input w-20 text-center text-[20px]" />
+                      <label class="field-label">Ícono</label>
+                      <div class="flex items-center gap-1.5">
+                        <div class="w-9 h-9 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 text-gray-500">
+                          <AppIcon :name="form.icon" :size="16" />
+                        </div>
+                        <input v-model="form.icon" placeholder="flower-2" class="modal-input w-24 text-center text-[11px]" />
+                      </div>
                     </div>
                   </div>
 
@@ -205,8 +217,8 @@
                     <label class="field-label">Categoría *</label>
                     <select v-model="form.category_id" class="modal-input w-full">
                       <option value="">Seleccionar categoría...</option>
-                      <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                        {{ cat.emoji }} {{ cat.name }}
+                      <option v-for="cat in categoryOptionsTree" :key="cat.id" :value="cat.id">
+                        {{ cat.parent_id ? '— ' : '' }}{{ cat.name }}
                       </option>
                     </select>
                   </div>
@@ -215,38 +227,6 @@
                     <label class="field-label">Precio (S/) *</label>
                     <input v-model.number="form.price" type="number" step="0.50" min="0" placeholder="0.00"
                       class="modal-input w-full font-bold" />
-                  </div>
-
-                  <div class="grid grid-cols-2 gap-3">
-                    <div class="flex flex-col gap-1.5">
-                      <label class="field-label">Ocasión</label>
-                      <input v-model="form.ocasion" list="ocasiones-list" placeholder="Ej: Cumpleaños"
-                        class="modal-input w-full" />
-                      <datalist id="ocasiones-list">
-                        <option v-for="o in OCASIONES_SUGERIDAS" :key="o" :value="o" />
-                      </datalist>
-                    </div>
-                    <div class="flex flex-col gap-1.5">
-                      <label class="field-label">Tamaño</label>
-                      <input v-model="form.tamano" list="tamanos-list" placeholder="Ej: Mediano"
-                        class="modal-input w-full" />
-                      <datalist id="tamanos-list">
-                        <option v-for="t in TAMANOS_SUGERIDOS" :key="t" :value="t" />
-                      </datalist>
-                    </div>
-                  </div>
-
-                  <div class="flex flex-col gap-1.5">
-                    <label class="field-label">Color predominante</label>
-                    <div class="flex items-center gap-2">
-                      <span v-if="form.color" class="w-9 h-9 rounded-xl shrink-0 border border-black/10"
-                        :style="{ background: colorHex(form.color) }" />
-                      <input v-model="form.color" list="colores-list" placeholder="Ej: Rojo"
-                        class="modal-input flex-1" />
-                      <datalist id="colores-list">
-                        <option v-for="c in Object.keys(COLOR_MAP)" :key="c" :value="capitalize(c)" />
-                      </datalist>
-                    </div>
                   </div>
 
                   <div class="flex flex-col gap-2 p-4 rounded-2xl bg-gray-50 border border-gray-200">
@@ -293,6 +273,31 @@
                   </div>
 
                   <div class="flex flex-col gap-1.5">
+                    <label class="field-label">Galería de fotos (opcional)</label>
+                    <p v-if="!editingProduct" class="text-[11.5px] text-gray-400 m-0">
+                      Guarda el producto primero para poder agregarle fotos a la galería
+                    </p>
+                    <div v-else class="flex flex-wrap gap-2">
+                      <div v-for="img in galleryImages" :key="img.id"
+                        class="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-200 group shrink-0">
+                        <img :src="img.image_url" class="w-full h-full object-cover" />
+                        <button @click="deleteGalleryImage(img.id)" type="button" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100
+                                 flex items-center justify-center border-none cursor-pointer
+                                 transition-opacity duration-150">
+                          <TrashIcon class="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                      <label class="w-16 h-16 rounded-xl border-2 border-dashed border-gray-300 shrink-0
+                               flex items-center justify-center cursor-pointer
+                               hover:border-brand-red/40 transition-all duration-150 relative">
+                        <span v-if="uploadingGallery" class="w-4 h-4 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
+                        <PlusIcon v-else class="w-5 h-5 text-gray-400" />
+                        <input type="file" accept="image/*" multiple class="hidden" @change="onGalleryFilesSelected" />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col gap-1.5">
                     <label class="field-label">Etiquetas</label>
                     <div class="grid grid-cols-2 gap-2">
                       <button type="button" @click="form.available = !form.available" class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border-2 cursor-pointer
@@ -309,7 +314,7 @@
                                text-[13px] font-semibold transition-all duration-150" :class="form.popular
                                 ? 'border-yellow-400 bg-yellow-50 text-yellow-700'
                                 : 'border-gray-200 bg-gray-50 text-gray-400'">
-                        <span>⭐</span>
+                        <Star :size="14" :fill="form.popular ? 'currentColor' : 'none'" />
                         Popular
                       </button>
                     </div>
@@ -332,16 +337,19 @@
                     enter-from-class="opacity-0 -translate-y-2" leave-to-class="opacity-0">
                     <div v-if="showAddSection"
                       class="grid grid-cols-2 gap-2 p-4 rounded-2xl bg-gray-50 border border-gray-200">
-                      <button v-for="sec in SECCIONES_DISPONIBLES" :key="sec.value" @click="addSection(sec)"
-                        :disabled="form.sections.some(s => s.seccion === sec.value)" class="flex items-center gap-2.5 px-3.5 py-3 rounded-xl border-2 cursor-pointer
-                               text-[13px] font-semibold transition-all duration-150" :class="form.sections.some(s => s.seccion === sec.value)
+                      <button v-for="tipo in seccionTiposActivos" :key="tipo.id" @click="addSection(tipo)"
+                        :disabled="form.sections.some(s => s.seccion === tipo.nombre)" class="flex items-center gap-2.5 px-3.5 py-3 rounded-xl border-2 cursor-pointer
+                               text-[13px] font-semibold transition-all duration-150" :class="form.sections.some(s => s.seccion === tipo.nombre)
                                 ? 'border-gray-100 bg-gray-100 text-gray-400 cursor-not-allowed'
                                 : 'border-gray-200 bg-white text-gray-700 hover:border-brand-red hover:text-brand-red'">
-                        <span class="text-[18px]">{{ sec.emoji }}</span>
-                        {{ sec.label }}
-                        <CheckIcon v-if="form.sections.some(s => s.seccion === sec.value)"
+                        <AppIcon :name="tipo.icono" :size="18" />
+                        {{ tipo.nombre }}
+                        <CheckIcon v-if="form.sections.some(s => s.seccion === tipo.nombre)"
                           class="w-3.5 h-3.5 ml-auto text-gray-400" />
                       </button>
+                      <p v-if="seccionTiposActivos.length === 0" class="col-span-2 text-[12.5px] text-gray-400 text-center py-2 m-0">
+                        No hay tipos de sección activos — créalos en el panel de arriba
+                      </p>
                     </div>
                   </Transition>
 
@@ -354,9 +362,7 @@
                     class="bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
                     <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
                       <div class="flex items-center gap-2">
-                        <span class="text-[18px]">
-                          {{SECCIONES_DISPONIBLES.find(s => s.value === section.seccion)?.emoji ?? '🌸'}}
-                        </span>
+                        <AppIcon :name="seccionTipos.find(t => t.nombre === section.seccion)?.icono ?? 'sparkles'" :size="18" />
                         <div>
                           <input v-model="section.label"
                             class="font-bold text-[14px] text-gray-900 bg-transparent border-none outline-none p-0 w-full" />
@@ -380,6 +386,21 @@
                     </div>
                     <div class="p-4 flex flex-col gap-2">
                       <div v-for="(opt, oi) in section.options" :key="oi" class="flex items-center gap-2">
+                        <button v-if="opt.id" @click="openOptionImagePicker(opt)" type="button"
+                          class="w-9 h-9 rounded-lg overflow-hidden border border-gray-200 shrink-0 cursor-pointer
+                                 bg-white flex items-center justify-center text-gray-300 hover:border-brand-red/40 relative group"
+                          title="Subir/cambiar foto">
+                          <img v-if="opt.image_url" :src="opt.image_url" class="w-full h-full object-cover" />
+                          <PhotoIcon v-else class="w-4 h-4" />
+                          <span v-if="uploadingOptionId === opt.id"
+                            class="absolute inset-0 bg-white/70 flex items-center justify-center">
+                            <span class="w-3.5 h-3.5 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
+                          </span>
+                        </button>
+                        <div v-else class="w-9 h-9 rounded-lg border border-dashed border-gray-200 shrink-0
+                                 flex items-center justify-center text-gray-300" title="Guarda el producto primero para poder subirle foto">
+                          <PhotoIcon class="w-4 h-4" />
+                        </div>
                         <input v-model="opt.name" placeholder="Ej: Grande" class="modal-input flex-1 py-2" />
                         <input v-model.number="opt.price_modifier" type="number" step="0.5" placeholder="0.00"
                           title="Modificador de precio (+/-)" class="modal-input w-24 py-2 text-right" />
@@ -398,6 +419,8 @@
                     </div>
                   </div>
                 </div>
+
+                <input ref="optionImageInputRef" type="file" accept="image/*" class="hidden" @change="onOptionImageSelected" />
 
                 <!-- ── Tab Extras ── -->
                 <div v-show="modalTab === 'extras'" class="flex flex-col gap-4">
@@ -566,23 +589,28 @@
             Sin categorías — crea la primera
           </div>
           <div v-else class="flex flex-col">
-            <div v-for="group in categoriesGrouped" :key="group.line">
+            <div v-for="group in categoriesGrouped" :key="group.id">
 
-              <!-- Header de la línea de negocio -->
+              <!-- Header de la categoría principal -->
               <div class="flex items-center gap-2 px-5 py-2.5 bg-gray-50/70 border-y border-gray-100">
-                <span class="text-[15px]">{{ group.icon }}</span>
+                <AppIcon :name="group.icon" :size="15" class="text-gray-500" />
                 <p class="font-black text-[11px] uppercase tracking-wider text-gray-500 m-0">
                   {{ group.label }}
                 </p>
-                <span class="text-[10.5px] font-bold text-gray-400 ml-auto">
-                  {{ group.categories.length }} categoría{{ group.categories.length !== 1 ? 's' : '' }}
+                <span class="text-[10.5px] font-bold text-gray-400">
+                  {{ group.categories.length }} subcategoría{{ group.categories.length !== 1 ? 's' : '' }}
                 </span>
+                <button @click="openEditCat(group.root)" title="Editar esta categoría principal"
+                  class="ml-auto w-6 h-6 rounded-lg flex items-center justify-center text-gray-400
+                         cursor-pointer border-none bg-transparent hover:bg-white hover:text-brand-red transition-all">
+                  <PencilIcon class="w-3 h-3" />
+                </button>
               </div>
 
-              <!-- Vacío dentro de la línea -->
+              <!-- Vacío dentro del grupo -->
               <div v-if="group.categories.length === 0"
                 class="flex items-center gap-2 px-5 py-4 text-[12.5px] text-gray-300 italic">
-                Sin categorías en {{ group.label.toLowerCase() }} todavía
+                Sin subcategorías en {{ group.label.toLowerCase() }} todavía
               </div>
 
               <!-- Categorías de esta línea -->
@@ -591,8 +619,8 @@
                   class="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
 
                   <div class="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center
-                    text-[18px] shrink-0">
-                    {{ cat.emoji || '📁' }}
+                    text-gray-500 shrink-0">
+                    <AppIcon :name="cat.icon" :size="18" />
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2">
@@ -613,7 +641,7 @@
                    transition-all duration-150" :class="cat.active
                     ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
                     : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'">
-                      {{ cat.active ? '✓ Activa' : '✗ Inactiva' }}
+                      {{ cat.active ? 'Activa' : 'Inactiva' }}
                     </button>
                     <button @click="openEditCat(cat)" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-500
                    cursor-pointer border-none bg-gray-100 hover:bg-red-50 hover:text-brand-red
@@ -636,29 +664,182 @@
       </Transition>
     </div>
 
+    <!-- ══ PANEL TIPOS DE SECCIÓN DE PERSONALIZACIÓN ══ -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <button @click="showSeccionTiposPanel = !showSeccionTiposPanel" class="w-full flex items-center justify-between px-5 py-4 cursor-pointer
+               border-none bg-transparent hover:bg-gray-50 transition-colors">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center">
+            <CheckCircleIcon class="w-4 h-4 text-purple-600" />
+          </div>
+          <div class="text-left">
+            <p class="font-black text-[14px] text-gray-900 m-0">Tipos de sección de personalización</p>
+            <p class="text-[11px] text-gray-400 m-0">{{ seccionTipos.length }} registrados — aparecen al armar "Personalización" en un producto</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button @click.stop="openCreateSeccionTipo" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-red text-white
+                   font-bold text-[12px] border-none cursor-pointer hover:bg-red-700
+                   transition-all duration-150">
+            <PlusIcon class="w-3 h-3" />
+            Nuevo
+          </button>
+          <ChevronDownIcon class="w-4 h-4 text-gray-400 transition-transform duration-200"
+            :class="showSeccionTiposPanel ? 'rotate-180' : ''" />
+        </div>
+      </button>
+
+      <Transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 -translate-y-2"
+        leave-to-class="opacity-0">
+        <div v-if="showSeccionTiposPanel" class="border-t border-gray-100">
+          <div v-if="seccionTipos.length === 0" class="flex items-center justify-center py-10 text-gray-400 text-[13px]">
+            Sin tipos de sección — crea el primero
+          </div>
+          <div v-else class="divide-y divide-gray-50">
+            <div v-for="tipo in seccionTipos" :key="tipo.id"
+              class="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
+
+              <div class="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center
+                    text-gray-500 shrink-0">
+                <AppIcon :name="tipo.icono" :size="18" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <p class="font-bold text-[13.5px] text-gray-900 m-0 truncate">{{ tipo.nombre }}</p>
+                  <span v-if="!tipo.activo" class="text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded-full
+                     bg-gray-100 text-gray-500 shrink-0">
+                    Inactivo
+                  </span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button @click="toggleSeccionTipo(tipo)" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold border cursor-pointer
+                   transition-all duration-150" :class="tipo.activo
+                    ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                    : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'">
+                  {{ tipo.activo ? 'Activo' : 'Inactivo' }}
+                </button>
+                <button @click="openEditSeccionTipo(tipo)" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-500
+                   cursor-pointer border-none bg-gray-100 hover:bg-red-50 hover:text-brand-red
+                   transition-all duration-150">
+                  <PencilIcon class="w-3.5 h-3.5" />
+                </button>
+                <button @click="askDeleteSeccionTipo(tipo)" class="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer
+                   border-none bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500
+                   transition-all duration-150">
+                  <TrashIcon class="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </div>
+
+    <!-- ══ MODAL TIPO DE SECCIÓN ══ -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition-opacity duration-200"
+        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
+        <div v-if="showSeccionTipoModal" class="fixed inset-0 z-[500] bg-black/50 backdrop-blur-sm
+                 flex items-center justify-center p-4" @click.self="closeSeccionTipoModal">
+          <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6">
+            <div class="flex items-center justify-between mb-5">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100
+                            flex items-center justify-center">
+                  <CheckCircleIcon class="w-5 h-5 text-purple-600" />
+                </div>
+                <h3 class="font-black text-[17px] text-gray-900 m-0"
+                  style="font-family:'Plus Jakarta Sans',sans-serif;">
+                  {{ editingSeccionTipo ? 'Editar tipo de sección' : 'Nuevo tipo de sección' }}
+                </h3>
+              </div>
+              <button @click="closeSeccionTipoModal" class="w-8 h-8 rounded-full bg-gray-100 flex items-center
+                       justify-center cursor-pointer border-none hover:bg-gray-200 transition-colors">
+                <XMarkIcon class="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+
+            <div class="flex flex-col gap-4">
+              <div class="grid grid-cols-[1fr_auto] gap-3">
+                <div class="flex flex-col gap-1.5">
+                  <label class="field-label">Nombre *</label>
+                  <input v-model="seccionTipoForm.nombre" placeholder="Ej: Término de cocción" class="modal-input w-full" />
+                </div>
+                <div class="flex flex-col gap-1.5">
+                  <label class="field-label">Ícono</label>
+                  <div class="flex items-center gap-2">
+                    <div
+                      class="w-11 h-11 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 text-gray-500">
+                      <AppIcon :name="seccionTipoForm.icono" :size="20" />
+                    </div>
+                    <input v-model="seccionTipoForm.icono" placeholder="sparkles"
+                      class="modal-input w-24 text-center text-[12px]" />
+                  </div>
+                </div>
+              </div>
+
+              <Transition enter-active-class="transition-all duration-150" enter-from-class="opacity-0 -translate-y-1"
+                leave-to-class="opacity-0">
+                <div v-if="seccionTipoError" class="flex items-center gap-2.5 px-4 py-3 rounded-2xl
+                         bg-red-50 border border-red-200">
+                  <ExclamationCircleIcon class="w-4 h-4 text-red-500 shrink-0" />
+                  <p class="text-[12.5px] text-red-700 m-0">{{ seccionTipoError }}</p>
+                </div>
+              </Transition>
+            </div>
+
+            <div class="flex gap-3 mt-5">
+              <button @click="closeSeccionTipoModal" class="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600
+                       font-semibold text-[13.5px] cursor-pointer bg-white
+                       hover:border-gray-300 transition-all duration-150">
+                Cancelar
+              </button>
+              <button @click="saveSeccionTipo" :disabled="savingSeccionTipo" class="flex-1 py-3 rounded-2xl bg-brand-red text-white font-bold
+                       text-[13.5px] cursor-pointer border-none hover:bg-red-700
+                       transition-all duration-150 disabled:opacity-50
+                       flex items-center justify-center gap-2">
+                <span v-if="savingSeccionTipo" class="w-4 h-4 border-2 border-white/30 border-t-white
+                         rounded-full animate-spin" />
+                <CheckCircleIcon v-else class="w-4 h-4" />
+                {{ savingSeccionTipo ? 'Guardando...' : (editingSeccionTipo ? 'Guardar' : 'Crear') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- ══ CONFIRMAR ELIMINAR TIPO DE SECCIÓN ══ -->
+    <ConfirmModal v-model="deleteSeccionTipoConfirm.show" title="¿Eliminar este tipo de sección?"
+      :message="`«${deleteSeccionTipoConfirm.target?.nombre}» ya no aparecerá como opción al agregar personalización a un producto.`"
+      variant="danger" confirm-label="Sí, eliminar" :loading="deleteSeccionTipoConfirm.loading"
+      @confirm="confirmDeleteSeccionTipo" />
+
     <!-- ══ HEADER PRODUCTOS ══ -->
     <div class="flex items-center justify-between flex-wrap gap-3">
       <p class="text-[13px] text-gray-400 m-0">
-        {{ productsStore.products.length }} productos · {{ categories.length }} categorías
+        {{ productsStore.meta?.total ?? productsStore.products.length }} productos · {{ categories.length }} categorías
       </p>
       <div class="flex items-center gap-2 flex-wrap">
-        <button @click="activeCat = ''" class="px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold
+        <button @click="filterByCategory('')" class="px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold
                  border transition-all duration-150 cursor-pointer" :class="activeCat === ''
                   ? 'bg-brand-red text-white border-brand-red'
                   : 'bg-white border-gray-200 text-gray-600 hover:border-red-300'">
           Todos
         </button>
-        <button v-for="cat in categories" :key="cat.id" @click="activeCat = String(cat.id)"
-          class="px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-all duration-150 cursor-pointer"
+        <button v-for="cat in categories" :key="cat.id" @click="filterByCategory(String(cat.id))"
+          class="px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-all duration-150 cursor-pointer inline-flex items-center gap-1.5"
           :class="activeCat === String(cat.id)
             ? 'bg-brand-red text-white border-brand-red'
             : 'bg-white border-gray-200 text-gray-600 hover:border-red-300'">
-          {{ cat.emoji }} {{ cat.name }}
+          <AppIcon :name="cat.icon" :size="13" /> {{ cat.name }}
         </button>
 
         <div class="relative">
           <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-          <input v-model="search" placeholder="Buscar..." class="pl-8 pr-3 py-1.5 rounded-xl border border-gray-200 bg-white text-[13px]
+          <input v-model="search" @input="onSearchInput" placeholder="Buscar..." class="pl-8 pr-3 py-1.5 rounded-xl border border-gray-200 bg-white text-[13px]
                    text-gray-900 outline-none w-60 focus:border-brand-red transition-all duration-200
                    placeholder:text-gray-300" />
         </div>
@@ -679,7 +860,7 @@
 
     <!-- ══ GRID PRODUCTOS ══ -->
     <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      <div v-for="product in filteredProducts" :key="product.id" class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col
+      <div v-for="product in productsStore.products" :key="product.id" class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col
                transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
         :class="!product.available ? 'opacity-60' : ''">
 
@@ -687,12 +868,12 @@
                     flex items-center justify-center overflow-hidden">
           <img v-if="product.image_url" :src="product.image_url" :alt="product.name"
             class="w-full h-full object-cover" />
-          <span v-else class="text-5xl">{{ product.emoji || '💐' }}</span>
+          <AppIcon v-else :name="product.icon" :size="40" class="text-gray-300" />
 
           <div class="absolute top-2 left-2 flex flex-col gap-1">
             <span v-if="product.popular"
-              class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-yellow-400 text-yellow-900 w-fit">
-              ⭐ Popular
+              class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-yellow-400 text-yellow-900 w-fit inline-flex items-center gap-1">
+              <Star :size="9" fill="currentColor" /> Popular
             </span>
             <span v-if="product.controla_stock" class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full w-fit"
               :class="(product.stock ?? 0) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'">
@@ -704,7 +885,8 @@
                    border cursor-pointer transition-all duration-150" :class="product.available
                     ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
                     : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'">
-            {{ product.available ? '✓' : '✗' }}
+            <Check v-if="product.available" :size="12" :stroke-width="3" />
+            <X v-else :size="12" :stroke-width="3" />
           </button>
 
           <div v-if="!product.available" class="absolute inset-0 bg-gray-900/30 flex items-center justify-center">
@@ -718,26 +900,12 @@
           <p class="font-bold text-[13.5px] text-gray-900 m-0 leading-snug line-clamp-2">{{ product.name }}</p>
           <p class="text-[11px] text-gray-400 m-0 line-clamp-1">
             {{ product.category?.name ?? '—' }}
-            <span v-if="product.category?.business_line" class="text-brand-red font-semibold">
-              · {{ BUSINESS_LINE_LABELS[product.category.business_line] ?? '' }}
+            <span v-if="parentCategoryName(product.category?.id)" class="text-brand-red font-semibold">
+              · {{ parentCategoryName(product.category?.id) }}
             </span>
           </p>
 
           <div class="flex flex-wrap gap-1 mt-1">
-            <span v-if="product.ocasion"
-              class="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100">
-              {{ product.ocasion }}
-            </span>
-            <span v-if="product.color" class="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full bg-gray-50 text-gray-600
-                     border border-gray-100 inline-flex items-center gap-1">
-              <span class="w-2 h-2 rounded-full border border-black/10"
-                :style="{ background: colorHex(product.color) }" />
-              {{ product.color }}
-            </span>
-            <span v-if="product.tamano"
-              class="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
-              {{ product.tamano }}
-            </span>
             <span v-if="product.customization_sections?.length"
               class="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-100">
               {{ product.customization_sections.length }} secciones
@@ -788,6 +956,17 @@
       </button>
     </div>
 
+    <!-- ══ CARGAR MÁS ══ -->
+    <div v-if="productsStore.hasMore" class="flex justify-center pt-2">
+      <button @click="loadMoreProducts" :disabled="productsStore.loadingMore" class="flex items-center gap-2 px-5 py-2.5 rounded-2xl border-2 border-gray-200
+               bg-white text-[13px] font-bold text-gray-600 cursor-pointer
+               hover:border-brand-red/40 hover:text-brand-red transition-all duration-150
+               disabled:opacity-50 disabled:cursor-wait">
+        <span v-if="productsStore.loadingMore" class="w-4 h-4 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
+        {{ productsStore.loadingMore ? 'Cargando...' : `Cargar más (${productsStore.products.length} de ${productsStore.meta?.total ?? 0})` }}
+      </button>
+    </div>
+
     <!-- ══ MODAL: GESTIONAR EXTRAS COMPARTIDOS ══ -->
     <Teleport to="body">
       <Transition enter-active-class="transition-opacity duration-200"
@@ -813,7 +992,7 @@
 
               <!-- Nuevo extra -->
               <div class="px-6 py-4 border-b border-gray-100 shrink-0 bg-gray-50/50">
-                <div class="grid grid-cols-[1fr_90px_110px_auto] gap-2 items-end">
+                <div class="grid grid-cols-[1fr_110px_auto] gap-2 items-end">
                   <div>
                     <label class="field-label">Nombre</label>
                     <input v-model="newExtra.name" placeholder="Ej: Leche de almendra" class="modal-input w-full" />
@@ -822,14 +1001,6 @@
                     <label class="field-label">Precio</label>
                     <input v-model.number="newExtra.price" type="number" step="0.5" placeholder="0.00"
                       class="modal-input w-full" />
-                  </div>
-                  <div>
-                    <label class="field-label">Línea</label>
-                    <select v-model="newExtra.business_line" class="modal-input w-full cursor-pointer">
-                      <option value="floreria">💐 Florería</option>
-                      <option value="cafeteria">☕ Cafetería</option>
-                      <option value="menu">🍽️ Menú</option>
-                    </select>
                   </div>
                   <button @click="createExtra" :disabled="!newExtra.name.trim() || savingExtra" class="h-[42px] px-4 rounded-xl bg-brand-red text-white font-bold text-[13px]
                            cursor-pointer border-none hover:bg-red-700 transition-all
@@ -847,16 +1018,10 @@
                   Aún no has creado ningún extra compartido.
                 </div>
                 <div v-else class="flex flex-col gap-2.5">
-                  <div v-for="extra in availableExtras" :key="extra.id" class="grid grid-cols-[1fr_90px_110px_auto] gap-2 items-center
+                  <div v-for="extra in availableExtras" :key="extra.id" class="grid grid-cols-[1fr_110px_auto] gap-2 items-center
                            px-3 py-2.5 rounded-xl border border-gray-100 bg-white">
                     <input v-model="extra.name" class="modal-input w-full py-1.5" />
                     <input v-model.number="extra.price" type="number" step="0.5" class="modal-input w-full py-1.5" />
-                    <select v-model="extra.business_line"
-                      class="modal-input w-full py-1.5 cursor-pointer text-[11.5px]">
-                      <option value="floreria">💐 Florería</option>
-                      <option value="cafeteria">☕ Cafetería</option>
-                      <option value="menu">🍽️ Menú</option>
-                    </select>
                     <div class="flex items-center gap-1.5">
                       <button @click="saveExtra(extra)" title="Guardar cambios" class="w-8 h-8 rounded-lg flex items-center justify-center text-green-600
                                cursor-pointer border-none bg-green-50 hover:bg-green-100 transition-all shrink-0">
@@ -888,6 +1053,9 @@ import {
   PlusCircleIcon, ArchiveBoxIcon, FolderIcon, ChevronDownIcon,
   PencilSquareIcon,
 } from '@heroicons/vue/24/outline'
+import { Star, Check, X } from 'lucide-vue-next'
+import AppIcon from '@/components/AppIcon.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 import { useProductsStore } from '@/stores/products'
 import type { Product, Category } from '@/stores/products'
 import api from '@/utils/api'
@@ -921,17 +1089,11 @@ const catError = ref('')
 
 const catForm = reactive({
   name: '',
-  emoji: '',
-  business_line: 'floreria' as 'floreria' | 'cafeteria' | 'menu',
+  icon: '',
+  parent_id: null as number | null,
   sort_order: 0,
   active: true,
 })
-
-const BUSINESS_LINE_LABELS: Record<string, string> = {
-  floreria: 'Florería',
-  cafeteria: 'Cafetería',
-  menu: 'Menú',
-}
 
 // ── Constantes ────────────────────────────────────────────
 const MODAL_TABS = [
@@ -940,50 +1102,108 @@ const MODAL_TABS = [
   { value: 'extras', label: 'Extras', icon: PlusCircleIcon },
 ]
 
-const SECCIONES_DISPONIBLES = [
-  { value: 'envoltura', label: 'Envoltura', emoji: '🎁' },
-  { value: 'lazo', label: 'Lazo / Cinta', emoji: '🎀' },
-  { value: 'follaje', label: 'Follaje', emoji: '🌿' },
-  { value: 'dedicatoria', label: 'Dedicatoria', emoji: '✍️' },
-  { value: 'presentacion', label: 'Presentación', emoji: '🪴' },
-  { value: 'complemento', label: 'Complemento', emoji: '🧸' },
-]
+// ── Tipos de sección de personalización (lista real, con CRUD) ──
+interface SeccionTipo { id: number; nombre: string; icono: string; activo: boolean; sort_order: number }
+const seccionTipos = ref<SeccionTipo[]>([])
+const seccionTiposActivos = computed(() => seccionTipos.value.filter(t => t.activo))
+const showSeccionTiposPanel = ref(false)
 
-const OCASIONES_SUGERIDAS = [
-  'Cumpleaños', 'Aniversario', 'Amor', 'Condolencias',
-  'Graduación', 'Día de la Madre', 'San Valentín',
-  'Agradecimiento', 'Felicitaciones', 'Recuperación',
-]
-const TAMANOS_SUGERIDOS = ['Pequeño', 'Mediano', 'Grande', 'Premium']
-
-const COLOR_MAP: Record<string, string> = {
-  rojo: '#DC2626', rosa: '#EC4899', rosado: '#F472B6', blanco: '#F9FAFB',
-  amarillo: '#FACC15', naranja: '#FB923C', morado: '#9333EA', lila: '#C084FC',
-  azul: '#3B82F6', celeste: '#7DD3FC', verde: '#22C55E', fucsia: '#D946EF',
-  durazno: '#FDBA74', coral: '#FF7F6B', crema: '#FEF3C7', vino: '#7F1D1D',
+async function loadSeccionTipos() {
+  try {
+    const { data } = await api.get('/admin/seccion-tipos')
+    seccionTipos.value = data.data
+  } catch { }
 }
 
-function colorHex(name: string): string {
-  return COLOR_MAP[name.trim().toLowerCase()] ?? '#D1D5DB'
+const showSeccionTipoModal = ref(false)
+const editingSeccionTipo = ref<SeccionTipo | null>(null)
+const savingSeccionTipo = ref(false)
+const seccionTipoError = ref('')
+const seccionTipoForm = reactive({ nombre: '', icono: 'sparkles' })
+
+function openCreateSeccionTipo() {
+  editingSeccionTipo.value = null
+  seccionTipoError.value = ''
+  Object.assign(seccionTipoForm, { nombre: '', icono: 'sparkles' })
+  showSeccionTipoModal.value = true
 }
 
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1)
+function openEditSeccionTipo(tipo: SeccionTipo) {
+  editingSeccionTipo.value = tipo
+  seccionTipoError.value = ''
+  Object.assign(seccionTipoForm, { nombre: tipo.nombre, icono: tipo.icono })
+  showSeccionTipoModal.value = true
+}
+
+function closeSeccionTipoModal() {
+  showSeccionTipoModal.value = false
+  editingSeccionTipo.value = null
+  seccionTipoError.value = ''
+}
+
+async function saveSeccionTipo() {
+  seccionTipoError.value = ''
+  if (!seccionTipoForm.nombre.trim()) {
+    seccionTipoError.value = 'El nombre es requerido'
+    return
+  }
+  savingSeccionTipo.value = true
+  try {
+    if (editingSeccionTipo.value) {
+      await api.put(`/admin/seccion-tipos/${editingSeccionTipo.value.id}`, seccionTipoForm)
+    } else {
+      await api.post('/admin/seccion-tipos', seccionTipoForm)
+    }
+    await loadSeccionTipos()
+    closeSeccionTipoModal()
+  } catch (e: any) {
+    seccionTipoError.value = e.response?.data?.message ?? 'Error al guardar'
+  } finally {
+    savingSeccionTipo.value = false
+  }
+}
+
+async function toggleSeccionTipo(tipo: SeccionTipo) {
+  try {
+    await api.put(`/admin/seccion-tipos/${tipo.id}`, { activo: !tipo.activo })
+    await loadSeccionTipos()
+  } catch { }
+}
+
+const deleteSeccionTipoConfirm = reactive({ show: false, loading: false, target: null as SeccionTipo | null })
+
+function askDeleteSeccionTipo(tipo: SeccionTipo) {
+  deleteSeccionTipoConfirm.target = tipo
+  deleteSeccionTipoConfirm.show = true
+}
+
+async function confirmDeleteSeccionTipo() {
+  if (!deleteSeccionTipoConfirm.target) return
+  deleteSeccionTipoConfirm.loading = true
+  try {
+    await api.delete(`/admin/seccion-tipos/${deleteSeccionTipoConfirm.target.id}`)
+    await loadSeccionTipos()
+    deleteSeccionTipoConfirm.show = false
+  } catch (e: any) {
+    alert(e.response?.data?.message ?? 'No se pudo eliminar este tipo de sección')
+  } finally {
+    deleteSeccionTipoConfirm.loading = false
+  }
 }
 
 // ── Form producto ─────────────────────────────────────────
-interface FormOption { name: string; price_modifier: number }
+interface FormOption { id?: number; name: string; price_modifier: number; image_url?: string }
 interface FormSection {
-  seccion: string; label: string; required: boolean
+  id?: number; seccion: string; label: string; required: boolean
   multiple: boolean; sort_order: number; options: FormOption[]
 }
 interface FormExtra { name: string; price: number }
-interface AvailableExtra { id: number; name: string; price: number; business_line: string }
+interface AvailableExtra { id: number; name: string; price: number }
 
 const form = reactive({
-  name: '', description: '', emoji: '',
+  name: '', description: '', icon: '',
   category_id: '' as number | '',
-  price: 0, ocasion: '', color: '', tamano: '',
+  price: 0,
   stock: 0, controla_stock: false,
   available: true, popular: false,
   sections: [] as FormSection[],
@@ -998,40 +1218,76 @@ const categoriesSorted = computed(() =>
   [...categories.value].sort((a, b) => a.sort_order - b.sort_order)
 )
 
-// ← NUEVO: agrupa las categorías por línea de negocio, en orden fijo
-const BUSINESS_LINE_ORDER = ['floreria', 'cafeteria', 'menu'] as const
-const BUSINESS_LINE_ICONS: Record<string, string> = {
-  floreria: '💐', cafeteria: '☕', menu: '🍽️',
-}
+// Categorías principales (raíz) — para el selector de "categoría padre"
+const rootCategories = computed(() =>
+  categoriesSorted.value.filter(c => c.parent_id === null)
+)
 
+// Agrupa: cada categoría principal real, con sus subcategorías debajo
 const categoriesGrouped = computed(() =>
-  BUSINESS_LINE_ORDER.map(line => ({
-    line,
-    label: BUSINESS_LINE_LABELS[line],
-    icon: BUSINESS_LINE_ICONS[line],
-    categories: categoriesSorted.value.filter(c => c.business_line === line),
+  rootCategories.value.map(root => ({
+    id: root.id,
+    root,
+    label: root.name,
+    icon: root.icon,
+    categories: categoriesSorted.value.filter(c => c.parent_id === root.id),
   }))
 )
 
-const filteredProducts = computed(() => {
-  let list = productsStore.products
-  if (activeCat.value) list = list.filter(p => String(p.category?.id) === activeCat.value)
-  if (search.value.trim()) {
-    const q = search.value.toLowerCase()
-    list = list.filter(p =>
-      p.name.toLowerCase().includes(q) ||
-      (p.description ?? '').toLowerCase().includes(q) ||
-      (p.ocasion ?? '').toLowerCase().includes(q)
-    )
+// Lista plana para selects: cada raíz seguida de sus subcategorías (en ese orden)
+const categoryOptionsTree = computed(() =>
+  rootCategories.value.flatMap(root => [
+    root,
+    ...categoriesSorted.value.filter(c => c.parent_id === root.id),
+  ])
+)
+
+// Nombre de la categoría padre de un producto, si su categoría es una subcategoría
+function parentCategoryName(catId?: number | null): string | null {
+  if (!catId) return null
+  const cat = categories.value.find(c => c.id === catId)
+  if (!cat?.parent_id) return null
+  return categories.value.find(c => c.id === cat.parent_id)?.name ?? null
+}
+
+// Filtro/búsqueda ahora van al servidor — el catálogo completo ya no
+// vive en memoria una vez que hay paginación real.
+function currentFilters() {
+  return {
+    categoryId: activeCat.value || undefined,
+    q: search.value.trim() || undefined,
   }
-  return list
-})
+}
+
+function filterByCategory(catId: string) {
+  activeCat.value = catId
+  productsStore.fetchAdmin(currentFilters())
+}
+
+let searchDebounce: ReturnType<typeof setTimeout> | null = null
+function onSearchInput() {
+  clearTimeout(searchDebounce!)
+  searchDebounce = setTimeout(() => {
+    productsStore.fetchAdmin(currentFilters())
+  }, 400)
+}
+
+function loadMoreProducts() {
+  productsStore.loadMoreAdmin()
+}
+
+// Recarga la página actual de resultados respetando los filtros activos
+// (se usa después de crear/editar/borrar un producto).
+function refreshCurrentPage() {
+  return productsStore.fetchAdmin(currentFilters())
+}
 
 // ── Lifecycle ─────────────────────────────────────────────
 onMounted(async () => {
   await productsStore.fetchAdmin()
   await loadCategories()
   await loadAvailableExtras()
+  await loadSeccionTipos()
 })
 
 async function loadCategories() {
@@ -1062,7 +1318,6 @@ const savingExtra = ref(false)
 const newExtra = reactive({
   name: '',
   price: 0,
-  business_line: 'floreria' as 'floreria' | 'cafeteria' | 'menu',
 })
 
 function openExtrasManager() {
@@ -1078,7 +1333,6 @@ async function createExtra() {
     const { data } = await api.post('/admin/extras', {
       name: newExtra.name.trim(),
       price: newExtra.price || 0,
-      business_line: newExtra.business_line,
     })
     availableExtras.value.push(data.data)
     newExtra.name = ''
@@ -1096,7 +1350,6 @@ async function saveExtra(extra: AvailableExtra) {
     await api.put(`/admin/extras/${extra.id}`, {
       name: extra.name,
       price: extra.price,
-      business_line: extra.business_line,
     })
   } catch (e: any) {
     extrasError.value = e?.response?.data?.message ?? 'No se pudo guardar el extra'
@@ -1122,7 +1375,7 @@ function openCreateCat() {
   editingCat.value = null
   catError.value = ''
   Object.assign(catForm, {
-    name: '', emoji: '', business_line: 'floreria',
+    name: '', icon: '', parent_id: null,
     sort_order: categories.value.length, active: true,
   })
   showCatModal.value = true
@@ -1133,8 +1386,8 @@ function openEditCat(cat: Category) {
   catError.value = ''
   Object.assign(catForm, {
     name: cat.name,
-    emoji: cat.emoji ?? '',
-    business_line: cat.business_line,
+    icon: cat.icon ?? '',
+    parent_id: cat.parent_id,
     sort_order: cat.sort_order,
     active: cat.active,
   })
@@ -1205,9 +1458,10 @@ function openCreate() {
   formError.value = ''
   showAddSection.value = false
   modalTab.value = 'info'
+  galleryImages.value = []
   Object.assign(form, {
-    name: '', description: '', emoji: '', category_id: '',
-    price: 0, ocasion: '', color: '', tamano: '',
+    name: '', description: '', icon: '', category_id: '',
+    price: 0,
     stock: 0, controla_stock: false, available: true, popular: false,
     sections: [], extras: [], extra_ids: [],
   })
@@ -1221,16 +1475,18 @@ function openEdit(p: Product) {
   formError.value = ''
   showAddSection.value = false
   modalTab.value = 'info'
+  galleryImages.value = (p.images ?? []).map(img => ({ ...img }))
   Object.assign(form, {
-    name: p.name, description: p.description ?? '', emoji: p.emoji ?? '',
+    name: p.name, description: p.description ?? '', icon: p.icon ?? '',
     category_id: p.category?.id ?? '', price: p.price,
-    ocasion: p.ocasion ?? '', color: p.color ?? '', tamano: p.tamano ?? '',
     stock: p.stock ?? 0, controla_stock: p.controla_stock ?? false,
     available: p.available, popular: p.popular,
     sections: (p.customization_sections ?? []).map(s => ({
-      seccion: s.seccion, label: s.label, required: s.required,
+      id: s.id, seccion: s.seccion, label: s.label, required: s.required,
       multiple: s.multiple, sort_order: 0,
-      options: s.options.map(o => ({ name: o.name, price_modifier: o.price_modifier ?? 0 })),
+      options: s.options.map(o => ({
+        id: o.id, name: o.name, price_modifier: o.price_modifier ?? 0, image_url: o.image_url,
+      })),
     })),
     extras: (p.extras ?? []).map(e => ({ name: e.name, price: e.price })),
     extra_ids: (p.extras_compartidos ?? []).map(e => e.id),
@@ -1253,10 +1509,10 @@ function handleImageChange(e: Event) {
   reader.readAsDataURL(file)
 }
 
-function addSection(sec: { value: string; label: string }) {
+function addSection(tipo: SeccionTipo) {
   form.sections.push({
-    seccion: sec.value, label: sec.label, required: false,
-    multiple: sec.value === 'follaje' || sec.value === 'complemento',
+    seccion: tipo.nombre, label: tipo.nombre, required: false,
+    multiple: false,
     sort_order: form.sections.length, options: [],
   })
   showAddSection.value = false
@@ -1265,6 +1521,80 @@ function addSection(sec: { value: string; label: string }) {
 function removeSection(i: number) { form.sections.splice(i, 1) }
 function addOption(si: number) { form.sections[si].options.push({ name: '', price_modifier: 0 }) }
 function removeOption(si: number, oi: number) { form.sections[si].options.splice(oi, 1) }
+
+// ── Imagen por opción de personalización ───────────────────
+const optionImageInputRef = ref<HTMLInputElement | null>(null)
+const uploadingOptionId = ref<number | null>(null)
+
+// ── Galería de fotos generales del producto ────────────────
+interface GalleryImage { id: number; image_url: string; sort_order: number }
+const galleryImages = ref<GalleryImage[]>([])
+const uploadingGallery = ref(false)
+
+async function onGalleryFilesSelected(e: Event) {
+  const files = (e.target as HTMLInputElement).files
+  if (!files || files.length === 0 || !editingProduct.value) return
+
+  uploadingGallery.value = true
+  try {
+    const fd = new FormData()
+    Array.from(files).forEach(f => fd.append('images[]', f))
+    const { data } = await api.post(
+      `/admin/products/${editingProduct.value.id}/images`,
+      fd,
+      { headers: { 'Content-Type': undefined } },
+    )
+    galleryImages.value = data.data
+    await refreshCurrentPage()
+  } catch {
+    formError.value = 'No se pudieron subir las fotos'
+  } finally {
+    uploadingGallery.value = false
+    ;(e.target as HTMLInputElement).value = ''
+  }
+}
+
+async function deleteGalleryImage(imageId: number) {
+  if (!editingProduct.value) return
+  try {
+    await api.delete(`/admin/products/${editingProduct.value.id}/images/${imageId}`)
+    galleryImages.value = galleryImages.value.filter(img => img.id !== imageId)
+    await refreshCurrentPage()
+  } catch {
+    formError.value = 'No se pudo eliminar la foto'
+  }
+}
+let targetOption: { id?: number; image_url?: string } | null = null
+
+function openOptionImagePicker(opt: { id?: number; image_url?: string }) {
+  if (!opt.id) return // sin id (opción recién agregada, sin guardar) no se puede subir foto todavía
+  targetOption = opt
+  optionImageInputRef.value?.click()
+}
+
+async function onOptionImageSelected(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  const opt = targetOption
+  if (!file || !opt?.id || !editingProduct.value) return
+
+  uploadingOptionId.value = opt.id
+  try {
+    const fd = new FormData()
+    fd.append('image', file)
+    const { data } = await api.post(
+      `/admin/products/${editingProduct.value.id}/options/${opt.id}/image`,
+      fd,
+      { headers: { 'Content-Type': undefined } },
+    )
+    opt.image_url = data.data.image_url
+    await refreshCurrentPage() // refresca la miniatura en la tarjeta del catálogo también
+  } catch {
+    formError.value = 'No se pudo subir la imagen'
+  } finally {
+    uploadingOptionId.value = null
+    if (optionImageInputRef.value) optionImageInputRef.value.value = ''
+  }
+}
 function addExtra() { form.extras.push({ name: '', price: 0 }) }
 function removeExtra(i: number) { form.extras.splice(i, 1) }
 
@@ -1279,24 +1609,21 @@ async function saveProduct() {
     const fd = new FormData()
     fd.append('name', form.name.trim())
     fd.append('description', form.description)
-    fd.append('emoji', form.emoji)
+    fd.append('icon', form.icon)
     fd.append('category_id', String(form.category_id))
     fd.append('price', String(form.price))
     fd.append('available', form.available ? '1' : '0')
     fd.append('popular', form.popular ? '1' : '0')
-    fd.append('ocasion', form.ocasion.trim())
-    fd.append('color', form.color.trim())
-    fd.append('tamano', form.tamano.trim())
     fd.append('controla_stock', form.controla_stock ? '1' : '0')
     fd.append('stock', String(form.controla_stock ? form.stock : 0))
 
     if (form.sections.length > 0) {
       fd.append('sections', JSON.stringify(
         form.sections.map((s, i) => ({
-          seccion: s.seccion, label: s.label, required: s.required,
+          id: s.id, seccion: s.seccion, label: s.label, required: s.required,
           multiple: s.multiple, sort_order: i,
           options: s.options.map((o, j) => ({
-            name: o.name, price_modifier: o.price_modifier || 0, sort_order: j,
+            id: o.id, name: o.name, price_modifier: o.price_modifier || 0, sort_order: j,
           })),
         }))
       ))
@@ -1313,8 +1640,8 @@ async function saveProduct() {
       ? `/admin/products/${editingProduct.value.id}/update`
       : '/admin/products'
 
-    await api.post(url, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-    await productsStore.fetchAdmin()
+    await api.post(url, fd, { headers: { 'Content-Type': undefined } })
+    await refreshCurrentPage()
     closeProductModal()
   } catch (e: any) {
     const errors = e.response?.data?.errors
@@ -1329,7 +1656,7 @@ async function saveProduct() {
 async function toggleAvailable(product: Product) {
   try {
     await api.post(`/admin/products/${product.id}/toggle`)
-    await productsStore.fetchAdmin()
+    await refreshCurrentPage()
   } catch { }
 }
 
@@ -1338,7 +1665,7 @@ async function confirmDelete() {
   deleting.value = true
   try {
     await api.delete(`/admin/products/${deleteTarget.value.id}`)
-    await productsStore.fetchAdmin()
+    await refreshCurrentPage()
     deleteTarget.value = null
   } catch { deleteTarget.value = null } finally { deleting.value = false }
 }
@@ -1361,9 +1688,9 @@ async function confirmDelete() {
 }
 
 .modal-input:focus {
-  border-color: #C41E1E;
+  border-color: var(--color-brand-primary, #C41E1E);
   background: white;
-  box-shadow: 0 0 0 3px rgba(196, 30, 30, 0.08);
+  box-shadow: 0 0 0 3px rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.08);
 }
 
 .field-label {

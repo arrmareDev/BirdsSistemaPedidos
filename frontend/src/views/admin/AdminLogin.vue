@@ -24,30 +24,32 @@
         <div class="w-28 h-28 rounded-[28px] bg-white
                     flex items-center justify-center mx-auto mb-7
                     shadow-[0_12px_40px_rgba(0,0,0,0.35)] ring-1 ring-white/20 p-3">
-          <img src="/images/logobirds.png" alt="Birds" class="w-full h-full object-contain"
-            @error="($event.target as HTMLImageElement).style.display = 'none'" />
+          <div v-if="!brandingStore.loaded" class="w-full h-full rounded-2xl bg-gray-100 animate-pulse" />
+          <img v-else :src="brandingStore.branding.logo_url" :alt="brandingStore.branding.nombre_negocio"
+            class="w-full h-full object-contain" @error="($event.target as HTMLImageElement).style.display = 'none'" />
         </div>
 
         <h1 class="font-black text-white text-[34px] leading-tight m-0 mb-3
                    uppercase tracking-tight" style="font-family:'Plus Jakarta Sans',sans-serif;
                  text-shadow: 0 4px 24px rgba(0,0,0,0.3);">
-          Birds
+          {{ brandingStore.branding.nombre_negocio }}
         </h1>
-        <p class="text-white/55 text-[13px] font-semibold uppercase tracking-[0.2em] m-0 mb-1">
-          Florería · Cafetería · Menú
+        <p v-if="rootCategories.length"
+          class="text-white/55 text-[13px] font-semibold uppercase tracking-[0.2em] m-0 mb-1">
+          {{rootCategories.map(c => c.name).join(' · ')}}
         </p>
 
         <p class="text-white/40 text-[14px] m-0 mb-10">
           Sistema de gestión de pedidos
         </p>
 
-        <!-- Líneas de negocio -->
-        <div class="flex gap-4 justify-center">
-          <div v-for="stat in STATS" :key="stat.label" class="flex flex-col items-center gap-2 px-4 py-3 rounded-2xl
+        <!-- Categorías del catálogo -->
+        <div v-if="rootCategories.length" class="flex gap-4 justify-center">
+          <div v-for="cat in rootCategories" :key="cat.id" class="flex flex-col items-center gap-2 px-4 py-3 rounded-2xl
                       bg-white/[0.06] border border-white/10 backdrop-blur-sm w-[92px]">
-            <component :is="stat.icon" class="w-5 h-5 text-[#F5C518]" />
+            <AppIcon :name="cat.icon" :size="20" class="text-[#F5C518]" />
             <span class="text-white/70 text-[11px] font-semibold">
-              {{ stat.label }}
+              {{ cat.name }}
             </span>
           </div>
         </div>
@@ -65,13 +67,15 @@
         <div class="flex items-center gap-3 mb-8 lg:hidden">
           <div class="w-11 h-11 rounded-2xl overflow-hidden bg-white
                       border-2 border-emerald-100 shrink-0 p-1">
-            <img src="/images/logobirds.png" alt="Birds" class="w-full h-full object-contain"
+            <div v-if="!brandingStore.loaded" class="w-full h-full rounded-xl bg-gray-100 animate-pulse" />
+            <img v-else :src="brandingStore.branding.logo_url" :alt="brandingStore.branding.nombre_negocio"
+              class="w-full h-full object-contain"
               @error="($event.target as HTMLImageElement).style.display = 'none'" />
           </div>
           <div>
             <p class="font-black text-gray-900 text-[17px] m-0 leading-none"
               style="font-family:'Plus Jakarta Sans',sans-serif;">
-              Birds
+              {{ brandingStore.branding.nombre_negocio }}
             </p>
             <p class="text-[12px] text-gray-400 m-0 mt-0.5">
               Panel de administración
@@ -83,7 +87,7 @@
         <div class="mb-7">
           <h2 class="font-black text-gray-900 text-[26px] m-0 mb-1 tracking-tight"
             style="font-family:'Plus Jakarta Sans',sans-serif;">
-            Bienvenido 👋
+            Bienvenido
           </h2>
           <p class="text-gray-400 text-[14px] m-0">
             Ingresa tus credenciales para continuar
@@ -107,7 +111,7 @@
                   'text-gray-900 font-medium outline-none bg-gray-50',
                   'placeholder:text-gray-300 transition-all duration-200',
                   fieldError.email
-                    ? 'border-red-300 bg-red-50/30 focus:border-red-400 focus:shadow-[0_0_0_4px_rgba(196,30,30,0.08)]'
+                    ? 'border-red-300 bg-red-50/30 focus:border-red-400 focus:shadow-[0_0_0_4px_rgba(var(--color-brand-primary-rgb,196,30,30),0.08)]'
                     : 'border-gray-100 focus:border-brand-green focus:bg-white focus:shadow-[0_0_0_4px_rgba(27,75,54,0.10)]',
                 ]" @input="clearFieldError('email')" />
             </div>
@@ -135,7 +139,7 @@
                   'text-gray-900 font-medium outline-none bg-gray-50',
                   'placeholder:text-gray-300 transition-all duration-200',
                   fieldError.password
-                    ? 'border-red-300 bg-red-50/30 focus:border-red-400 focus:shadow-[0_0_0_4px_rgba(196,30,30,0.08)]'
+                    ? 'border-red-300 bg-red-50/30 focus:border-red-400 focus:shadow-[0_0_0_4px_rgba(var(--color-brand-primary-rgb,196,30,30),0.08)]'
                     : 'border-gray-100 focus:border-brand-green focus:bg-white focus:shadow-[0_0_0_4px_rgba(27,75,54,0.10)]',
                 ]" @input="clearFieldError('password')" />
               <button type="button" @click="showPass = !showPass" class="absolute right-3.5 top-1/2 -translate-y-1/2
@@ -201,7 +205,7 @@
             Volver a la tienda
           </RouterLink>
           <span class="text-[12px] text-gray-300 select-none">
-            v1.0 · Birds
+            v1.0 · {{ brandingStore.branding.nombre_negocio }}
           </span>
         </div>
       </div>
@@ -210,10 +214,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAdminStore } from '@/stores/admin'
-import { Coffee } from 'lucide-vue-next'
+import { useProductsStore } from '@/stores/products'
+import { useBrandingStore } from '@/stores/branding'
+import AppIcon from '@/components/AppIcon.vue'
 import {
   EnvelopeIcon,
   LockClosedIcon,
@@ -226,13 +232,13 @@ import {
   StarIcon,
   CpuChipIcon,
   BanknotesIcon,
-  SparklesIcon,
   BeakerIcon,
-  ClipboardDocumentListIcon,
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const admin = useAdminStore()
+const productsStore = useProductsStore()
+const brandingStore = useBrandingStore()
 
 // ── Estado ────────────────────────────────────────────────
 const email = ref('')
@@ -242,13 +248,12 @@ const loading = ref(false)
 const globalError = ref('')
 const fieldError = reactive({ email: '', password: '' })
 
-// ── Panel izquierdo: líneas de negocio (íconos Heroicons) ─
-const STATS = [
-  { label: 'Florería', icon: SparklesIcon },
-  { label: 'Cafetería', icon: Coffee  },
-  { label: 'Menú', icon: ClipboardDocumentListIcon },
-]
+// ── Panel izquierdo: categorías reales del catálogo ────────
+const rootCategories = computed(() => productsStore.rootCategories.slice(0, 3))
 
+onMounted(() => {
+  if (!productsStore.categories.length) productsStore.fetch({ perPage: 1 })
+})
 
 // ── Validación ────────────────────────────────────────────
 function validate(): boolean {
@@ -292,7 +297,7 @@ async function handleLogin() {
   try {
     const ok = await admin.login(email.value.trim(), password.value)
     if (ok) {
-      router.push(admin.homeRoute)
+      router.push(admin.mustChangePassword ? '/admin/cambiar-clave' : admin.homeRoute)
     } else {
       globalError.value = 'Correo o contraseña incorrectos. Intenta de nuevo.'
     }

@@ -1,6 +1,190 @@
 <template>
     <div class="flex flex-col gap-5">
 
+        <!-- ══ MARCA DEL NEGOCIO — admin/sistema ══ -->
+        <div v-if="canEditBranding" class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+                <div class="w-8 h-8 rounded-xl bg-brand-red/10 flex items-center justify-center">
+                    <Palette :size="16" class="text-brand-red" />
+                </div>
+                <h3 class="font-black text-[15px] text-gray-900 m-0"
+                    style="font-family:'Plus Jakarta Sans',sans-serif;">
+                    Marca del negocio
+                </h3>
+            </div>
+
+            <div class="p-5 flex flex-col gap-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                    <!-- Nombre -->
+                    <div class="flex flex-col gap-1.5 sm:col-span-2">
+                        <label class="text-[11px] font-black uppercase tracking-widest text-gray-500">
+                            Nombre del negocio
+                        </label>
+                        <input v-model="brandingForm.nombre_negocio" placeholder="Ej: Birds" class="branding-input" />
+                    </div>
+
+                    <!-- Logo -->
+                    <div class="flex flex-col gap-1.5 sm:col-span-2">
+                        <label class="text-[11px] font-black uppercase tracking-widest text-gray-500">
+                            Logo
+                        </label>
+                        <div class="flex items-center gap-3">
+                            <div class="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200
+                                        flex items-center justify-center shrink-0 overflow-hidden p-1.5">
+                                <img :src="logoPreview" alt="Logo" class="max-w-full max-h-full object-contain" />
+                            </div>
+                            <label class="px-4 py-2.5 rounded-xl border-2 border-gray-200 bg-white
+                                          text-[12.5px] font-bold text-gray-600 cursor-pointer
+                                          hover:border-brand-red/40 hover:text-brand-red transition-all duration-150">
+                                Cambiar logo
+                                <input type="file" accept="image/*" class="hidden" @change="onLogoChange" />
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Colores -->
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-black uppercase tracking-widest text-gray-500">
+                            Color principal
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <input v-model="brandingForm.color_primario" type="color" class="w-11 h-11 rounded-xl border-2 border-gray-200 cursor-pointer p-0.5 shrink-0" />
+                            <input v-model="brandingForm.color_primario" placeholder="#C41E1E" class="branding-input" />
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-black uppercase tracking-widest text-gray-500">
+                            Color principal (oscuro / hover)
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <input v-model="brandingForm.color_primario_dark" type="color" class="w-11 h-11 rounded-xl border-2 border-gray-200 cursor-pointer p-0.5 shrink-0" />
+                            <input v-model="brandingForm.color_primario_dark" placeholder="#9B1717" class="branding-input" />
+                        </div>
+                    </div>
+
+                    <!-- Contacto -->
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-black uppercase tracking-widest text-gray-500">
+                            Teléfono
+                        </label>
+                        <input v-model="brandingForm.telefono" placeholder="984199340" class="branding-input" />
+                    </div>
+
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-black uppercase tracking-widest text-gray-500">
+                            WhatsApp (con código de país, sin +)
+                        </label>
+                        <input v-model="brandingForm.whatsapp" placeholder="51984199340" class="branding-input" />
+                    </div>
+
+                    <div class="flex flex-col gap-1.5 sm:col-span-2">
+                        <label class="text-[11px] font-black uppercase tracking-widest text-gray-500">
+                            Dirección
+                        </label>
+                        <input v-model="brandingForm.direccion" placeholder="Ej: Torres Paz N° 361, Chiclayo" class="branding-input" />
+                    </div>
+                </div>
+
+                <Transition enter-active-class="transition-all duration-150" enter-from-class="opacity-0 -translate-y-1"
+                    leave-to-class="opacity-0">
+                    <div v-if="brandingError" class="px-3.5 py-3 rounded-2xl bg-red-50 border border-red-200
+                               text-[13px] text-red-600 flex items-center gap-2">
+                        <TriangleAlert :size="15" class="shrink-0" /> {{ brandingError }}
+                    </div>
+                </Transition>
+
+                <div class="flex items-center gap-3">
+                    <button @click="saveBranding" :disabled="savingBranding" class="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold
+                     text-[13.5px] text-white border-none cursor-pointer
+                     bg-brand-red hover:bg-brand-red-dark
+                     disabled:opacity-50 transition-all duration-150">
+                        <span v-if="savingBranding" class="w-4 h-4 border-2 border-white/30 border-t-white
+                       rounded-full animate-spin" />
+                        <CheckCircleIcon v-else class="w-4 h-4" />
+                        {{ savingBranding ? 'Guardando...' : 'Guardar marca' }}
+                    </button>
+                    <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0"
+                        leave-to-class="opacity-0">
+                        <span v-if="brandingSaved" class="text-[13px] text-green-600 font-semibold flex items-center gap-1.5">
+                            <CheckCircleIcon class="w-4 h-4" />
+                            Guardado
+                        </span>
+                    </Transition>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ CAMPOS DE PEDIDO — admin/sistema ══ -->
+        <div v-if="canEditBranding" class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+                <div class="w-8 h-8 rounded-xl bg-pink-50 flex items-center justify-center">
+                    <ClipboardList :size="16" class="text-pink-600" />
+                </div>
+                <h3 class="font-black text-[15px] text-gray-900 m-0"
+                    style="font-family:'Plus Jakarta Sans',sans-serif;">
+                    Campos del pedido
+                </h3>
+            </div>
+
+            <div class="p-5 flex flex-col gap-4">
+                <p class="text-[12.5px] text-gray-400 m-0 -mt-1">
+                    Estas opciones aparecen en el checkout de tus clientes y al armar un pedido manual
+                    desde el panel. Actívalas y ponles el nombre que tenga sentido para tu negocio.
+                </p>
+
+                <div class="flex items-center gap-3 p-3.5 rounded-2xl border border-gray-100 bg-gray-50/50">
+                    <button type="button" @click="pedidoConfigForm.entrega_programada_activo = !pedidoConfigForm.entrega_programada_activo"
+                        class="relative w-11 h-6 rounded-full transition-all duration-200 border-none cursor-pointer shrink-0"
+                        :class="pedidoConfigForm.entrega_programada_activo ? 'bg-brand-red' : 'bg-gray-300'">
+                        <span class="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200"
+                            :class="pedidoConfigForm.entrega_programada_activo ? 'left-5' : 'left-0.5'" />
+                    </button>
+                    <input v-model="pedidoConfigForm.entrega_programada_label" :disabled="!pedidoConfigForm.entrega_programada_activo"
+                        placeholder="Ej: ¿Cuándo lo necesitas?" class="branding-input flex-1 disabled:opacity-40" />
+                </div>
+
+                <div class="flex items-center gap-3 p-3.5 rounded-2xl border border-gray-100 bg-gray-50/50">
+                    <button type="button" @click="pedidoConfigForm.mensaje_activo = !pedidoConfigForm.mensaje_activo"
+                        class="relative w-11 h-6 rounded-full transition-all duration-200 border-none cursor-pointer shrink-0"
+                        :class="pedidoConfigForm.mensaje_activo ? 'bg-brand-red' : 'bg-gray-300'">
+                        <span class="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200"
+                            :class="pedidoConfigForm.mensaje_activo ? 'left-5' : 'left-0.5'" />
+                    </button>
+                    <input v-model="pedidoConfigForm.mensaje_label" :disabled="!pedidoConfigForm.mensaje_activo"
+                        placeholder="Ej: Mensaje para la tarjeta" class="branding-input flex-1 disabled:opacity-40" />
+                </div>
+
+                <Transition enter-active-class="transition-all duration-150" enter-from-class="opacity-0 -translate-y-1"
+                    leave-to-class="opacity-0">
+                    <div v-if="pedidoConfigError" class="px-3.5 py-3 rounded-2xl bg-red-50 border border-red-200
+                               text-[13px] text-red-600 flex items-center gap-2">
+                        <TriangleAlert :size="15" class="shrink-0" /> {{ pedidoConfigError }}
+                    </div>
+                </Transition>
+
+                <div class="flex items-center gap-3">
+                    <button @click="savePedidoConfig" :disabled="savingPedidoConfig" class="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold
+                     text-[13.5px] text-white border-none cursor-pointer
+                     bg-brand-red hover:bg-brand-red-dark
+                     disabled:opacity-50 transition-all duration-150">
+                        <span v-if="savingPedidoConfig" class="w-4 h-4 border-2 border-white/30 border-t-white
+                       rounded-full animate-spin" />
+                        <CheckCircleIcon v-else class="w-4 h-4" />
+                        {{ savingPedidoConfig ? 'Guardando...' : 'Guardar' }}
+                    </button>
+                    <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0"
+                        leave-to-class="opacity-0">
+                        <span v-if="pedidoConfigSaved" class="text-[13px] text-green-600 font-semibold flex items-center gap-1.5">
+                            <CheckCircleIcon class="w-4 h-4" />
+                            Guardado
+                        </span>
+                    </Transition>
+                </div>
+            </div>
+        </div>
+
         <!-- Config — solo rol sistema -->
         <div v-if="isSistema" class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -29,6 +213,19 @@
                    focus:shadow-[0_0_0_3px_rgba(147,51,234,0.08)]
                    transition-all duration-200 w-44" />
                 </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-[11px] font-black uppercase tracking-widest text-gray-500">
+                        Delivery de respaldo (S/)
+                    </label>
+                    <input v-model.number="configForm.deliveryFallback" type="number" min="0" step="0.50" class="px-4 py-3 rounded-2xl border-2 border-gray-100
+                   bg-gray-50 text-[15px] font-bold text-gray-900 outline-none
+                   focus:border-purple-500 focus:bg-white
+                   focus:shadow-[0_0_0_3px_rgba(147,51,234,0.08)]
+                   transition-all duration-200 w-44" />
+                    <p class="text-[10.5px] text-gray-400 m-0 max-w-[180px]">
+                        Solo se usa si no hay tarifa por distancia ni monto manual
+                    </p>
+                </div>
                 <button @click="saveConfig" :disabled="savingConfig" class="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold
                  text-[13.5px] text-white border-none cursor-pointer
                  bg-purple-600 hover:bg-purple-700
@@ -53,7 +250,7 @@
              bg-blue-50 border border-blue-100">
             <InformationCircleIcon class="w-4 h-4 text-blue-500 shrink-0" />
             <p class="text-[13px] text-blue-700 m-0">
-                Vista de solo lectura — el cobro lo gestiona el equipo de sistema.
+                Vista de solo lectura — el cobro lo gestiona el equipo de soporte.
             </p>
         </div>
 
@@ -424,7 +621,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useAdminStore } from '@/stores/admin'
+import { useBrandingStore } from '@/stores/branding'
+import { usePedidoConfigStore } from '@/stores/pedidoConfig'
 import api from '@/utils/api'
+import { Palette, TriangleAlert, ClipboardList } from 'lucide-vue-next'
 import {
     CpuChipIcon, CheckCircleIcon, ClipboardDocumentListIcon,
     CurrencyDollarIcon, ClockIcon, ChartBarIcon,
@@ -434,9 +634,99 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const adminStore = useAdminStore()
+const brandingStore = useBrandingStore()
+const pedidoConfigStore = usePedidoConfigStore()
 
 // ── Rol ───────────────────────────────────────────────────
 const isSistema = computed(() => adminStore.role === 'sistema')
+const canEditBranding = computed(() => ['admin', 'sistema'].includes(adminStore.role ?? ''))
+
+// ── Marca del negocio ───────────────────────────────────────
+const brandingForm = reactive({
+    nombre_negocio: '', color_primario: '', color_primario_dark: '',
+    telefono: '', whatsapp: '', direccion: '',
+})
+const logoFile = ref<File | null>(null)
+const logoPreviewLocal = ref('')
+const savingBranding = ref(false)
+const brandingSaved = ref(false)
+const brandingError = ref('')
+
+const logoPreview = computed(() => logoPreviewLocal.value || brandingStore.branding.logo_url)
+
+function fillBrandingForm() {
+    const b = brandingStore.branding
+    brandingForm.nombre_negocio = b.nombre_negocio
+    brandingForm.color_primario = b.color_primario
+    brandingForm.color_primario_dark = b.color_primario_dark
+    brandingForm.telefono = b.telefono ?? ''
+    brandingForm.whatsapp = b.whatsapp ?? ''
+    brandingForm.direccion = b.direccion ?? ''
+}
+
+function onLogoChange(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0]
+    if (!file) return
+    logoFile.value = file
+    logoPreviewLocal.value = URL.createObjectURL(file)
+}
+
+// ── Campos de pedido ──────────────────────────────────────
+const pedidoConfigForm = reactive({
+    mensaje_activo: true, mensaje_label: '',
+    entrega_programada_activo: true, entrega_programada_label: '',
+})
+const savingPedidoConfig = ref(false)
+const pedidoConfigSaved = ref(false)
+const pedidoConfigError = ref('')
+
+function fillPedidoConfigForm() {
+    Object.assign(pedidoConfigForm, pedidoConfigStore.config)
+}
+
+async function savePedidoConfig() {
+    pedidoConfigError.value = ''
+    savingPedidoConfig.value = true
+    try {
+        await api.post('/admin/sistema/pedido-config', { ...pedidoConfigForm })
+        await pedidoConfigStore.fetch() // refresca en checkout y en el panel de pedidos
+        pedidoConfigSaved.value = true
+        setTimeout(() => { pedidoConfigSaved.value = false }, 2_500)
+    } catch (e: any) {
+        pedidoConfigError.value = e.response?.data?.message ?? 'Error al guardar'
+    } finally {
+        savingPedidoConfig.value = false
+    }
+}
+
+async function saveBranding() {
+    brandingError.value = ''
+    savingBranding.value = true
+    try {
+        const fd = new FormData()
+        fd.append('nombre_negocio', brandingForm.nombre_negocio)
+        fd.append('color_primario', brandingForm.color_primario)
+        fd.append('color_primario_dark', brandingForm.color_primario_dark)
+        fd.append('telefono', brandingForm.telefono)
+        fd.append('whatsapp', brandingForm.whatsapp)
+        fd.append('direccion', brandingForm.direccion)
+        if (logoFile.value) fd.append('logo', logoFile.value)
+
+        await api.post('/admin/sistema/branding', fd, {
+            headers: { 'Content-Type': undefined },
+        })
+
+        await brandingStore.fetch() // refresca en toda la app (colores, logo, header, footer...)
+        logoFile.value = null
+        logoPreviewLocal.value = ''
+        brandingSaved.value = true
+        setTimeout(() => { brandingSaved.value = false }, 2_500)
+    } catch (e: any) {
+        brandingError.value = e.response?.data?.message ?? 'Error al guardar la marca'
+    } finally {
+        savingBranding.value = false
+    }
+}
 
 // ── Estado ────────────────────────────────────────────────
 const loading = ref(false)
@@ -460,7 +750,7 @@ const kpis = ref({
 const porDia = ref<any[]>([])
 const detalle = ref<any[]>([])
 const meta = ref<any>(null)
-const configForm = reactive({ comision: 0.30 })
+const configForm = reactive({ comision: 0.30, deliveryFallback: 5.00 })
 
 // ── Constantes ────────────────────────────────────────────
 const PERIODOS = [
@@ -558,6 +848,7 @@ async function fetchConfig() {
     try {
         const { data } = await api.get('/admin/sistema/config')
         configForm.comision = data.data.comision_por_pedido
+        configForm.deliveryFallback = data.data.delivery_fee_fallback
     } catch { }
 }
 
@@ -566,6 +857,7 @@ async function saveConfig() {
     try {
         await api.put('/admin/sistema/config', {
             comision_por_pedido: configForm.comision,
+            delivery_fee_fallback: configForm.deliveryFallback,
         })
         configSaved.value = true
         setTimeout(() => { configSaved.value = false }, 2_500)
@@ -650,7 +942,33 @@ function formatDate(d: string): string {
 
 // ── Lifecycle ─────────────────────────────────────────────
 onMounted(async () => {
+    if (canEditBranding.value) {
+        if (!brandingStore.loaded) await brandingStore.fetch()
+        fillBrandingForm()
+        if (!pedidoConfigStore.loaded) await pedidoConfigStore.fetch()
+        fillPedidoConfigForm()
+    }
     await fetchDashboard(1)
     if (isSistema.value) await fetchConfig()
 })
 </script>
+
+<style scoped>
+.branding-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    border: 2px solid #f3f4f6;
+    background: #f9fafb;
+    font-size: 14px;
+    color: #111827;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.branding-input:focus {
+    border-color: var(--color-brand-primary, #C41E1E);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.08);
+}
+</style>

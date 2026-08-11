@@ -101,12 +101,98 @@ class SistemaController extends Controller
         ]);
     }
 
+    // GET /api/v1/pedido-config — público, lo consume el checkout y el admin
+    public function getPedidoConfig(): JsonResponse
+    {
+        return $this->success($this->pedidoConfigData());
+    }
+
+    // POST /api/v1/admin/sistema/pedido-config — solo admin/sistema
+    public function updatePedidoConfig(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'mensaje_activo'             => 'sometimes|boolean',
+            'mensaje_label'              => 'sometimes|string|max:60',
+            'entrega_programada_activo'  => 'sometimes|boolean',
+            'entrega_programada_label'   => 'sometimes|string|max:60',
+        ]);
+
+        foreach ($data as $clave => $valor) {
+            ConfiguracionSistema::set(
+                "pedido_{$clave}",
+                is_bool($valor) ? ($valor ? '1' : '0') : $valor
+            );
+        }
+
+        return $this->success($this->pedidoConfigData(), 'Configuración de pedido actualizada');
+    }
+
+    private function pedidoConfigData(): array
+    {
+        return [
+            'mensaje_activo'            => (bool) (int) ConfiguracionSistema::get('pedido_mensaje_activo', '1'),
+            'mensaje_label'             => ConfiguracionSistema::get('pedido_mensaje_label', 'Mensaje para la tarjeta'),
+            'entrega_programada_activo' => (bool) (int) ConfiguracionSistema::get('pedido_entrega_programada_activo', '1'),
+            'entrega_programada_label'  => ConfiguracionSistema::get('pedido_entrega_programada_label', '¿Cuándo lo necesitas?'),
+        ];
+    }
+
+    // GET /api/v1/branding — público, lo consume el catálogo y el login
+    public function getBranding(): JsonResponse
+    {
+        return $this->success($this->brandingData());
+    }
+
+    // PUT /api/v1/admin/sistema/branding — solo admin/sistema
+    public function updateBranding(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'nombre_negocio'      => 'sometimes|string|max:80',
+            'color_primario'      => 'sometimes|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'color_primario_dark' => 'sometimes|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'telefono'            => 'sometimes|nullable|string|max:20',
+            'whatsapp'            => 'sometimes|nullable|string|max:20',
+            'direccion'           => 'sometimes|nullable|string|max:255',
+            'logo'                => 'sometimes|image|mimes:png,jpg,jpeg,webp,svg|max:5120',
+        ]);
+
+        foreach ($data as $clave => $valor) {
+            if ($clave === 'logo') continue;
+            ConfiguracionSistema::set($clave, $valor);
+        }
+
+        if ($request->hasFile('logo')) {
+            $path = $request->file('logo')->store('branding', 'public');
+            // URL absoluta (con dominio del backend) — el frontend corre en
+            // otro puerto/origen, así que una ruta relativa como "/storage/..."
+            // se intentaría cargar desde el frontend y nunca se encontraría.
+            ConfiguracionSistema::set('logo_url', asset('storage/' . $path));
+        }
+
+        return $this->success($this->brandingData(), 'Marca actualizada');
+    }
+
+    private function brandingData(): array
+    {
+        return [
+            'nombre_negocio'      => ConfiguracionSistema::get('nombre_negocio', 'Mi Negocio'),
+            'logo_url'            => ConfiguracionSistema::get('logo_url', '/images/logobirds.png'),
+            'color_primario'      => ConfiguracionSistema::get('color_primario', '#C41E1E'),
+            'color_primario_dark' => ConfiguracionSistema::get('color_primario_dark', '#9B1717'),
+            'telefono'            => ConfiguracionSistema::get('telefono'),
+            'whatsapp'            => ConfiguracionSistema::get('whatsapp'),
+            'direccion'           => ConfiguracionSistema::get('direccion'),
+        ];
+    }
+
     // GET /api/v1/admin/sistema/config — solo sistema
     public function getConfig(): JsonResponse
     {
         $comision = ConfiguracionSistema::get('comision_por_pedido', '0.30');
+        $deliveryFallback = ConfiguracionSistema::get('delivery_fee_fallback', '5.00');
         return $this->success([
-            'comision_por_pedido' => (float) $comision,
+            'comision_por_pedido'   => (float) $comision,
+            'delivery_fee_fallback' => (float) $deliveryFallback,
         ]);
     }
 
@@ -114,7 +200,8 @@ class SistemaController extends Controller
     public function updateConfig(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'comision_por_pedido' => 'required|numeric|min:0|max:10',
+            'comision_por_pedido'   => 'required|numeric|min:0|max:10',
+            'delivery_fee_fallback' => 'sometimes|numeric|min:0',
         ]);
 
         ConfiguracionSistema::set(
@@ -122,8 +209,16 @@ class SistemaController extends Controller
             number_format($data['comision_por_pedido'], 2, '.', '')
         );
 
+        if (isset($data['delivery_fee_fallback'])) {
+            ConfiguracionSistema::set(
+                'delivery_fee_fallback',
+                number_format($data['delivery_fee_fallback'], 2, '.', '')
+            );
+        }
+
         return $this->success([
-            'comision_por_pedido' => (float) $data['comision_por_pedido'],
+            'comision_por_pedido'   => (float) $data['comision_por_pedido'],
+            'delivery_fee_fallback' => (float) ($data['delivery_fee_fallback'] ?? ConfiguracionSistema::get('delivery_fee_fallback', '5.00')),
         ], 'Configuración actualizada');
     }
 

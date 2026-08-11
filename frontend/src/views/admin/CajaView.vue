@@ -44,7 +44,7 @@
                        bg-gray-50 text-[15px] font-bold text-gray-900 outline-none
                        placeholder:text-gray-300 placeholder:font-normal
                        focus:border-brand-red focus:bg-white
-                       focus:shadow-[0_0_0_4px_rgba(196,30,30,0.08)]
+                       focus:shadow-[0_0_0_4px_rgba(var(--color-brand-primary-rgb,196,30,30),0.08)]
                        transition-all duration-200" />
             </div>
           </div>
@@ -60,7 +60,7 @@
 
           <button @click="abrirCaja" :disabled="apertura.loading || apertura.monto <= 0" class="w-full py-3.5 rounded-2xl font-black text-[14px] text-white
                    bg-brand-red border-none cursor-pointer uppercase tracking-wide
-                   shadow-[0_4px_20px_rgba(196,30,30,0.25)]
+                   shadow-[0_4px_20px_rgba(var(--color-brand-primary-rgb,196,30,30),0.25)]
                    hover:bg-red-700 hover:-translate-y-0.5 active:scale-[0.98]
                    disabled:opacity-40 disabled:cursor-not-allowed
                    disabled:hover:translate-y-0 transition-all duration-200
@@ -257,7 +257,7 @@
                          font-bold text-gray-900 outline-none bg-gray-50
                          placeholder:text-gray-300 placeholder:font-normal
                          border-gray-100 focus:border-brand-red focus:bg-white
-                         focus:shadow-[0_0_0_3px_rgba(196,30,30,0.08)]
+                         focus:shadow-[0_0_0_3px_rgba(var(--color-brand-primary-rgb,196,30,30),0.08)]
                          transition-all duration-200" />
               </div>
             </div>
@@ -271,7 +271,7 @@
                        text-gray-900 outline-none bg-gray-50
                        placeholder:text-gray-300
                        border-gray-100 focus:border-brand-red focus:bg-white
-                       focus:shadow-[0_0_0_3px_rgba(196,30,30,0.08)]
+                       focus:shadow-[0_0_0_3px_rgba(var(--color-brand-primary-rgb,196,30,30),0.08)]
                        transition-all duration-200" />
             </div>
 
@@ -299,7 +299,7 @@
 
             <button @click="registrarMovimiento" :disabled="mov.loading || caja.estado === 'cerrada'" class="w-full py-3.5 rounded-2xl font-black text-[14px] text-white
                      bg-brand-red border-none cursor-pointer uppercase tracking-wide
-                     shadow-[0_4px_16px_rgba(196,30,30,0.25)]
+                     shadow-[0_4px_16px_rgba(var(--color-brand-primary-rgb,196,30,30),0.25)]
                      hover:bg-red-700 hover:-translate-y-0.5 active:scale-[0.98]
                      disabled:opacity-40 disabled:cursor-not-allowed
                      disabled:hover:translate-y-0 transition-all duration-200

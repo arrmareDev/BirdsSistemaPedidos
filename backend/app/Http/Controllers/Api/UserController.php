@@ -6,6 +6,8 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -115,22 +117,37 @@ class UserController extends Controller
     // POST /admin/users/{id}/reset-password
     public function resetPassword(int $id): JsonResponse
     {
-        if (!auth()->user()->hasRole(['admin', 'sistema'])) {
+        $actor = auth()->user();
+
+        if (!$actor->hasRole(['admin', 'sistema'])) {
             return $this->error('No tienes permiso para esta acción', 403);
         }
 
         $user = User::findOrFail($id);
-        $tempPassword = 'temp-' . strtolower(substr($user->name, 0, 4)) . rand(1000, 9999);
 
-        $user->update(['password' => Hash::make($tempPassword)]);
+        // Contraseña temporal con entropía real (no basada en datos públicos
+        // como el nombre) — 12 caracteres alfanuméricos al azar.
+        $tempPassword = Str::password(12, symbols: false);
+
+        $user->update([
+            'password'             => Hash::make($tempPassword),
+            'must_change_password' => true,
+        ]);
         $user->tokens()->delete();
+
+        Log::info('Contraseña reseteada por administrador', [
+            'actor_id'    => $actor->id,
+            'actor_email' => $actor->email,
+            'target_id'   => $user->id,
+            'target_email' => $user->email,
+        ]);
 
         return $this->success([
             'user_id'       => $user->id,
             'name'          => $user->name,
             'email'         => $user->email,
             'temp_password' => $tempPassword,
-        ], 'Contraseña reseteada. Comparte esta contraseña temporal con el usuario.');
+        ], 'Contraseña reseteada. Comparte esta contraseña temporal con el usuario — deberá cambiarla al iniciar sesión.');
     }
 
     // DELETE /admin/users/{id}

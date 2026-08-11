@@ -101,12 +101,50 @@
                     <Transition enter-active-class="transition-all duration-200"
                       enter-from-class="opacity-0 -translate-y-1" leave-active-class="transition-all duration-150"
                       leave-to-class="opacity-0">
-                      <div v-if="form.type === 'delivery'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                      <div v-if="form.type === 'delivery'" class="flex flex-col gap-3">
+
+                        <!-- Botón GPS -->
+                        <button @click="usarGPS" :disabled="loadingGPS" class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl
+                                 border-2 border-brand-red/30 bg-brand-red/5 text-brand-red
+                                 font-bold text-[12px] cursor-pointer transition-all duration-150
+                                 hover:bg-brand-red/10 disabled:opacity-50 disabled:cursor-not-allowed">
+                          <span v-if="loadingGPS"
+                            class="w-3.5 h-3.5 border-2 border-brand-red/30 border-t-brand-red rounded-full animate-spin" />
+                          <MapPinIcon v-else class="w-3.5 h-3.5" />
+                          {{ loadingGPS ? 'Obteniendo ubicación...' : 'Usar mi ubicación (GPS)' }}
+                        </button>
+
+                        <div v-if="gpsError" class="flex items-center gap-1.5 px-2.5 py-2 rounded-xl
+                                 bg-red-50 border border-red-200 text-[11px] text-red-600">
+                          {{ gpsError }}
+                        </div>
+
+                        <!-- Búsqueda por texto -->
+                        <div class="relative">
+                          <input v-model="mapSearch" @input="debouncedMapSearch" placeholder="Buscar dirección..."
+                            class="modal-input w-full pr-8" />
+                          <div v-if="mapSearching" class="absolute right-2.5 top-1/2 -translate-y-1/2
+                                   w-3.5 h-3.5 border-2 border-gray-200 border-t-brand-red rounded-full animate-spin" />
+                        </div>
+
+                        <div v-if="mapResults.length > 0"
+                          class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden -mt-2">
+                          <button v-for="r in mapResults" :key="r.place_id" @click="selectMapResult(r)" class="w-full text-left px-3 py-2 text-[11.5px] text-gray-700
+                                   border-none bg-transparent cursor-pointer
+                                   hover:bg-gray-50 border-b border-gray-100
+                                   last:border-b-0 transition-colors duration-150">
+                            {{ r.display_name }}
+                          </button>
+                        </div>
+
+                        <!-- Mapa Leaflet -->
+                        <div id="admin-delivery-map" class="w-full h-48 rounded-xl overflow-hidden border-2 border-gray-100" />
+
                         <div>
                           <label class="block text-[10.5px] font-black uppercase tracking-widest text-gray-400 mb-1.5">
                             Dirección
                           </label>
-                          <input v-model="form.address" placeholder="Calle, número, referencia" class="modal-input" />
+                          <input v-model="form.address" placeholder="Se completa al marcar el mapa" class="modal-input" />
                         </div>
                         <div>
                           <label class="block text-[10.5px] font-black uppercase tracking-widest text-gray-400 mb-1.5">
@@ -115,23 +153,38 @@
                           <input v-model="form.reference" placeholder="Portón azul, frente al parque..."
                             class="modal-input" />
                         </div>
-                        <div>
-                          <label class="block text-[10.5px] font-black uppercase tracking-widest text-gray-400 mb-1.5">
-                            Distrito
-                          </label>
-                          <select v-model="form.district" class="modal-input">
-                            <option value="">Seleccionar...</option>
-                            <option v-for="d in DISTRICTS" :key="d">{{ d }}</option>
+
+                        <!-- Zona detectada -->
+                        <div v-if="detectingZone" class="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200">
+                          <div class="w-3.5 h-3.5 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
+                          <span class="text-[11px] text-gray-500 font-medium">Detectando zona...</span>
+                        </div>
+                        <div v-else-if="selectedZone"
+                          class="flex items-center justify-between px-3 py-2 rounded-xl bg-pink-50 border border-pink-200">
+                          <span class="text-[11px] font-black text-pink-700">{{ selectedZone.nombre }}</span>
+                          <span class="text-[13px] font-black text-pink-700">S/ {{ selectedZone.precio.toFixed(2) }}</span>
+                        </div>
+                        <div v-else-if="zoneNotFound" class="flex flex-col gap-1.5">
+                          <div class="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-700">
+                            Fuera de cobertura — elige la tarifa más cercana
+                          </div>
+                          <select v-model="form.delivery_zone_id" @change="onManualZoneChange" class="modal-input">
+                            <option value="">
+                              {{ loadingZones ? 'Cargando...' : 'Seleccionar tarifa...' }}
+                            </option>
+                            <option v-for="z in zones" :key="z.id" :value="z.id">
+                              {{ z.nombre }} — S/ {{ z.precio.toFixed(2) }}
+                            </option>
                           </select>
                         </div>
                       </div>
                     </Transition>
 
                     <!-- Entrega programada -->
-                    <div class="border border-gray-100 rounded-2xl p-3 flex flex-col gap-3">
+                    <div v-if="pedidoConfigStore.config.entrega_programada_activo" class="border border-gray-100 rounded-2xl p-3 flex flex-col gap-3">
                       <div class="flex items-center justify-between">
                         <label class="text-[10.5px] font-black uppercase tracking-widest text-gray-400">
-                          Entrega programada
+                          {{ pedidoConfigStore.config.entrega_programada_label }}
                         </label>
                         <button @click="form.entrega_programada = !form.entrega_programada"
                           class="relative w-10 h-5 rounded-full transition-all duration-200 border-none cursor-pointer"
@@ -165,10 +218,10 @@
                       </Transition>
                     </div>
 
-                    <!-- Mensaje tarjeta -->
-                    <div>
+                    <!-- Mensaje personalizado -->
+                    <div v-if="pedidoConfigStore.config.mensaje_activo">
                       <label class="block text-[10.5px] font-black uppercase tracking-widest text-gray-400 mb-1.5">
-                        Mensaje para tarjeta
+                        {{ pedidoConfigStore.config.mensaje_label }}
                       </label>
                       <textarea v-model="form.mensaje_tarjeta" placeholder="Ej: ¡Feliz cumpleaños! Con cariño..."
                         rows="2" maxlength="300" class="modal-input resize-none" />
@@ -191,13 +244,17 @@
                         <span>{{ cartItems.length }} producto{{ cartItems.length !== 1 ? 's' : '' }}</span>
                         <span>S/ {{ orderTotal.toFixed(2) }}</span>
                       </div>
+                      <div v-if="form.type === 'delivery' && deliveryFeeAmount > 0" class="flex justify-between text-[12px] text-gray-400 mb-2">
+                        <span>Delivery{{ selectedZone ? ` (${selectedZone.nombre})` : '' }}</span>
+                        <span>+ S/ {{ deliveryFeeAmount.toFixed(2) }}</span>
+                      </div>
                       <div class="flex justify-between items-center pt-2 border-t border-gray-200">
                         <span class="font-semibold text-[14px] text-gray-700">Total</span>
                         <div class="flex items-baseline gap-1">
                           <span class="text-[12px] font-semibold text-gray-400">S/</span>
                           <span class="font-black text-[24px] text-brand-red leading-none"
                             style="font-family:'Plus Jakarta Sans',sans-serif;">
-                            {{ orderTotal.toFixed(2) }}
+                            {{ totalConDelivery.toFixed(2) }}
                           </span>
                         </div>
                       </div>
@@ -219,14 +276,14 @@
 
                     <button @click="submitOrder" :disabled="!canSubmit || submitting" class="w-full py-4 rounded-2xl font-black text-[14px] text-white
                              border-none cursor-pointer transition-all duration-200 uppercase tracking-wide bg-brand-red
-                             shadow-[0_4px_20px_rgba(196,30,30,0.3)] hover:bg-red-700 hover:-translate-y-0.5
+                             shadow-red-md hover:bg-red-700 hover:-translate-y-0.5
                              active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed
                              disabled:hover:translate-y-0 flex items-center justify-center gap-2"
                       style="font-family:'Plus Jakarta Sans',sans-serif;">
                       <span v-if="submitting"
                         class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       <CheckCircleIcon v-else class="w-4 h-4" />
-                      {{ submitting ? 'Registrando...' : `Confirmar · S/ ${orderTotal.toFixed(2)}` }}
+                      {{ submitting ? 'Registrando...' : `Confirmar · S/ ${totalConDelivery.toFixed(2)}` }}
                     </button>
                   </div>
                 </div>
@@ -260,7 +317,7 @@
                     </Transition>
                     <button @click="submitOrder" :disabled="!canSubmit || submitting" class="w-full py-4 rounded-2xl font-black text-[14px] text-white
                              border-none cursor-pointer transition-all duration-200 uppercase tracking-wide bg-brand-red
-                             shadow-[0_4px_20px_rgba(196,30,30,0.3)] hover:bg-red-700 hover:-translate-y-0.5
+                             shadow-red-md hover:bg-red-700 hover:-translate-y-0.5
                              active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed
                              disabled:hover:translate-y-0 flex items-center justify-center gap-2"
                       style="font-family:'Plus Jakarta Sans',sans-serif;">
@@ -299,18 +356,24 @@
                   <div v-if="rightTab === 'catalogo'" class="flex-1 overflow-y-auto flex flex-col">
                     <div
                       class="flex gap-2 overflow-x-auto px-4 py-3 border-b border-gray-100 bg-white scrollbar-none shrink-0">
-                      <button v-for="cat in CATS" :key="cat.id" @click="activeCat = cat.id" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-semibold
-                               border whitespace-nowrap shrink-0 cursor-pointer transition-all duration-150" :class="activeCat === cat.id
+                      <button @click="activeCat = 'all'" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-semibold
+                               border whitespace-nowrap shrink-0 cursor-pointer transition-all duration-150" :class="activeCat === 'all'
                                 ? 'bg-brand-red text-white border-brand-red shadow-sm'
                                 : 'bg-white border-gray-200 text-gray-500 hover:border-red-300 hover:text-brand-red'">
-                        {{ cat.icon }} {{ cat.label }}
+                        <LayoutGrid :size="13" /> Todo
+                      </button>
+                      <button v-for="cat in productsStore.categories" :key="cat.id" @click="activeCat = cat.slug" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-semibold
+                               border whitespace-nowrap shrink-0 cursor-pointer transition-all duration-150" :class="activeCat === cat.slug
+                                ? 'bg-brand-red text-white border-brand-red shadow-sm'
+                                : 'bg-white border-gray-200 text-gray-500 hover:border-red-300 hover:text-brand-red'">
+                        <AppIcon :name="cat.icon" :size="13" /> {{ cat.name }}
                       </button>
                     </div>
 
                     <div class="flex-1 overflow-y-auto p-4">
                       <div v-if="filteredCatalog.length === 0"
                         class="flex flex-col items-center py-16 text-gray-400 gap-2">
-                        <span class="text-4xl">🌸</span>
+                        <PackageSearch :size="36" />
                         <p class="m-0 text-[13px]">Sin productos en esta categoría</p>
                       </div>
                       <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -321,7 +384,7 @@
                           <div class="relative h-24 bg-gray-50 flex items-center justify-center overflow-hidden">
                             <img v-if="p.image_url" :src="p.image_url"
                               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            <span v-else class="text-4xl">{{ p.emoji }}</span>
+                            <AppIcon v-else :name="p.icon" :size="36" class="text-gray-300" />
                             <div v-if="p.popular"
                               class="absolute top-2 right-0 bg-pink-400 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-l-md">
                               Popular
@@ -337,20 +400,6 @@
                           </div>
                           <div class="p-3">
                             <p class="font-semibold text-[13px] text-gray-900 m-0 leading-snug mb-1">{{ p.name }}</p>
-                            <div v-if="p.ocasion || p.color || p.tamano" class="flex flex-wrap gap-1 mb-2">
-                              <span v-if="p.tamano"
-                                class="text-[9px] px-1.5 py-0.5 rounded-full bg-pink-50 text-pink-600 border border-pink-100 font-medium">
-                                {{ p.tamano }}
-                              </span>
-                              <span v-if="p.color"
-                                class="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-100 font-medium">
-                                {{ p.color }}
-                              </span>
-                              <span v-if="p.ocasion"
-                                class="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-100 font-medium">
-                                {{ p.ocasion }}
-                              </span>
-                            </div>
                             <div class="flex items-center justify-between">
                               <div class="flex items-baseline gap-0.5">
                                 <span class="text-[11px] font-semibold text-gray-400">S/</span>
@@ -394,7 +443,7 @@
                           <div class="w-12 h-12 rounded-xl bg-gray-50 shrink-0 flex items-center justify-center
                                       text-2xl overflow-hidden border border-gray-100">
                             <img v-if="item.imageUrl" :src="item.imageUrl" class="w-full h-full object-cover" />
-                            <span v-else>{{ item.emoji }}</span>
+                            <AppIcon v-else :name="item.icon" :size="20" class="text-gray-300" />
                           </div>
                           <div class="flex-1 min-w-0">
                             <p class="font-semibold text-[13.5px] text-gray-900 m-0 leading-snug">{{ item.name }}</p>
@@ -434,13 +483,18 @@
                           <span>{{ cartItems.length }} items</span>
                           <span>S/ {{ orderTotal.toFixed(2) }}</span>
                         </div>
+                        <div v-if="!isEditMode && form.type === 'delivery' && deliveryFeeAmount > 0"
+                          class="flex justify-between text-[12.5px] text-gray-400 mb-2">
+                          <span>Delivery</span>
+                          <span>+ S/ {{ deliveryFeeAmount.toFixed(2) }}</span>
+                        </div>
                         <div class="flex justify-between items-center pt-2.5 border-t border-gray-100">
                           <span class="font-semibold text-[14px] text-gray-700">Total</span>
                           <div class="flex items-baseline gap-1">
                             <span class="text-[12px] text-gray-400 font-semibold">S/</span>
                             <span class="font-black text-[22px] text-brand-red leading-none"
                               style="font-family:'Plus Jakarta Sans',sans-serif;">
-                              {{ orderTotal.toFixed(2) }}
+                              {{ isEditMode ? orderTotal.toFixed(2) : totalConDelivery.toFixed(2) }}
                             </span>
                           </div>
                         </div>
@@ -551,8 +605,8 @@
                 <div v-if="despachoModal.order?.entrega_programada && despachoModal.order?.fecha_entrega"
                   class="flex justify-between text-[13px]">
                   <span class="text-gray-500">Entrega</span>
-                  <span class="font-bold text-pink-700">
-                    📅 {{ formatDate(despachoModal.order.fecha_entrega) }}
+                  <span class="font-bold text-pink-700 inline-flex items-center gap-1">
+                    <Calendar :size="12" /> {{ formatDate(despachoModal.order.fecha_entrega) }}
                   </span>
                 </div>
                 <div v-if="despachoModal.order?.metodo_pago" class="flex justify-between text-[13px]">
@@ -639,8 +693,8 @@
           <Transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 scale-95"
             leave-to-class="opacity-0 scale-95">
             <div v-if="cobroModal.show" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-7 text-center">
-              <div class="w-14 h-14 rounded-2xl bg-green-50 mx-auto mb-5 flex items-center justify-center">
-                <span class="text-2xl">💵</span>
+              <div class="w-14 h-14 rounded-2xl bg-green-50 mx-auto mb-5 flex items-center justify-center text-green-500">
+                <Banknote :size="26" />
               </div>
               <h3 class="font-black text-[19px] text-gray-900 m-0 mb-2"
                 style="font-family:'Plus Jakarta Sans',sans-serif;">
@@ -656,7 +710,7 @@
                          text-[12px] font-bold cursor-pointer transition-all duration-150" :class="cobroModal.metodoPago === mp.id
                           ? 'border-brand-red bg-red-50 text-brand-red shadow-sm'
                           : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-red-200'">
-                  <span class="text-xl leading-none">{{ mp.icon }}</span>
+                  <AppIcon :name="mp.icon" :size="20" />
                   {{ mp.label }}
                 </button>
               </div>
@@ -773,7 +827,7 @@
       <div v-else class="flex flex-col gap-3">
         <div v-for="o in displayedOrders" :key="o.id"
           class="bg-white rounded-2xl border-2 cursor-pointer transition-all duration-150 shadow-sm overflow-hidden"
-          :class="selected?.id === o.id ? 'border-brand-red shadow-[0_0_0_1px_rgba(196,30,30,0.1)]' : 'border-gray-100 hover:border-red-200 hover:shadow-sm'"
+          :class="selected?.id === o.id ? 'border-brand-red shadow-[0_0_0_1px_rgba(var(--color-brand-primary-rgb,196,30,30),0.1)]' : 'border-gray-100 hover:border-red-200 hover:shadow-sm'"
           @click="selectOrder(o)">
           <div class="p-4">
 
@@ -798,8 +852,8 @@
                   {{ metodoPagoLabel(o.metodo_pago) }}
                 </span>
                 <span v-if="o.entrega_programada && o.fecha_entrega" class="hidden sm:inline text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0
-                         bg-pink-50 text-pink-700 border border-pink-200">
-                  📅 {{ o.fecha_entrega }}
+                         bg-pink-50 text-pink-700 border border-pink-200 items-center gap-1">
+                  <Calendar :size="10" class="inline -mt-0.5" /> {{ o.fecha_entrega }}
                 </span>
               </div>
               <div class="flex items-center gap-2 shrink-0">
@@ -879,7 +933,7 @@
                     <button v-else-if="o.type === 'local' && o.status === 'listo'" @click.stop="abrirCobroModal(o)"
                       class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border
                              cursor-pointer bg-green-50 border-green-300 text-green-700 hover:bg-green-100 transition-all duration-150">
-                      <span class="text-sm leading-none">💵</span>
+                      <Banknote :size="14" />
                       Cobrar
                     </button>
 
@@ -972,7 +1026,7 @@
             </p>
             <div v-if="selected.entrega_programada && selected.fecha_entrega"
               class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-pink-50 border border-pink-200">
-              <span class="text-sm">📅</span>
+              <Calendar :size="14" class="text-pink-500 shrink-0" />
               <div>
                 <p class="text-[10.5px] font-black text-pink-700 m-0">Entrega programada</p>
                 <p class="text-[10px] text-pink-500 m-0">
@@ -982,7 +1036,9 @@
               </div>
             </div>
             <div v-if="selected.mensaje_tarjeta" class="px-2.5 py-1.5 rounded-xl bg-purple-50 border border-purple-200">
-              <p class="text-[10px] font-black text-purple-600 m-0 mb-0.5">💌 Mensaje tarjeta</p>
+              <p class="text-[10px] font-black text-purple-600 m-0 mb-0.5 flex items-center gap-1">
+                <Heart :size="11" /> {{ pedidoConfigStore.config.mensaje_label }}
+              </p>
               <p class="text-[11px] text-purple-800 m-0 italic">"{{ selected.mensaje_tarjeta }}"</p>
             </div>
             <p v-if="selected.metodo_pago" class="text-[11.5px] m-0 mt-0.5">
@@ -1008,16 +1064,6 @@
               <p class="font-semibold text-[13px] text-gray-900 m-0">
                 {{ item.product?.name ?? 'Producto' }}
               </p>
-              <div v-if="item.product?.tamano || item.product?.color" class="flex gap-1 mt-0.5">
-                <span v-if="item.product?.tamano"
-                  class="text-[9px] px-1.5 py-0.5 rounded-full bg-pink-50 text-pink-600 border border-pink-100">
-                  {{ item.product.tamano }}
-                </span>
-                <span v-if="item.product?.color"
-                  class="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-100">
-                  {{ item.product.color }}
-                </span>
-              </div>
               <p v-if="item.custom_summary" class="text-[11.5px] text-gray-400 mt-0.5 m-0 line-clamp-2">
                 {{ item.custom_summary }}
               </p>
@@ -1032,8 +1078,9 @@
           </div>
         </div>
 
-        <div v-if="selected.note" class="mx-4 mb-3 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-100">
-          <p class="text-[12px] text-amber-800 m-0 font-medium">📝 {{ selected.note }}</p>
+        <div v-if="selected.note" class="mx-4 mb-3 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-100 flex items-start gap-1.5">
+          <StickyNote :size="13" class="text-amber-600 shrink-0 mt-0.5" />
+          <p class="text-[12px] text-amber-800 m-0 font-medium">{{ selected.note }}</p>
         </div>
 
         <!-- Acciones -->
@@ -1088,7 +1135,7 @@
                 class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-green-600 border-none
                        cursor-pointer shadow-sm hover:bg-green-700 transition-all duration-150
                        flex items-center justify-center gap-2">
-                <span class="text-base leading-none">💵</span>
+                <Banknote :size="16" />
                 Cobrar pedido
               </button>
 
@@ -1161,7 +1208,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, reactive, inject } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive, inject, watch, nextTick } from 'vue'
 import {
   PlusIcon, XMarkIcon, TrashIcon, CheckIcon,
   MagnifyingGlassIcon, ClockIcon, PhoneIcon,
@@ -1172,18 +1219,29 @@ import {
   ShoppingBagIcon, BuildingStorefrontIcon,
 } from '@heroicons/vue/24/outline'
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon.vue'
+import AppIcon from '@/components/AppIcon.vue'
+import { LayoutGrid, PackageSearch, Calendar, Banknote, StickyNote, Heart } from 'lucide-vue-next'
 import CustomizerModal from '@/components/catalog/CustomizerModal.vue'
 import { useOrdersStore } from '@/stores/orders'
 import { useProductsStore } from '@/stores/products'
+import { usePedidoConfigStore } from '@/stores/pedidoConfig'
 import { useCartStore } from '@/stores/cart'
 import { useAdminStore } from '@/stores/admin'
 import { storeToRefs } from 'pinia'
 
 import api from '@/utils/api'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
+import markerIcon from 'leaflet/dist/images/marker-icon.png'
+import markerShadow from 'leaflet/dist/images/marker-shadow.png'
+delete (L.Icon.Default.prototype as any)._getIconUrl
+L.Icon.Default.mergeOptions({ iconUrl: markerIcon, iconRetinaUrl: markerIcon2x, shadowUrl: markerShadow })
 
 // ── Stores ────────────────────────────────────────────────
 const ordersStore = useOrdersStore()
 const productsStore = useProductsStore()
+const pedidoConfigStore = usePedidoConfigStore()
 const cartStore = useCartStore()
 const adminStore = useAdminStore()
 const { can } = storeToRefs(adminStore)
@@ -1230,7 +1288,7 @@ const cobroModal = reactive({
   show: false, order: null as any, metodoPago: '', loading: false, error: '',
 })
 
-// ── Form nuevo pedido — florería ──────────────────────────
+// ── Form nuevo pedido ──────────────────────────────────────
 const form = reactive({
   client_name: '',
   client_phone: '',
@@ -1238,7 +1296,9 @@ const form = reactive({
   mesa: '',
   address: '',
   reference: '',
-  district: '',
+  delivery_zone_id: 0,
+  lat: null as number | null,
+  lng: null as number | null,
   note: '',
   mensaje_tarjeta: '',
   fecha_entrega: '',
@@ -1283,9 +1343,33 @@ const ORDER_TYPES = [
   { id: 'delivery', icon: TruckIcon, label: 'Delivery' },
 ]
 
-const DISTRICTS = [
-  'Chiclayo', 'José Leonardo Ortiz', 'La Victoria', 'Pimentel', 'San José',
-]
+// ── Mapa / GPS / zona de delivery ──────────────────────────
+interface DeliveryZone { id: number; nombre: string; precio: number }
+const CHICLAYO_LAT = -6.7741
+const CHICLAYO_LNG = -79.8409
+
+let adminMap: L.Map | null = null
+let adminMarker: L.Marker | null = null
+const mapSearch = ref('')
+const mapResults = ref<any[]>([])
+const mapSearching = ref(false)
+let mapSearchTimer: ReturnType<typeof setTimeout> | null = null
+
+const loadingGPS = ref(false)
+const gpsError = ref('')
+
+const zones = ref<DeliveryZone[]>([])
+const loadingZones = ref(false)
+const detectedZone = ref<DeliveryZone | null>(null)
+const detectingZone = ref(false)
+const zoneNotFound = ref(false)
+
+const selectedZone = computed<DeliveryZone | null>(() => {
+  if (detectedZone.value) return detectedZone.value
+  return zones.value.find(z => z.id === form.delivery_zone_id) ?? null
+})
+const deliveryFeeAmount = computed(() => selectedZone.value?.precio ?? 0)
+const totalConDelivery = computed(() => orderTotal.value + deliveryFeeAmount.value)
 
 const HORARIOS = [
   { value: '09:00', label: '9:00 AM - 10:00 AM' },
@@ -1298,20 +1382,10 @@ const HORARIOS = [
   { value: '17:00', label: '5:00 PM - 6:00 PM' },
 ]
 
-const CATS = [
-  { id: 'all', icon: '💐', label: 'Todo' },
-  { id: 'ramos', icon: '🌹', label: 'Ramos' },
-  { id: 'arreglos', icon: '🌸', label: 'Arreglos' },
-  { id: 'plantas', icon: '🪴', label: 'Plantas' },
-  { id: 'coronas', icon: '🌿', label: 'Coronas' },
-  { id: 'regalos', icon: '🎁', label: 'Regalos' },
-  { id: 'globos', icon: '🎈', label: 'Globos' },
-]
-
 const METODOS_PAGO_LOCAL = [
-  { id: 'efectivo', icon: '💵', label: 'Efectivo' },
-  { id: 'yape', icon: '📱', label: 'Yape/Plin' },
-  { id: 'tarjeta', icon: '💳', label: 'Tarjeta' },
+  { id: 'efectivo', icon: 'banknote', label: 'Efectivo' },
+  { id: 'yape', icon: 'smartphone', label: 'Yape/Plin' },
+  { id: 'tarjeta', icon: 'credit-card', label: 'Tarjeta' },
 ]
 
 // ── Computed ──────────────────────────────────────────────
@@ -1325,6 +1399,7 @@ const canSubmit = computed(() => {
     (form.type === 'local' || form.client_phone.trim()) &&
     cartItems.value.length > 0 &&
     (form.type !== 'local' || !!form.mesa.trim()) &&
+    (form.type !== 'delivery' || (!!form.delivery_zone_id && !!form.address.trim())) &&
     (!form.entrega_programada || !!form.fecha_entrega)
   )
 })
@@ -1355,11 +1430,14 @@ function toggleTrashed() {
 onMounted(() => {
   if (can.value.writeOrders) registerCta?.(() => openModal())
   loadOrders()
-  productsStore.fetchAdmin()
+  productsStore.fetchAdmin({ perPage: 200 })
   refreshInterval = setInterval(() => silentRefresh(), 20_000)
 })
 
-onUnmounted(() => { if (refreshInterval) clearInterval(refreshInterval) })
+onUnmounted(() => {
+  if (refreshInterval) clearInterval(refreshInterval)
+  if (adminMap) { adminMap.remove(); adminMap = null }
+})
 
 // ── Refresh silencioso ────────────────────────────────────
 async function silentRefresh() {
@@ -1433,9 +1511,9 @@ function openEditItemsModal(order: any) {
     _uid: crypto.randomUUID(),
     productId: i.product_id,
     name: i.product?.name ?? 'Producto',
-    emoji: i.product?.emoji ?? null,
+    icon: i.product?.icon ?? null,
     imageUrl: i.product?.image_url ?? null,
-    businessLine: null,
+    rootCategorySlug: null,
     basePrice: parseFloat(i.unit_price),
     modifiersPrice: 0,
     extrasPrice: 0,
@@ -1463,15 +1541,185 @@ function openModal() {
 function closeModal() {
   showModal.value = false; modalError.value = ''; cartStore.clear(); resetForm()
   editingOrderId.value = null
+  if (adminMap) { adminMap.remove(); adminMap = null }
 }
 
 function resetForm() {
   Object.assign(form, {
     client_name: '', client_phone: '', type: 'delivery', mesa: '',
-    address: '', reference: '', district: '', note: '',
+    address: '', reference: '', delivery_zone_id: 0, lat: null, lng: null, note: '',
     mensaje_tarjeta: '', fecha_entrega: '', hora_entrega: '', entrega_programada: false,
   })
+  detectedZone.value = null
+  zoneNotFound.value = false
+  gpsError.value = ''
+  mapSearch.value = ''
+  mapResults.value = []
 }
+
+// ── Zonas de delivery ───────────────────────────────────────
+async function fetchZones() {
+  loadingZones.value = true
+  try {
+    const { data } = await api.get('/delivery-zones')
+    zones.value = data.data
+  } catch { }
+  finally { loadingZones.value = false }
+}
+
+function onManualZoneChange() { }
+
+async function detectarZona(lat: number, lng: number) {
+  detectingZone.value = true
+  zoneNotFound.value = false
+  detectedZone.value = null
+  form.delivery_zone_id = 0
+
+  try {
+    const { data } = await api.get('/delivery-zones/detectar', { params: { lat, lng } })
+    detectedZone.value = data.data
+    form.delivery_zone_id = data.data.id
+  } catch {
+    zoneNotFound.value = true
+    await fetchZones()
+  } finally {
+    detectingZone.value = false
+  }
+}
+
+// ── GPS ───────────────────────────────────────────────────
+function usarGPS() {
+  gpsError.value = ''
+  if (!navigator.geolocation) {
+    gpsError.value = 'Tu navegador no soporta geolocalización'
+    return
+  }
+  loadingGPS.value = true
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const lat = position.coords.latitude
+      const lng = position.coords.longitude
+      if (adminMap && adminMarker) { adminMap.setView([lat, lng], 17); adminMarker.setLatLng([lat, lng]) }
+      form.lat = lat
+      form.lng = lng
+      await Promise.all([reverseGeocode(lat, lng), detectarZona(lat, lng)])
+      loadingGPS.value = false
+    },
+    (error) => {
+      loadingGPS.value = false
+      const messages: Record<number, string> = {
+        1: 'Permiso de ubicación denegado.',
+        2: 'No se pudo obtener tu ubicación. Márcala en el mapa.',
+        3: 'Tiempo de espera agotado. Intenta de nuevo.',
+      }
+      gpsError.value = messages[error.code] ?? 'Error al obtener ubicación.'
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  )
+}
+
+// ── Mapa Leaflet ──────────────────────────────────────────
+function initAdminMap() {
+  if (adminMap) return
+  const el = document.getElementById('admin-delivery-map')
+  if (!el) return
+
+  adminMap = L.map('admin-delivery-map', { center: [CHICLAYO_LAT, CHICLAYO_LNG], zoom: 14 })
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 19,
+  }).addTo(adminMap)
+
+  const redIcon = L.divIcon({
+    className: '',
+    html: `<div style="width:28px;height:28px;background:var(--color-brand-primary,#C41E1E);border:3px solid white;
+      border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+      box-shadow:0 2px 8px rgba(var(--color-brand-primary-rgb,196,30,30),0.4);"></div>`,
+    iconSize: [28, 28], iconAnchor: [14, 28],
+  })
+
+  adminMarker = L.marker([CHICLAYO_LAT, CHICLAYO_LNG], { draggable: true, icon: redIcon }).addTo(adminMap)
+  adminMarker.on('dragend', () => {
+    const pos = adminMarker!.getLatLng()
+    form.lat = pos.lat; form.lng = pos.lng
+    reverseGeocode(pos.lat, pos.lng); detectarZona(pos.lat, pos.lng)
+  })
+  adminMap.on('click', (e: L.LeafletMouseEvent) => {
+    adminMarker!.setLatLng(e.latlng)
+    form.lat = e.latlng.lat; form.lng = e.latlng.lng
+    reverseGeocode(e.latlng.lat, e.latlng.lng); detectarZona(e.latlng.lat, e.latlng.lng)
+  })
+  form.lat = CHICLAYO_LAT; form.lng = CHICLAYO_LNG
+
+  // El modal recién se hizo visible — Leaflet necesita recalcular el
+  // tamaño del contenedor una vez que ya tiene dimensiones reales.
+  setTimeout(() => adminMap?.invalidateSize(), 150)
+}
+
+async function reverseGeocode(lat: number, lng: number) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+      { headers: { 'Accept-Language': 'es' } }
+    )
+    const data = await res.json()
+    if (data.display_name) {
+      form.address = data.display_name.split(',').slice(0, 3).join(',').trim()
+    }
+  } catch { }
+}
+
+function debouncedMapSearch() {
+  clearTimeout(mapSearchTimer!)
+  if (mapSearch.value.length < 3) { mapResults.value = []; return }
+  mapSearchTimer = setTimeout(searchAddress, 500)
+}
+
+async function searchAddress() {
+  mapSearching.value = true
+  try {
+    const query = encodeURIComponent(`${mapSearch.value}, Chiclayo, Peru`)
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=5`,
+      { headers: { 'Accept-Language': 'es' } }
+    )
+    mapResults.value = await res.json()
+  } catch { mapResults.value = [] }
+  finally { mapSearching.value = false }
+}
+
+function selectMapResult(result: any) {
+  const lat = parseFloat(result.lat)
+  const lng = parseFloat(result.lon)
+  if (adminMap && adminMarker) { adminMap.setView([lat, lng], 17); adminMarker.setLatLng([lat, lng]) }
+  form.lat = lat; form.lng = lng
+  form.address = result.display_name.split(',').slice(0, 3).join(',').trim()
+  mapResults.value = []; mapSearch.value = ''
+  detectarZona(lat, lng)
+}
+
+// Inicializa/destruye el mapa según el tipo de pedido elegido
+watch(() => form.type, async (val) => {
+  if (val === 'delivery' && showModal.value && !isEditMode.value) {
+    await nextTick()
+    initAdminMap()
+  } else {
+    if (adminMap) { adminMap.remove(); adminMap = null }
+    detectedZone.value = null
+    zoneNotFound.value = false
+    form.delivery_zone_id = 0
+    gpsError.value = ''
+  }
+})
+
+// El modal se abre con type='delivery' por defecto — como el watch de
+// arriba no dispara si el valor no cambia, hay que inicializar el mapa
+// también cuando el modal mismo se hace visible.
+watch(showModal, async (open) => {
+  if (open && form.type === 'delivery' && !isEditMode.value) {
+    await nextTick()
+    initAdminMap()
+  }
+})
 
 function openProduct(product: any) {
   customizerRef.value?.open(product)
@@ -1505,13 +1753,16 @@ async function submitOrder() {
       mesa: form.mesa || null,
       address: form.address || null,
       reference: form.reference || null,
-      district: form.district || null,
+      delivery_zone_id: form.delivery_zone_id || null,
+      delivery_fee: deliveryFeeAmount.value,
+      lat: form.lat ?? null,
+      lng: form.lng ?? null,
       note: form.note || null,
       mensaje_tarjeta: form.mensaje_tarjeta || null,
       fecha_entrega: form.fecha_entrega || null,
       hora_entrega: form.hora_entrega || null,
       entrega_programada: form.entrega_programada,
-      total: orderTotal.value,
+      total: totalConDelivery.value,
       items: cartItems.value.map(i => ({
         product_id: i.productId,
         qty: i.qty,
@@ -1662,15 +1913,18 @@ function sendWA(o: any) {
   const clientPhone = (o.client_phone ?? '').replace(/\D/g, '')
   const phone = clientPhone.startsWith('51') ? clientPhone : `51${clientPhone}`
 
+  // Símbolos de texto plano, no emoji de color — wa.me tiene un bug
+  // confirmado que corrompe el emoji de color al armar el mensaje
+  // (llegan como � tanto en escritorio como en el celular).
   const lines = [
-    `💐 *Florería — Pedido #${o.id}*`,
-    `👤 ${o.client_name} · ${typeLabel(o.type)}`,
-    `📊 Estado: *${statusLabel(o.status)}*`,
+    `*Pedido #${o.id}*`,
+    `${o.client_name} · ${typeLabel(o.type)}`,
+    `Estado: *${statusLabel(o.status)}*`,
   ]
-  if (o.entrega_programada && o.fecha_entrega) lines.push(`📅 Entrega: ${o.fecha_entrega}${o.hora_entrega ? ' · ' + o.hora_entrega : ''}`)
-  if (o.mensaje_tarjeta) lines.push(`💌 Tarjeta: "${o.mensaje_tarjeta}"`)
-  lines.push(`💰 Total: *S/ ${parseFloat(o.total).toFixed(2)}*`, ``)
-  lines.push(`📦 Seguimiento: ${import.meta.env.VITE_APP_URL ?? ''}/seguimiento/${o.id}?tel=${clientPhone}`)
+  if (o.entrega_programada && o.fecha_entrega) lines.push(`Entrega: ${o.fecha_entrega}${o.hora_entrega ? ' · ' + o.hora_entrega : ''}`)
+  if (o.mensaje_tarjeta) lines.push(`Tarjeta: "${o.mensaje_tarjeta}"`)
+  lines.push(`Total: *S/ ${parseFloat(o.total).toFixed(2)}*`, ``)
+  lines.push(`Seguimiento: ${import.meta.env.VITE_APP_URL ?? ''}/seguimiento/${o.id}?tel=${clientPhone}`)
 
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank')
 }
@@ -1693,7 +1947,7 @@ function formatDate(d: string): string {
 }
 
 function typeLabel(t: string): string {
-  return { local: '🪑 Local', recoger: '🏪 Recoger', delivery: '🚚 Delivery' }[t] ?? t
+  return { local: 'Local', recoger: 'Recoger', delivery: 'Delivery' }[t] ?? t
 }
 
 function statusLabel(s: string): string {
@@ -1719,12 +1973,12 @@ function statusCls(s: string): string {
 
 function metodoPagoLabel(m: string): string {
   return {
-    anticipado: '💳 Pagado',
-    contraentrega_efectivo: '💵 Efectivo',
-    contraentrega_yape: '📱 Yape/Plin',
-    efectivo: '💵 Efectivo',
-    yape: '📱 Yape/Plin',
-    tarjeta: '💳 Tarjeta',
+    anticipado: 'Pagado',
+    contraentrega_efectivo: 'Efectivo',
+    contraentrega_yape: 'Yape/Plin',
+    efectivo: 'Efectivo',
+    yape: 'Yape/Plin',
+    tarjeta: 'Tarjeta',
   }[m] ?? m
 }
 
@@ -1758,9 +2012,9 @@ function metodoPagoCls(m: string): string {
 }
 
 .modal-input:focus {
-  border-color: #C41E1E;
+  border-color: var(--color-brand-primary, #C41E1E);
   background: white;
-  box-shadow: 0 0 0 3px rgba(196, 30, 30, 0.08);
+  box-shadow: 0 0 0 3px rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.08);
 }
 
 .cart-item-enter-active {

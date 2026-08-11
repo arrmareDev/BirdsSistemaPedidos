@@ -2,34 +2,26 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\BusinessLine;
 use App\Models\Extra;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class ExtraController extends Controller
 {
-    // GET /api/v1/admin/extras?linea=cafeteria
+    // GET /api/v1/admin/extras
     public function index(Request $request): JsonResponse
     {
-        $query = Extra::orderBy('sort_order');
-
-        if ($linea = $request->get('linea')) {
-            $query->where('business_line', $linea);
-        }
-
-        return $this->success($query->get());
+        $extras = Extra::orderBy('sort_order')->get();
+        return $this->success($extras);
     }
 
     // POST /api/v1/admin/extras
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'          => 'required|string|max:100',
-            'price'         => 'required|numeric|min:0',
-            'business_line' => ['required', Rule::enum(BusinessLine::class)],
-            'sort_order'    => 'nullable|integer',
+            'name'       => 'required|string|max:100',
+            'price'      => 'required|numeric|min:0',
+            'sort_order' => 'nullable|integer',
         ]);
 
         $extra = Extra::create($data);
@@ -42,11 +34,10 @@ class ExtraController extends Controller
         $extra = Extra::findOrFail($id);
 
         $data = $request->validate([
-            'name'          => 'sometimes|string|max:100',
-            'price'         => 'sometimes|numeric|min:0',
-            'business_line' => ['sometimes', Rule::enum(BusinessLine::class)],
-            'active'        => 'nullable|boolean',
-            'sort_order'    => 'nullable|integer',
+            'name'       => 'sometimes|string|max:100',
+            'price'      => 'sometimes|numeric|min:0',
+            'active'     => 'nullable|boolean',
+            'sort_order' => 'nullable|integer',
         ]);
 
         $extra->update($data);

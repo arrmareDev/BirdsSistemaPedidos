@@ -40,8 +40,8 @@
         <div v-else-if="!product" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32
                    flex flex-col items-center gap-5 text-center">
             <div class="w-24 h-24 rounded-3xl bg-gray-50 flex items-center
-                        justify-center text-5xl border border-gray-100">
-                🌷
+                        justify-center text-gray-300 border border-gray-100">
+                <PackageX :size="40" :stroke-width="1.5" />
             </div>
             <div>
                 <p class="font-black text-gray-900 text-[20px] m-0">Producto no encontrado</p>
@@ -65,18 +65,16 @@
                         <img v-if="selectedImage" :src="selectedImage" :alt="product.name"
                             class="w-full h-full object-cover transition-all duration-500"
                             :class="imgTransition ? 'opacity-0 scale-105' : 'opacity-100 scale-100'" />
-                        <div v-else class="w-full h-full flex items-center justify-center">
-                            <span class="text-[110px] leading-none drop-shadow-sm
-                                         animate-[float_3s_ease-in-out_infinite]">
-                                {{ product.emoji || '💐' }}
-                            </span>
+                        <div v-else class="w-full h-full flex items-center justify-center text-rose-300
+                                     animate-[float_3s_ease-in-out_infinite]">
+                            <AppIcon :name="product.icon" :size="96" :stroke-width="1.2" />
                         </div>
 
                         <div class="absolute top-4 left-4 flex flex-col gap-2">
                             <span v-if="product.popular" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
                                        text-[10.5px] font-black uppercase tracking-wide text-brand-dark" style="background:linear-gradient(135deg,#E6D5C3,#D4AF37);
                                        box-shadow:0 4px 12px rgba(212,175,55,0.35);">
-                                ⭐ Popular
+                                <Star :size="11" fill="currentColor" /> Popular
                             </span>
                             <span v-if="agotado" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
                                        text-[10.5px] font-black uppercase tracking-wide text-white bg-gray-800">
@@ -84,7 +82,7 @@
                             </span>
                             <span v-else-if="stockBajo" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
                                        text-[10.5px] font-black uppercase tracking-wide text-white bg-amber-500">
-                                ⚡ Últimos {{ product.stock }}
+                                <Zap :size="11" fill="currentColor" /> Últimos {{ product.stock }}
                             </span>
                         </div>
 
@@ -97,12 +95,24 @@
                         </div>
                     </div>
 
-                    <div v-if="product.image_url" class="flex gap-2.5">
-                        <button @click="selectImage(product.image_url!)" class="w-16 h-16 rounded-2xl overflow-hidden border-2 cursor-pointer
+                    <div v-if="product.image_url || product.images?.length || optionImages.length > 0" class="flex gap-2.5 flex-wrap">
+                        <button v-if="product.image_url" @click="selectImage(product.image_url!)" class="w-16 h-16 rounded-2xl overflow-hidden border-2 cursor-pointer
                                    transition-all duration-150 shrink-0" :class="selectedImage === product.image_url
                                     ? 'border-brand-terracotta shadow-md shadow-orange-100'
                                     : 'border-gray-200 hover:border-gray-300'">
                             <img :src="product.image_url" :alt="product.name" class="w-full h-full object-cover" />
+                        </button>
+                        <button v-for="img in product.images" :key="`gallery-${img.id}`" @click="selectImage(img.image_url)" class="w-16 h-16 rounded-2xl overflow-hidden border-2 cursor-pointer
+                                   transition-all duration-150 shrink-0" :class="selectedImage === img.image_url
+                                    ? 'border-brand-terracotta shadow-md shadow-orange-100'
+                                    : 'border-gray-200 hover:border-gray-300'">
+                            <img :src="img.image_url" :alt="product.name" class="w-full h-full object-cover" />
+                        </button>
+                        <button v-for="oi in optionImages" :key="oi.id" @click="selectSingle(oi.sectionId, oi.opt)" :title="oi.name" class="w-16 h-16 rounded-2xl overflow-hidden border-2 cursor-pointer
+                                   transition-all duration-150 shrink-0" :class="selectedImage === oi.image_url
+                                    ? 'border-brand-terracotta shadow-md shadow-orange-100'
+                                    : 'border-gray-200 hover:border-gray-300'">
+                            <img :src="oi.image_url" :alt="oi.name" class="w-full h-full object-cover" />
                         </button>
                     </div>
 
@@ -135,12 +145,7 @@
                     <div class="flex items-center gap-2 flex-wrap">
                         <span v-if="product.category" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-bold"
                             style="background: #F8F5F0; color: #9A6B56; border: 1.5px solid rgba(154,107,86,0.2);">
-                            {{ product.category.emoji }} {{ product.category.name }}
-                        </span>
-                        <span v-if="product.ocasion" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
-                                   text-[11.5px] font-bold" style="background: #F8F5F0; color: #9A6B56; border: 1.5px solid rgba(154,107,86,0.2);">
-                            <SparklesIcon class="w-3.5 h-3.5" />
-                            {{ product.ocasion }}
+                            {{ product.category.name }}
                         </span>
                     </div>
 
@@ -151,22 +156,6 @@
                         <p v-if="product.description" class="text-[15px] text-gray-600 m-0 leading-relaxed">
                             {{ product.description }}
                         </p>
-                    </div>
-
-                    <div v-if="product.color || product.tamano" class="flex flex-wrap gap-2">
-                        <div v-if="product.color"
-                            class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gray-50 border border-gray-200">
-                            <span class="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0"
-                                :style="{ background: colorHex(product.color) }" />
-                            <span class="text-[12.5px] font-semibold text-gray-700 capitalize">
-                                {{ product.color }}
-                            </span>
-                        </div>
-                        <div v-if="product.tamano"
-                            class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gray-50 border border-gray-200">
-                            <ArrowsPointingOutIcon class="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                            <span class="text-[12.5px] font-semibold text-gray-700">{{ product.tamano }}</span>
-                        </div>
                     </div>
 
                     <div class="flex items-baseline gap-2">
@@ -190,7 +179,7 @@
                             class="flex flex-col gap-3">
 
                             <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-[17px] leading-none">{{ sectionEmoji(section.seccion) }}</span>
+                                <span class="text-gray-400"><Dot :size="16" :stroke-width="3" /></span>
                                 <span class="font-bold text-[14px] text-gray-900">{{ section.label }}</span>
                                 <span v-if="section.required" class="text-[9.5px] font-black uppercase px-2 py-0.5 rounded-full
                                            bg-brand-bg text-brand-terracotta border border-brand-terracotta/30 tracking-wide">
@@ -215,6 +204,7 @@
                                         <CheckIcon v-if="isSelected(section.id, opt.id)"
                                             class="w-2.5 h-2.5 text-white" />
                                     </div>
+                                    <img v-if="opt.image_url" :src="opt.image_url" class="w-5 h-5 rounded-md object-cover shrink-0" />
                                     {{ opt.name }}
                                 </button>
                             </div>
@@ -232,6 +222,7 @@
                                         <div v-if="isSelected(section.id, opt.id)"
                                             class="w-2 h-2 rounded-full bg-white" />
                                     </div>
+                                    <img v-if="opt.image_url" :src="opt.image_url" class="w-6 h-6 rounded-lg object-cover shrink-0" />
                                     {{ opt.name }}
                                 </button>
                             </div>
@@ -508,16 +499,19 @@
 import { ref, computed, onMounted, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProductsStore } from '@/stores/products'
+import api from '@/utils/api'
 import { useCartStore } from '@/stores/cart'
 import type { Product, CustomizationOption, ProductExtra } from '@/stores/products'
 import type { CartCustomization, CartExtra } from '@/stores/cart'
 import ProductCard from '@/components/catalog/ProductCard.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import {
     ChevronLeftIcon, ChevronRightIcon, ArrowRightIcon,
-    SparklesIcon, ArrowsPointingOutIcon, CheckIcon,
+    SparklesIcon, CheckIcon,
     ExclamationCircleIcon, ShoppingCartIcon, CheckCircleIcon,
     TruckIcon, MinusIcon, PlusIcon,
 } from '@heroicons/vue/24/outline'
+import { Star, Zap, PackageX, Dot } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
@@ -527,6 +521,22 @@ const cartStore = useCartStore()
 const loading = ref(false)
 const product = ref<Product | null>(null)
 const selectedImage = ref<string | null>(null)
+
+// Opciones de personalización (secciones de selección única) que tienen
+// foto propia — se muestran como miniaturas extra en la galería.
+const optionImages = computed(() => {
+    if (!product.value) return []
+    const result: { id: number; name: string; image_url: string; sectionId: number; opt: CustomizationOption }[] = []
+    for (const section of product.value.customization_sections) {
+        if (section.multiple) continue
+        for (const opt of section.options) {
+            if (opt.image_url) {
+                result.push({ id: opt.id, name: opt.name, image_url: opt.image_url, sectionId: section.id, opt })
+            }
+        }
+    }
+    return result
+})
 const imgTransition = ref(false)
 const added = ref(false)
 const qty = ref(1)
@@ -541,8 +551,12 @@ async function loadProduct(slug: string) {
     let found = productsStore.products.find(p => p.slug === slug)
     if (!found) {
         loading.value = true
-        await productsStore.fetch()
-        found = productsStore.products.find(p => p.slug === slug)
+        try {
+            const { data } = await api.get(`/products/${slug}`)
+            found = data.data
+        } catch {
+            found = undefined
+        }
         loading.value = false
     }
     product.value = found ?? null
@@ -661,6 +675,7 @@ function selectSingle(sectionId: number, opt: CustomizationOption) {
             section_id: sectionId, seccion: section.seccion, label: section.label,
             selections: [{ option_id: opt.id, name: opt.name, price_modifier: opt.price_modifier ?? 0 }],
         })
+        if (opt.image_url) selectImage(opt.image_url)
     }
     selections.value = new Map(selections.value)
 }
@@ -753,29 +768,6 @@ function addToCart() {
     setTimeout(() => {
         added.value = false
     }, 2000)
-}
-
-
-
-// ── Helpers ───────────────────────────────────────────────
-const COLOR_MAP: Record<string, string> = {
-    rojo: '#DC2626', rosa: '#EC4899', rosado: '#F472B6', blanco: '#F9FAFB',
-    amarillo: '#FACC15', naranja: '#FB923C', morado: '#9333EA', lila: '#C084FC',
-    azul: '#3B82F6', celeste: '#7DD3FC', verde: '#22C55E', fucsia: '#D946EF',
-    durazno: '#FDBA74', coral: '#FF7F6B', crema: '#FEF3C7', vino: '#7F1D1D',
-    multicolor: 'linear-gradient(135deg,#EC4899,#FACC15,#22C55E,#3B82F6)',
-}
-
-function colorHex(name: string): string {
-    return COLOR_MAP[name.trim().toLowerCase()] ?? '#D1D5DB'
-}
-
-function sectionEmoji(seccion: string): string {
-    const map: Record<string, string> = {
-        envoltura: '🎁', lazo: '🎀', follaje: '🌿',
-        dedicatoria: '✍️', presentacion: '🪴', complemento: '🧸',
-    }
-    return map[seccion] ?? '🌸'
 }
 
 // ── Productos Relacionados ────────────────────────────────

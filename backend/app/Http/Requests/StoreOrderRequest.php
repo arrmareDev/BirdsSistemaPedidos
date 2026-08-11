@@ -28,7 +28,7 @@ class StoreOrderRequest extends FormRequest
             'address'          => 'nullable|string|max:255',
             'reference'        => 'nullable|string|max:255',
             'district'         => 'nullable|string|max:100',
-            'delivery_zone_id' => 'nullable|exists:delivery_zones,id',
+            'delivery_zone_id' => 'nullable|exists:delivery_tariffs,id',
             'delivery_fee'     => 'nullable|numeric|min:0',
             'lat'              => 'nullable|numeric',
             'lng'              => 'nullable|numeric',
@@ -39,7 +39,7 @@ class StoreOrderRequest extends FormRequest
             // ── Nota general ──────────────────────────────────────
             'note' => 'nullable|string|max:500',
 
-            // ── Campos exclusivos de florería ─────────────────────
+            // ── Entrega programada / mensaje personalizado ─────────
             'mensaje_tarjeta'    => 'nullable|string|max:300',
             'fecha_entrega'      => 'nullable|date|after_or_equal:today',
             'hora_entrega'       => 'nullable|date_format:H:i',

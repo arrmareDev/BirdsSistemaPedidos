@@ -1,102 +1,139 @@
-// ── Productos ─────────────────────────────────────────────
-export interface CustomizationOption {
-  id: number;
-  name: string;
+import { createRouter, createWebHistory } from "vue-router";
+
+function getStoredUser(): { must_change_password?: boolean } | null {
+  try {
+    return JSON.parse(localStorage.getItem("brasero_admin_user") ?? "null");
+  } catch {
+    return null;
+  }
 }
 
-export interface CustomizationSection {
-  id: number;
-  seccion: string;
-  label: string;
-  required: boolean;
-  multiple: boolean;
-  options: CustomizationOption[];
+function requireAuth(_to: any, _from: any, next: any) {
+  const token = localStorage.getItem("brasero_admin_token");
+  if (!token) return next("/admin/login");
+  if (getStoredUser()?.must_change_password)
+    return next("/admin/cambiar-clave");
+  next();
 }
 
-export interface ProductExtra {
-  id: number;
-  name: string;
-  price: number;
+function redirectIfAuth(_to: any, _from: any, next: any) {
+  const token = localStorage.getItem("brasero_admin_token");
+  if (!token) return next();
+  if (getStoredUser()?.must_change_password)
+    return next("/admin/cambiar-clave");
+  next("/admin/dashboard");
 }
 
-export interface Category {
-  id: number;
-  name: string;
-  slug: string;
-  emoji: string | null;
-  sort_order: number;
-  active: boolean;
-  products_count?: number;
+// La pantalla de cambio de contraseña obligatorio: solo entra quien tiene
+// la bandera activa, y quien ya la cambió no puede quedarse dando vueltas ahí.
+function requirePasswordChangePending(_to: any, _from: any, next: any) {
+  const token = localStorage.getItem("brasero_admin_token");
+  if (!token) return next("/admin/login");
+  if (!getStoredUser()?.must_change_password) return next("/admin/dashboard");
+  next();
 }
 
-export interface Product {
-  id: number;
-  name: string;
-  slug: string;
-  description: string | null;
-  emoji: string | null;
-  image_url: string | null;
-  price: number;
-  popular: boolean;
-  available: boolean;
-  ocasion?: string | null;
-  color?: string | null;
-  tamano?: string | null;
-  stock?: number;
-  controla_stock?: boolean;
-  category: Category | null;
-  customization_sections: CustomizationSection[];
-  extras: ProductExtra[];
-}
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior: () => ({ top: 0 }),
+  routes: [
+    // ══ TIENDA PÚBLICA ══
+    {
+      path: "/",
+      component: () => import("@/views/CatalogView.vue"),
+      name: "catalog",
+    },
+    {
+      path: "/producto/:slug",
+      component: () => import("@/views/ProductDetailView.vue"),
+      name: "product-detail",
+    },
+    {
+      path: "/checkout",
+      component: () => import("@/views/CheckoutView.vue"),
+      name: "checkout",
+    },
+    {
+      path: "/confirmado",
+      component: () => import("@/views/SuccessView.vue"),
+      name: "success",
+    },
+    {
+      path: "/seguimiento/:id?",
+      component: () => import("@/views/TrackingView.vue"),
+      name: "tracking",
+    },
 
-// ── Carrito ───────────────────────────────────────────────
-export interface CartSelection {
-  option_id: number;
-  name: string;
-}
+    // ══ ADMIN ══
+    {
+      path: "/admin/login",
+      component: () => import("@/views/admin/AdminLogin.vue"),
+      name: "admin-login",
+      beforeEnter: redirectIfAuth,
+    },
+    {
+      path: "/admin/cambiar-clave",
+      component: () => import("@/views/admin/CambiarClaveView.vue"),
+      name: "admin-cambiar-clave",
+      beforeEnter: requirePasswordChangePending,
+    },
+    {
+      path: "/admin",
+      component: () => import("@/views/admin/AdminShell.vue"),
+      beforeEnter: requireAuth,
+      children: [
+        { path: "", redirect: "/admin/dashboard" },
+        {
+          path: "dashboard",
+          component: () => import("@/views/admin/DashboardView.vue"),
+          name: "admin-dashboard",
+        },
+        {
+          path: "pedidos",
+          component: () => import("@/views/admin/PedidosView.vue"),
+          name: "admin-pedidos",
+        },
+        {
+          path: "catalogo",
+          component: () => import("@/views/admin/CatalogoView.vue"),
+          name: "admin-catalogo",
+        },
+        {
+          path: "caja",
+          component: () => import("@/views/admin/CajaView.vue"),
+          name: "admin-caja",
+        },
+        {
+          path: "clientes",
+          component: () => import("@/views/admin/ClientesView.vue"),
+          name: "admin-clientes",
+        },
+        {
+          path: "reportes",
+          component: () => import("@/views/admin/ReportesView.vue"),
+          name: "admin-reportes",
+        },
+        {
+          path: "/admin/usuarios",
+          component: () => import("@/views/admin/UsuariosView.vue"),
+          meta: { requiresAuth: true, role: ["super_admin"] },
+        },
 
-export interface CartCustomization {
-  section_id: number;
-  seccion: string;
-  label: string;
-  selections: CartSelection[];
-}
+        {
+          path: "/admin/delivery-zones",
+          name: "delivery-zones",
+          component: () => import("@/views/admin/DeliveryZonesView.vue"),
+          meta: { auth: true },
+        },
 
-export interface CartExtra {
-  extra_id: number;
-  name: string;
-  price: number;
-  qty: number;
-}
+        {
+          path: "/admin/sistema",
+          component: () => import("@/views/admin/SistemaView.vue"),
+          meta: { requiresAuth: true, role: ["sistema"] },
+        },
+      ],
+    },
+  ],
+});
 
-export interface CartItem {
-  _uid: string;
-  productId: number;
-  name: string;
-  emoji: string | null;
-  imageUrl: string | null;
-  basePrice: number;
-  extrasPrice: number;
-  price: number;
-  qty: number;
-  customization: CartCustomization[];
-  extras: CartExtra[];
-}
-
-// ── Checkout ──────────────────────────────────────────────
-export type MetodoPago =
-  | "anticipado"
-  | "contraentrega_efectivo"
-  | "contraentrega_yape";
-
-export interface OrderForm {
-  name: string;
-  phone: string;
-  address: string;
-  district: string;
-  reference: string;
-  note: string;
-  metodo_pago: MetodoPago;
-  lat: number | null;
-  lng: number | null;
-}
+export default router;

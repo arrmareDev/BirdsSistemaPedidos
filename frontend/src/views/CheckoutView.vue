@@ -22,12 +22,12 @@
       <label class="block text-[10.5px] font-black uppercase tracking-wider text-brand-red mb-3">
         ¿Cómo lo recibes?
       </label>
-      <div class="grid grid-cols-3 gap-3">
+      <div class="grid gap-3" :style="{ gridTemplateColumns: `repeat(${ORDER_TYPES.length}, minmax(0, 1fr))` }">
         <button v-for="t in ORDER_TYPES" :key="t.id" @click="form.type = t.id as any" class="flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2
                  font-bold text-[12px] cursor-pointer transition-all duration-200 uppercase" :class="form.type === t.id
                   ? 'border-brand-red bg-brand-red/8 text-brand-red shadow-red-sm'
                   : 'border-surface-border bg-white text-ink-muted hover:border-brand-red/40 hover:text-brand-red'">
-          <span class="text-[22px]">{{ t.icon }}</span>
+          <AppIcon :name="t.icon" :size="22" />
           {{ t.label }}
         </button>
       </div>
@@ -62,7 +62,7 @@
           leave-active-class="transition-all duration-150" leave-to-class="opacity-0">
           <div v-if="form.type === 'local'" class="flex flex-col gap-3">
             <div class="px-4 py-3.5 rounded-2xl bg-blue-50 border border-blue-200 flex items-start gap-3">
-              <span class="text-xl shrink-0">🪑</span>
+              <Armchair :size="20" class="shrink-0 text-blue-600" />
               <div>
                 <p class="font-bold text-[13px] text-blue-800 m-0">Consumo en el local</p>
                 <p class="text-[11.5px] text-blue-600 m-0 mt-0.5">
@@ -102,7 +102,7 @@
                        hover:bg-brand-red/10 disabled:opacity-50 disabled:cursor-not-allowed">
                 <span v-if="loadingGPS"
                   class="w-4 h-4 border-2 border-brand-red/30 border-t-brand-red rounded-full animate-spin" />
-                <span v-else>📍</span>
+                <MapPin v-else :size="16" />
                 {{ loadingGPS ? 'Obteniendo ubicación...' : 'Usar mi ubicación actual (GPS)' }}
               </button>
 
@@ -111,7 +111,7 @@
                 leave-to-class="opacity-0">
                 <div v-if="gpsError" class="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl
                          bg-red-50 border border-red-200 text-[12px] text-red-600">
-                  ⚠ {{ gpsError }}
+                  <TriangleAlert :size="14" class="shrink-0" /> {{ gpsError }}
                 </div>
               </Transition>
 
@@ -172,7 +172,7 @@
               <div v-else-if="selectedZone"
                 class="flex items-center justify-between px-4 py-3 rounded-2xl bg-pink-50 border border-pink-200">
                 <div class="flex items-center gap-2">
-                  <span class="text-lg">🚚</span>
+                  <Truck :size="18" class="text-pink-600" />
                   <div>
                     <p class="text-[12px] font-black text-pink-700 m-0">{{ selectedZone.nombre }}</p>
                     <p class="text-[11px] text-pink-500 m-0">
@@ -190,7 +190,7 @@
 
               <div v-else-if="zoneNotFound" class="flex flex-col gap-3">
                 <div class="flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-amber-50 border border-amber-200">
-                  <span class="text-amber-600 text-sm shrink-0">⚠</span>
+                  <TriangleAlert :size="14" class="text-amber-600 shrink-0 mt-0.5" />
                   <p class="text-[12px] text-amber-700 m-0 leading-relaxed">
                     Tu dirección está fuera de nuestra zona de cobertura. Puedes seleccionar la tarifa más cercana.
                   </p>
@@ -218,24 +218,12 @@
                 ¿Cómo vas a pagar? *
               </label>
               <div class="flex flex-col gap-2">
-               <!-- <button @click="form.metodo_pago = 'anticipado'"
-                  class="flex items-center gap-3 p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-150"
-                  :class="form.metodo_pago === 'anticipado'
-                    ? 'border-brand-red bg-brand-red/8'
-                    : 'border-surface-border bg-white hover:border-brand-red/40'">
-                  <span class="text-xl">💳</span>
-                  /<div>
-                    <p class="font-bold text-[13px] text-ink m-0">Ya pagué / Pago anticipado</p>
-                    <p class="text-[11.5px] text-ink-muted m-0">Transferencia o coordinado con la tienda</p>
-                  </div> 
-                </button>-->
-
                 <button @click="form.metodo_pago = 'contraentrega_efectivo'"
                   class="flex items-center gap-3 p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-150"
                   :class="form.metodo_pago === 'contraentrega_efectivo'
                     ? 'border-brand-red bg-brand-red/8'
                     : 'border-surface-border bg-white hover:border-brand-red/40'">
-                  <span class="text-xl">💵</span>
+                  <Banknote :size="20" class="text-green-600" />
                   <div>
                     <p class="font-bold text-[13px] text-ink m-0">Efectivo al repartidor</p>
                     <p class="text-[11.5px] text-ink-muted m-0">Pago contraentrega en efectivo</p>
@@ -247,7 +235,7 @@
                   :class="form.metodo_pago === 'contraentrega_yape'
                     ? 'border-brand-red bg-brand-red/8'
                     : 'border-surface-border bg-white hover:border-brand-red/40'">
-                  <span class="text-xl">📱</span>
+                  <Smartphone :size="20" class="text-purple-600" />
                   <div>
                     <p class="font-bold text-[13px] text-ink m-0">Yape / Plin</p>
                     <p class="text-[11.5px] text-ink-muted m-0">Pago contraentrega digital</p>
@@ -264,7 +252,7 @@
           leave-active-class="transition-all duration-150" leave-to-class="opacity-0">
           <div v-if="form.type === 'recoger'"
             class="px-4 py-3.5 rounded-2xl bg-green-50 border border-green-200 flex items-start gap-3">
-            <span class="text-xl shrink-0">🏪</span>
+            <Store :size="20" class="shrink-0 text-green-600" />
             <div>
               <p class="font-bold text-[13px] text-green-800 m-0">Recoger en tienda</p>
               <p class="text-[11.5px] text-green-600 m-0 mt-0.5">
@@ -277,12 +265,13 @@
       </div>
     </div>
 
-    <!-- ══ ENTREGA PROGRAMADA (solo si el carrito tiene productos de florería) ══ -->
-    <div v-if="cartStore.hasFloreria" class="bg-white rounded-3xl border border-surface-border shadow-card p-6 mb-6">
+    <!-- ══ ENTREGA PROGRAMADA ══ -->
+    <div v-if="pedidoConfigStore.config.entrega_programada_activo"
+      class="bg-white rounded-3xl border border-surface-border shadow-card p-6 mb-6">
       <div class="flex items-center justify-between mb-4">
         <div>
           <h2 class="font-black text-[15px] text-ink m-0 uppercase tracking-wide">
-            ¿Cuándo lo necesitas?
+            {{ pedidoConfigStore.config.entrega_programada_label }}
           </h2>
           <p class="text-[12px] text-ink-muted mt-0.5 m-0">
             Opcional — si no eliges fecha, lo prepararemos lo antes posible
@@ -321,7 +310,7 @@
           </div>
 
           <div class="flex items-start gap-2.5 px-3.5 py-3 rounded-2xl bg-pink-50 border border-pink-200">
-            <span class="text-pink-500 shrink-0">💐</span>
+            <Calendar :size="16" class="text-pink-500 shrink-0" />
             <p class="text-[12px] text-pink-700 m-0 leading-relaxed">
               Nos aseguraremos de que tu pedido esté listo para la fecha elegida.
             </p>
@@ -330,15 +319,16 @@
       </Transition>
     </div>
 
-    <!-- ══ MENSAJE PARA LA TARJETA (solo si el carrito tiene productos de florería) ══ -->
-    <div v-if="cartStore.hasFloreria" class="bg-white rounded-3xl border border-surface-border shadow-card p-6 mb-6">
+    <!-- ══ MENSAJE PERSONALIZADO ══ -->
+    <div v-if="pedidoConfigStore.config.mensaje_activo"
+      class="bg-white rounded-3xl border border-surface-border shadow-card p-6 mb-6">
       <h2 class="font-black text-[15px] text-ink mb-2 m-0 uppercase tracking-wide">
-        Mensaje para la tarjeta
+        {{ pedidoConfigStore.config.mensaje_label }}
       </h2>
       <p class="text-[12px] text-ink-muted mb-4 m-0">
-        Opcional — lo incluiremos en una tarjeta dentro del arreglo
+        Opcional — lo incluiremos junto con tu pedido
       </p>
-      <textarea v-model="form.mensaje_tarjeta" placeholder="Ej: ¡Feliz cumpleaños! Con todo mi amor 💕" rows="3"
+      <textarea v-model="form.mensaje_tarjeta" placeholder="Ej: ¡Feliz cumpleaños! Con todo mi cariño" rows="3"
         maxlength="300" class="w-full px-4 py-3 rounded-xl border-2 border-surface-border
                bg-white text-[14px] text-ink outline-none resize-none
                placeholder:text-ink-faint focus:border-brand-red transition-all duration-200" />
@@ -420,7 +410,7 @@
             <button @click="showHelpTooltip = false" class="w-4 h-4 rounded-full flex items-center justify-center
                      text-ink-faint hover:text-ink-muted border-none bg-transparent cursor-pointer shrink-0 mt-0.5"
               aria-label="Cerrar">
-              ✕
+              <X :size="12" />
             </button>
           </div>
         </Transition>
@@ -431,7 +421,7 @@
                  hover:bg-[#128C7E] hover:scale-105 active:scale-95
                  transition-all duration-200 shrink-0" aria-label="Ayuda por WhatsApp">
           <span class="absolute inset-0 rounded-full bg-[#25D366] animate-ping-slow opacity-75" />
-          <span class="relative text-2xl">💬</span>
+          <WhatsAppIcon :size="24" class="relative text-white" />
         </button>
       </div>
     </Teleport>
@@ -441,7 +431,7 @@
       leave-to-class="opacity-0">
       <div v-if="errorMsg"
         class="flex items-center gap-2.5 px-4 py-3.5 rounded-2xl bg-red-50 border border-red-200 mb-5">
-        <span class="text-red-500 font-bold text-[13px]">⚠</span>
+        <TriangleAlert :size="16" class="text-red-500 shrink-0" />
         <p class="text-[12.5px] text-red-700 m-0">{{ errorMsg }}</p>
       </div>
     </Transition>
@@ -456,7 +446,8 @@
              flex items-center justify-center gap-2">
       <span v-if="orderStore.loading"
         class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-      {{ orderStore.loading ? 'Procesando...' : 'Confirmar y pedir por WhatsApp 💬' }}
+      <WhatsAppIcon v-else :size="18" />
+      {{ orderStore.loading ? 'Procesando...' : 'Confirmar y pedir por WhatsApp' }}
     </button>
 
     <p class="text-center text-[12px] text-ink-muted mt-3">
@@ -471,6 +462,10 @@ import { reactive, computed, ref, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useOrderStore } from '@/stores/order'
+import { usePedidoConfigStore } from '@/stores/pedidoconfig'
+import AppIcon from '@/components/AppIcon.vue'
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon.vue'
+import { Armchair, MapPin, TriangleAlert, Truck, Banknote, Smartphone, Store, Calendar, X } from 'lucide-vue-next'
 import api from '@/utils/api'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -484,6 +479,7 @@ L.Icon.Default.mergeOptions({ iconUrl: markerIcon, iconRetinaUrl: markerIcon2x, 
 // ── Stores y router ───────────────────────────────────────
 const cartStore = useCartStore()
 const orderStore = useOrderStore()
+const pedidoConfigStore = usePedidoConfigStore()
 const router = useRouter()
 
 // ── Tipos ─────────────────────────────────────────────────
@@ -495,14 +491,14 @@ const CHICLAYO_LNG = -79.8409
 
 // Orden: local, recoger, delivery — coincide con App\Enums\SaleChannel
 const ORDER_TYPES = [
- // { id: 'local', icon: '🪑', label: 'Consumo en local' },//
-  { id: 'recoger', icon: '🏪', label: 'Para llevar' },
-  { id: 'delivery', icon: '🚚', label: 'Delivery' },
+  // { id: 'local', icon: 'armchair', label: 'Consumo en local' },
+  { id: 'recoger', icon: 'store', label: 'Para llevar' },
+  { id: 'delivery', icon: 'truck', label: 'Delivery' },
 ] as const
 
 const HORARIOS = [
   { value: '09:00', label: '9:00 AM - 10:00 AM' },
-  { value: '10:00', label: '10:00 AM - 11:00 AM' }, 
+  { value: '10:00', label: '10:00 AM - 11:00 AM' },
   { value: '11:00', label: '11:00 AM - 12:00 PM' },
   { value: '12:00', label: '12:00 PM - 1:00 PM' },
   { value: '14:00', label: '2:00 PM - 3:00 PM' },
@@ -524,7 +520,7 @@ const form = reactive({
   note: '',
   lat: null as number | null,
   lng: null as number | null,
-  // ── Florería ─────────────────────────────────────────────
+  // ── Entrega programada / mensaje personalizado ─────────────
   mensaje_tarjeta: '',
   fecha_entrega: '',
   hora_entrega: '',
@@ -533,7 +529,7 @@ const form = reactive({
 
 // ── Estado general ────────────────────────────────────────
 const errorMsg = ref('')
-const showHelpTooltip = ref(true) // visible por defecto, se puede cerrar con la ✕
+const showHelpTooltip = ref(true) // visible por defecto, se puede cerrar con el botón X
 
 // ── Zonas ────────────────────────────────────────────────
 const zones = ref<DeliveryZone[]>([])
@@ -616,17 +612,6 @@ watch(() => form.entrega_programada, (val) => {
   }
 })
 
-// Si el carrito deja de tener productos de florería (ej: el cliente quita
-// el último ramo y solo deja café), limpiamos el estado de entrega
-// programada y mensaje de tarjeta para no enviar datos "fantasma".
-watch(() => cartStore.hasFloreria, (tieneFloreria) => {
-  if (!tieneFloreria) {
-    form.entrega_programada = false
-    form.fecha_entrega = ''
-    form.hora_entrega = ''
-  }
-})
-
 // ── Zonas ────────────────────────────────────────────────
 async function fetchZones() {
   loadingZones.value = true
@@ -698,9 +683,9 @@ function initMap() {
 
   const redIcon = L.divIcon({
     className: '',
-    html: `<div style="width:32px;height:32px;background:#C41E1E;border:3px solid white;
+    html: `<div style="width:32px;height:32px;background:var(--color-brand-primary,#C41E1E);border:3px solid white;
       border-radius:50% 50% 50% 0;transform:rotate(-45deg);
-      box-shadow:0 2px 8px rgba(196,30,30,0.4);"></div>`,
+      box-shadow:0 2px 8px rgba(var(--color-brand-primary-rgb,196,30,30),0.4);"></div>`,
     iconSize: [32, 32], iconAnchor: [16, 32],
   })
 
@@ -806,7 +791,7 @@ async function handleOrder() {
     note: form.note || undefined,
     lat: form.lat ?? undefined,
     lng: form.lng ?? undefined,
-    // ── Florería ─────────────────────────────────────────────
+    // ── Entrega programada / mensaje personalizado ─────────────
     mensaje_tarjeta: form.mensaje_tarjeta || undefined,
     fecha_entrega: form.fecha_entrega || undefined,
     hora_entrega: form.hora_entrega || undefined,
@@ -840,15 +825,23 @@ async function handleOrder() {
 }
 
 .checkout-input:focus {
-  border-color: #C41E1E;
+  border-color: var(--color-brand-primary, #C41E1E);
   background: white;
-  box-shadow: 0 0 0 3px rgba(196, 30, 30, 0.08);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary, #C41E1E) 8%, transparent);
 }
 
 /* Pulso lento y sutil del botón flotante de WhatsApp */
 @keyframes ping-slow {
-  0% { transform: scale(1); opacity: 0.5; }
-  75%, 100% { transform: scale(1.6); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+
+  75%,
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
 }
 
 .animate-ping-slow {

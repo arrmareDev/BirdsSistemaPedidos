@@ -1,15 +1,36 @@
 import { createRouter, createWebHistory } from "vue-router";
 
+function getStoredUser(): { must_change_password?: boolean } | null {
+  try {
+    return JSON.parse(localStorage.getItem("brasero_admin_user") ?? "null");
+  } catch {
+    return null;
+  }
+}
+
 function requireAuth(_to: any, _from: any, next: any) {
   const token = localStorage.getItem("brasero_admin_token");
-  if (token) next();
-  else next("/admin/login");
+  if (!token) return next("/admin/login");
+  if (getStoredUser()?.must_change_password)
+    return next("/admin/cambiar-clave");
+  next();
 }
 
 function redirectIfAuth(_to: any, _from: any, next: any) {
   const token = localStorage.getItem("brasero_admin_token");
-  if (token) next("/admin/dashboard");
-  else next();
+  if (!token) return next();
+  if (getStoredUser()?.must_change_password)
+    return next("/admin/cambiar-clave");
+  next("/admin/dashboard");
+}
+
+// La pantalla de cambio de contraseña obligatorio: solo entra quien tiene
+// la bandera activa, y quien ya la cambió no puede quedarse dando vueltas ahí.
+function requirePasswordChangePending(_to: any, _from: any, next: any) {
+  const token = localStorage.getItem("brasero_admin_token");
+  if (!token) return next("/admin/login");
+  if (!getStoredUser()?.must_change_password) return next("/admin/dashboard");
+  next();
 }
 
 const router = createRouter({
@@ -49,6 +70,12 @@ const router = createRouter({
       component: () => import("@/views/admin/AdminLogin.vue"),
       name: "admin-login",
       beforeEnter: redirectIfAuth,
+    },
+    {
+      path: "/admin/cambiar-clave",
+      component: () => import("@/views/admin/CambiarClaveView.vue"),
+      name: "admin-cambiar-clave",
+      beforeEnter: requirePasswordChangePending,
     },
     {
       path: "/admin",

@@ -1,5 +1,5 @@
 <template>
-        <section class="relative overflow-hidden bg-brand-dark select-none h-[75dvh] md:h-[90dvh]">
+    <section class="relative overflow-hidden bg-brand-dark select-none h-[75dvh] md:h-[90dvh]">
         <!-- ══ SLIDES ══ -->
         <div class="absolute inset-0">
             <TransitionGroup name="slide-fade" tag="div" class="relative w-full h-full">
@@ -41,7 +41,7 @@
                         background: slide.badgeBg,
                         borderColor: slide.badgeBorder,
                     }">
-                                <span class="text-base">{{ slide.badgeIcon }}</span>
+                                <AppIcon :name="slide.badgeIcon" :size="16" :style="{ color: slide.badgeText }" />
                                 <span class="text-[12px] font-bold tracking-wide" :style="{ color: slide.badgeText }">
                                     {{ slide.badge }}
                                 </span>
@@ -69,10 +69,10 @@
                                 <div v-if="slide.oldPrice" class="text-[20px] font-bold text-white/40 line-through">
                                     S/ {{ slide.oldPrice }}
                                 </div>
-                            <div class="font-display font-black text-5xl md:text-[64px] text-brand-accent
+                                <div class="font-display font-black text-5xl md:text-[64px] text-brand-accent
                              leading-none drop-shadow-[0_4px_20px_rgba(230,213,195,0.4)]">
-                            S/ {{ slide.priceTag }}
-                            </div>
+                                    S/ {{ slide.priceTag }}
+                                </div>
                                 <div v-if="slide.priceSub" class="text-[13px] text-white/60 font-medium
                          max-w-[80px] leading-snug">
                                     {{ slide.priceSub }}
@@ -98,13 +98,14 @@
                          backdrop-blur-sm" style="background: rgba(37,211,102,0.2);
                          border: 1.5px solid rgba(37,211,102,0.5);
                          color: #4ade80;">
-                                    💬 {{ slide.ctaWa }}
+                                    <MessageCircle :size="18" /> {{ slide.ctaWa }}
                                 </a>
                             </div>
                         </Transition>
 
                         <!-- Floating badges -->
-                        <div v-if="slide.floatBadges" class="hidden md:flex absolute bottom-16 right-12 flex-col gap-2 items-end">
+                        <div v-if="slide.floatBadges"
+                            class="hidden md:flex absolute bottom-16 right-12 flex-col gap-2 items-end">
                             <Transition name="slide-up-delay3" appear>
                                 <div v-if="current === i" class="flex flex-col gap-2">
                                     <div v-for="fb in slide.floatBadges" :key="fb.text" class="flex items-center gap-2 px-3.5 py-2 rounded-xl
@@ -114,7 +115,8 @@
                             borderColor: fb.border,
                             color: fb.color,
                         }">
-                                        {{ fb.icon }} {{ fb.text }}
+                                        <AppIcon :name="fb.icon" :size="14" :style="{ color: fb.color }" /> {{ fb.text
+                                        }}
                                     </div>
                                 </div>
                             </Transition>
@@ -136,17 +138,17 @@
         <!-- ══ FLECHAS ══ -->
         <button @click="prev" class="absolute left-4 top-1/2 -translate-y-1/2 z-30
              w-11 h-11 rounded-full bg-black/30 border border-white/20
-             flex items-center justify-center text-white text-xl cursor-pointer
+             flex items-center justify-center text-white cursor-pointer
              hover:bg-black/50 transition-all duration-150
              backdrop-blur-sm hidden md:flex">
-            ‹
+            <ChevronLeft :size="20" />
         </button>
         <button @click="next" class="absolute right-4 top-1/2 -translate-y-1/2 z-30
              w-11 h-11 rounded-full bg-black/30 border border-white/20
-             flex items-center justify-center text-white text-xl cursor-pointer
+             flex items-center justify-center text-white cursor-pointer
              hover:bg-black/50 transition-all duration-150
              backdrop-blur-sm hidden md:flex">
-            ›
+            <ChevronRight :size="20" />
         </button>
 
         <!-- ══ BARRA DE PROGRESO ══ -->
@@ -158,9 +160,12 @@
         </div>
     </section>
 </template>
-f
+
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ChevronLeft, ChevronRight, MessageCircle } from 'lucide-vue-next'
+import AppIcon from '@/components/AppIcon.vue'
+import { useBrandingStore } from '@/stores/branding'
 
 defineEmits(['scrollToMenu'])
 
@@ -169,9 +174,11 @@ const current = ref(0)
 const paused = ref(false)
 const progress = ref(0)
 
-const waPhone = import.meta.env.VITE_WA_PHONE ?? '51984199340'
-const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent('¡Hola! Quisiera hacer un pedido')}`
-
+const brandingStore = useBrandingStore()
+const waLink = computed(() => {
+    const phone = (brandingStore.branding.whatsapp ?? import.meta.env.VITE_WA_PHONE ?? '51984199340').replace(/\D/g, '')
+    return `https://wa.me/${phone}?text=${encodeURIComponent('¡Hola! Quisiera hacer un pedido')}`
+})
 
 const progressWidth = computed(() =>
     paused.value ? (progress.value / INTERVAL * 100) : 100
@@ -184,7 +191,7 @@ const SLIDES = [
         bgImage: '/images/sombrerera.png',
         bg: 'linear-gradient(135deg,#0C542C,#083B1E,#052211)',
         overlay: 'linear-gradient(110deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.45) 55%, rgba(0,0,0,0.12) 100%)',
-        badgeIcon: '🌹',
+        badgeIcon: 'flower-2',
         badge: 'Selección del día',
         badgeText: '#D4AF37',
         badgeBg: 'rgba(212,175,55,0.15)',
@@ -198,8 +205,8 @@ const SLIDES = [
         cta: 'Pedir ahora →',
         ctaWa: 'Pedir por WhatsApp',
         floatBadges: [
-            { icon: '🌿', text: 'Flores frescas del día', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
-            { icon: '🎀', text: 'Envoltura premium', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
+            { icon: 'leaf', text: 'Flores frescas del día', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
+            { icon: 'ribbon', text: 'Envoltura premium', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
         ],
     },
     {
@@ -207,7 +214,7 @@ const SLIDES = [
         bgImage: '/images/cajarosas.png',
         bg: 'linear-gradient(135deg,#126B38,#0C542C,#052211)',
         overlay: 'linear-gradient(110deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.42) 55%, rgba(0,0,0,0.10) 100%)',
-        badgeIcon: '✨',
+        badgeIcon: 'sparkles',
         badge: 'Diseño estrella',
         badgeText: '#FFFFFF',
         badgeBg: 'rgba(12,84,44,0.3)',
@@ -222,8 +229,8 @@ const SLIDES = [
         cta: 'Ver arreglo →',
         ctaWa: null,
         floatBadges: [
-            { icon: '💌', text: 'Tarjeta incluida', bg: 'rgba(212,175,55,0.2)', border: 'rgba(212,175,55,0.4)', color: '#D4AF37' },
-            { icon: '📦', text: 'Caja sombrero', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
+            { icon: 'heart', text: 'Tarjeta incluida', bg: 'rgba(212,175,55,0.2)', border: 'rgba(212,175,55,0.4)', color: '#D4AF37' },
+            { icon: 'package', text: 'Caja sombrero', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
         ],
     },
     {
@@ -231,7 +238,7 @@ const SLIDES = [
         bgImage: '/images/delivery.jpeg',
         bg: 'linear-gradient(135deg,#0C542C,#083B1E,#052211)',
         overlay: 'linear-gradient(110deg, rgba(0,0,0,0.76) 0%, rgba(0,0,0,0.40) 55%, rgba(0,0,0,0.10) 100%)',
-        badgeIcon: '🛵',
+        badgeIcon: 'bike',
         badge: 'Delivery disponible',
         badgeText: '#FFFFFF',
         badgeBg: 'rgba(12,84,44,0.3)',
@@ -244,8 +251,8 @@ const SLIDES = [
         cta: 'Pedir con delivery →',
         ctaWa: null,
         floatBadges: [
-            { icon: '📍', text: 'Chiclayo y alrededores', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
-            { icon: '🕐', text: 'Entrega programada', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
+            { icon: 'map-pin', text: 'Chiclayo y alrededores', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
+            { icon: 'clock', text: 'Entrega programada', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
         ],
     },
     {
@@ -253,7 +260,7 @@ const SLIDES = [
         bgImage: '/images/ocacion.png',
         bg: 'linear-gradient(135deg,#126B38,#0C542C,#052211)',
         overlay: 'linear-gradient(110deg, rgba(0,0,0,0.76) 0%, rgba(0,0,0,0.42) 55%, rgba(0,0,0,0.10) 100%)',
-        badgeIcon: '🎁',
+        badgeIcon: 'gift',
         badge: 'Para cada ocasión',
         badgeText: '#D4AF37',
         badgeBg: 'rgba(212,175,55,0.15)',
@@ -267,8 +274,8 @@ const SLIDES = [
         cta: 'Ver catálogo →',
         ctaWa: null,
         floatBadges: [
-            { icon: '🌸', text: 'Diseños a medida', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
-            { icon: '⭐', text: '4.9 estrellas', bg: 'rgba(212,175,55,0.2)', border: 'rgba(212,175,55,0.4)', color: '#D4AF37' },
+            { icon: 'flower', text: 'Diseños a medida', bg: 'rgba(0,0,0,0.55)', border: 'rgba(255,255,255,0.15)', color: '#fff' },
+            { icon: 'star', text: '4.9 estrellas', bg: 'rgba(212,175,55,0.2)', border: 'rgba(212,175,55,0.4)', color: '#D4AF37' },
         ],
     },
 ]

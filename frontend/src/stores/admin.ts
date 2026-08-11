@@ -7,6 +7,7 @@ export interface AdminUser {
   name: string;
   email: string;
   role: "admin" | "sistema" | "contador" | "atencion" | "salon";
+  must_change_password: boolean;
   permissions: {
     dashboard: boolean;
     catalog: boolean;
@@ -39,6 +40,9 @@ export const useAdminStore = defineStore("admin", () => {
   const isContador = computed(() => role.value === "contador");
   const isAtencion = computed(() => role.value === "atencion");
   const isSalon = computed(() => role.value === "salon");
+  const mustChangePassword = computed(
+    () => user.value?.must_change_password ?? false,
+  );
 
   // Permisos de navegación
   const can = computed(() => ({
@@ -111,6 +115,30 @@ export const useAdminStore = defineStore("admin", () => {
     }
   }
 
+  async function changePassword(
+    currentPassword: string,
+    newPassword: string,
+    newPasswordConfirmation: string,
+  ): Promise<{ ok: boolean; error?: string }> {
+    try {
+      await api.put("/admin/auth/password", {
+        current_password: currentPassword,
+        password: newPassword,
+        password_confirmation: newPasswordConfirmation,
+      });
+      if (user.value) {
+        user.value.must_change_password = false;
+        localStorage.setItem("brasero_admin_user", JSON.stringify(user.value));
+      }
+      return { ok: true };
+    } catch (e: any) {
+      return {
+        ok: false,
+        error: e.response?.data?.message ?? "Error al cambiar la contraseña",
+      };
+    }
+  }
+
   return {
     token,
     user,
@@ -122,10 +150,12 @@ export const useAdminStore = defineStore("admin", () => {
     isContador,
     isAtencion,
     isSalon,
+    mustChangePassword,
     can,
     homeRoute,
     login,
     logout,
     fetchMe,
+    changePassword,
   };
 });

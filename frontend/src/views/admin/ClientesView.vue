@@ -298,50 +298,27 @@
                 </div>
 
                 <!-- Preferencias -->
-                <div v-if="selected.preferences">
+                <div v-if="preferenciasSecciones(selected).length > 0">
                   <h3 class="text-[11px] font-black uppercase tracking-widest
                              text-gray-400 m-0 mb-3">
                     Preferencias detectadas
                   </h3>
                   <div class="flex flex-col gap-2.5">
-
-                    <div v-if="selected.preferences.salsas?.length" class="flex items-start gap-3 px-4 py-3 rounded-xl
-                             bg-orange-50 border border-orange-100">
-                      <span class="text-lg shrink-0">🫙</span>
+                    <div v-for="sec in preferenciasSecciones(selected)" :key="sec.seccion"
+                      class="flex items-start gap-3 px-4 py-3 rounded-xl bg-gray-50 border border-gray-100">
+                      <SlidersHorizontal :size="18" class="text-gray-400 shrink-0 mt-0.5" />
                       <div>
-                        <p class="text-[11px] text-orange-600 font-bold m-0 mb-1.5">
-                          Cremas favoritas
+                        <p class="text-[11px] text-gray-500 font-bold m-0 mb-1.5">
+                          {{ sec.label }}
                         </p>
                         <div class="flex flex-wrap gap-1.5">
-                          <span v-for="(s, i) in selected.preferences.salsas" :key="s"
-                            class="text-[11px] font-semibold px-2.5 py-1 rounded-full" :class="i === 0
-                              ? 'bg-orange-200 text-orange-800'
-                              : 'bg-orange-100 text-orange-700'">
-                            {{ i === 0 ? '⭐ ' : '' }}{{ s }}
+                          <span v-for="(name, i) in sec.top5" :key="name"
+                            class="text-[11px] font-semibold px-2.5 py-1 rounded-full inline-flex items-center gap-1" :class="i === 0
+                              ? 'bg-brand-red/10 text-brand-red'
+                              : 'bg-gray-100 text-gray-600'">
+                            <Star v-if="i === 0" :size="10" fill="currentColor" /> {{ name }}
                           </span>
                         </div>
-                      </div>
-                    </div>
-
-                    <div v-if="selected.preferences.ensalada" class="flex items-center gap-3 px-4 py-3 rounded-xl
-                             bg-green-50 border border-green-100">
-                      <span class="text-lg shrink-0">🥗</span>
-                      <div>
-                        <p class="text-[11px] text-green-600 font-bold m-0">Ensalada preferida</p>
-                        <p class="text-[13px] text-green-800 font-semibold m-0">
-                          {{ selected.preferences.ensalada }}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div v-if="selected.preferences.papas" class="flex items-center gap-3 px-4 py-3 rounded-xl
-                             bg-yellow-50 border border-yellow-100">
-                      <span class="text-lg shrink-0">🍟</span>
-                      <div>
-                        <p class="text-[11px] text-yellow-600 font-bold m-0">Papas preferidas</p>
-                        <p class="text-[13px] text-yellow-800 font-semibold m-0">
-                          {{ selected.preferences.papas }}
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -372,12 +349,12 @@
                             ? 'bg-brand-red'
                             : 'bg-gray-400'" :style="`width: ${Math.min(selected.orders_count * 10, 100)}%`" />
                       </div>
-                      <p class="text-[11px] text-gray-400 m-0 mt-1.5">
+                      <p class="text-[11px] text-gray-400 m-0 mt-1.5 flex items-center gap-1">
                         <template v-if="selected.orders_count >= 10">
-                          🏆 Cliente VIP — ¡merece atención especial!
+                          <Trophy :size="12" class="text-yellow-500 shrink-0" /> Cliente VIP — ¡merece atención especial!
                         </template>
                         <template v-else-if="selected.orders_count >= 5">
-                          🔥 Recurrente — faltan {{ 10 - selected.orders_count }} para VIP
+                          <Flame :size="12" class="text-orange-500 shrink-0" /> Recurrente — faltan {{ 10 - selected.orders_count }} para VIP
                         </template>
                         <template v-else>
                           Nuevo cliente — faltan {{ 10 - selected.orders_count }} para VIP
@@ -435,6 +412,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useClientsStore, type Client } from '@/stores/clients'
+import { SlidersHorizontal, Star, Trophy, Flame } from 'lucide-vue-next'
 import {
   MagnifyingGlassIcon,
   PhoneIcon,
@@ -648,6 +626,20 @@ function initials(name: string): string {
     .toUpperCase()
 }
 
+// Top 5 opciones más elegidas, por cada sección de personalización que el
+// cliente realmente tenga en su historial (sin asumir cuáles existen).
+function preferenciasSecciones(client: Client) {
+  const secciones = client.preferences?.secciones ?? {}
+  return Object.entries(secciones).map(([seccion, data]) => ({
+    seccion,
+    label: data.label ?? seccion,
+    top5: Object.entries(data.counts ?? {})
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name]) => name),
+  }))
+}
+
 function formatMonto(n: number): string {
   return n.toLocaleString('es-PE', {
     minimumFractionDigits: 2,
@@ -675,13 +667,13 @@ function segmentoBadgeClass(c: Client) {
     return {
       avatar: 'bg-yellow-100 text-yellow-700',
       badge: 'bg-yellow-100 text-yellow-700',
-      label: 'VIP ⭐',
+      label: 'VIP',
     }
   if (c.orders_count >= 5)
     return {
       avatar: 'bg-red-100 text-red-700',
       badge: 'bg-red-100 text-red-700',
-      label: 'Fiel 🔥',
+      label: 'Fiel',
     }
   if (c.orders_count >= 2)
     return {
@@ -699,13 +691,12 @@ function segmentoBadgeClass(c: Client) {
 function waLink(c: Client, tipo: 'saludo' | 'promo' | 'reactivar' | 'cumple'): string {
   const phone = import.meta.env.VITE_WA_PHONE ?? '51984199340'
   const nombre = c.name.split(' ')[0]
-  const crema = c.preferences?.salsas?.[0] ?? 'crema especial'
 
   const mensajes: Record<string, string> = {
     saludo: `Hola ${nombre} ¡Gracias por ser cliente de Birds! ¿Cómo estás?`,
     promo: `Hola ${nombre} ¡Tenemos una oferta especial para ti! Esta semana 10% de descuento en tu próximo pedido. ¿Te animás? `,
     reactivar: `Hola ${nombre} ¡Te extrañamos en Birds! Han pasado unos días y queremos invitarte a volver. Recuerda que nos puedes pedir a domicilio. ¡Te esperamos!`,
-    cumple: `Hola ${nombre} Desde Birds te deseamos un día increíble. Sabemos que te gusta la ${crema} ¡así que hoy es el mejor día para unas deliciosas alas de pollo!`,
+    cumple: `Hola ${nombre} Desde Birds te deseamos un día increíble en tu cumpleaños. ¡Que lo celebres a lo grande!`,
   }
 
   return `https://wa.me/${c.phone.replace(/\D/g, '')}?text=${encodeURIComponent(mensajes[tipo])}`

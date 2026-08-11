@@ -89,14 +89,14 @@ class ReportController extends Controller
             DB::raw('SUM(qty) as total_qty'),
             DB::raw('SUM(subtotal) as total_revenue')
         )
-            ->with('product:id,name,emoji')
+            ->with('product:id,name,icon')
             ->groupBy('product_id')
             ->orderByDesc('total_qty')
             ->limit(8)
             ->get()
             ->map(fn($item) => [
-                'product' => $item->product?->name  ?? 'Producto eliminado',
-                'emoji'   => $item->product?->emoji ?? '🍽️',
+                'product' => $item->product?->name ?? 'Producto eliminado',
+                'icon'    => $item->product?->icon ?? 'package',
                 'qty'     => (int) $item->total_qty,
                 'revenue' => (float) $item->total_revenue,
             ]);
@@ -123,6 +123,10 @@ class ReportController extends Controller
         ]);
     }
 
+    // Cuenta cuántas veces se eligió cada opción, agrupado por sección de
+    // personalización — de forma genérica, sin asumir qué secciones existen
+    // (cada negocio define las suyas: "envoltura"/"lazo" para una florería,
+    // "salsas"/"papas" para un restaurante, etc.)
     public function customizations(): JsonResponse
     {
         $items = OrderItem::whereNotNull('customization')
@@ -130,10 +134,8 @@ class ReportController extends Controller
             ->whereRaw("customization::text != '[]'")
             ->get(['customization']);
 
-        $salsaCount    = [];
-        $ensaladaCount = [];
-        $papasCount    = [];
-        $terminoCount  = [];
+        // seccion => ['label' => ..., 'counts' => [opcion => qty]]
+        $bySection = [];
 
         foreach ($items as $item) {
             $customization = is_string($item->customization)
@@ -142,37 +144,43 @@ class ReportController extends Controller
 
             if (!is_array($customization)) continue;
 
-            // Nueva estructura: array de secciones con selections
             foreach ($customization as $section) {
                 $seccion    = $section['seccion']    ?? '';
+                $label      = $section['label']      ?? $seccion;
                 $selections = $section['selections'] ?? [];
+
+                if (empty($seccion)) continue;
+
+                if (!isset($bySection[$seccion])) {
+                    $bySection[$seccion] = ['label' => $label, 'counts' => []];
+                }
 
                 foreach ($selections as $sel) {
                     $name = $sel['name'] ?? '';
                     if (empty($name)) continue;
 
-                    match ($seccion) {
-                        'salsas'   => $salsaCount[$name]    = ($salsaCount[$name]    ?? 0) + 1,
-                        'ensalada' => $ensaladaCount[$name] = ($ensaladaCount[$name] ?? 0) + 1,
-                        'papas'    => $papasCount[$name]    = ($papasCount[$name]    ?? 0) + 1,
-                        'termino'  => $terminoCount[$name]  = ($terminoCount[$name]  ?? 0) + 1,
-                        default    => null,
-                    };
+                    $bySection[$seccion]['counts'][$name] =
+                        ($bySection[$seccion]['counts'][$name] ?? 0) + 1;
                 }
             }
         }
 
-        arsort($salsaCount);
-        arsort($ensaladaCount);
-        arsort($papasCount);
-        arsort($terminoCount);
+        $secciones = collect($bySection)->map(function ($data, $seccion) {
+            $counts = $data['counts'];
+            arsort($counts);
+
+            return [
+                'seccion' => $seccion,
+                'label'   => $data['label'],
+                'options' => collect($counts)
+                    ->map(fn($qty, $name) => compact('name', 'qty'))
+                    ->values(),
+            ];
+        })->values();
 
         return $this->success([
-            'salsas'                 => collect($salsaCount)->map(fn($qty, $name) => compact('name', 'qty'))->values(),
-            'ensaladas'              => collect($ensaladaCount)->map(fn($qty, $name) => compact('name', 'qty'))->values(),
-            'papas'                  => collect($papasCount)->map(fn($qty, $name) => compact('name', 'qty'))->values(),
-            'terminos'               => collect($terminoCount)->map(fn($qty, $name) => compact('name', 'qty'))->values(),
-            'total_items_analizados' => $items->count(),
+            'secciones'               => $secciones,
+            'total_items_analizados'  => $items->count(),
         ]);
     }
 

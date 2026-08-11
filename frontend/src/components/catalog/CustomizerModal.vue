@@ -14,11 +14,11 @@
 
             <!-- Imagen -->
             <div class="relative h-48 sm:h-56 bg-gray-50 shrink-0 overflow-hidden">
-              <img v-if="product.image_url" :src="product.image_url" :alt="product.name"
+              <img v-if="displayImageUrl" :src="displayImageUrl" :alt="product.name"
                 class="w-full h-full object-cover" />
               <div v-else class="w-full h-full flex items-center justify-center
-                       bg-gradient-to-br from-rose-50 via-pink-50 to-emerald-50">
-                <span class="text-[80px] leading-none">{{ product.emoji || '💐' }}</span>
+                       bg-gradient-to-br from-rose-50 via-pink-50 to-emerald-50 text-rose-400">
+                <AppIcon :name="product.icon" :size="72" :stroke-width="1.5" />
               </div>
 
               <!-- Badge modo edición -->
@@ -50,6 +50,15 @@
               </button>
             </div>
 
+            <!-- Miniaturas (imagen principal + galería + variantes con foto) -->
+            <div v-if="galleryThumbs.length > 1" class="flex gap-2 px-5 pt-3 shrink-0 overflow-x-auto">
+              <button v-for="thumb in galleryThumbs" :key="thumb.key" @click="manualImage = thumb.url" class="w-11 h-11 rounded-xl overflow-hidden border-2 cursor-pointer shrink-0
+                       transition-all duration-150" :class="displayImageUrl === thumb.url
+                        ? 'border-brand-red' : 'border-gray-200 hover:border-gray-300'">
+                <img :src="thumb.url" class="w-full h-full object-cover" />
+              </button>
+            </div>
+
             <!-- Info -->
             <div class="px-5 pt-5 pb-3 shrink-0">
               <h2 class="font-black text-[20px] text-gray-900 m-0 mb-1 leading-tight"
@@ -59,23 +68,6 @@
               <p v-if="product.description" class="text-[13.5px] text-gray-400 m-0 leading-relaxed">
                 {{ product.description }}
               </p>
-
-              <!-- Atributos florería -->
-              <div v-if="hasAttributes" class="flex flex-wrap gap-1.5 mt-3">
-                <span v-if="product.ocasion" class="attr-chip">
-                  <SparklesIcon class="w-3 h-3 shrink-0" />
-                  {{ product.ocasion }}
-                </span>
-                <span v-if="product.color" class="attr-chip">
-                  <span class="w-2.5 h-2.5 rounded-full shrink-0 border border-black/10"
-                    :style="{ background: colorHex(product.color) }" />
-                  {{ product.color }}
-                </span>
-                <span v-if="product.tamano" class="attr-chip">
-                  <ArrowsPointingOutIcon class="w-3 h-3 shrink-0" />
-                  {{ product.tamano }}
-                </span>
-              </div>
 
               <div class="flex items-baseline gap-1 mt-3">
                 <span class="text-[13px] font-semibold text-gray-400">S/</span>
@@ -123,6 +115,7 @@
                                     : 'border-gray-300'">
                         <CheckIcon v-if="isSelected(section.id, opt.id)" class="w-2.5 h-2.5 text-white" />
                       </div>
+                      <img v-if="opt.image_url" :src="opt.image_url" class="w-5 h-5 rounded-md object-cover shrink-0" />
                       {{ opt.name }}
                     </button>
                   </div>
@@ -140,6 +133,7 @@
                                     : 'border-gray-300'">
                         <div v-if="isSelected(section.id, opt.id)" class="w-2 h-2 rounded-full bg-white" />
                       </div>
+                      <img v-if="opt.image_url" :src="opt.image_url" class="w-9 h-9 rounded-lg object-cover shrink-0" />
                       <span class="font-medium text-[13.5px] text-gray-900">
                         {{ opt.name }}
                       </span>
@@ -249,7 +243,7 @@
                           ? 'bg-gray-400 shadow-none'
                           : editingUid
                             ? 'bg-amber-500 hover:bg-amber-600 shadow-[0_4px_20px_rgba(245,158,11,0.35)]'
-                            : 'bg-brand-red hover:bg-red-700 shadow-[0_4px_20px_rgba(196,30,30,0.3)]'"
+                            : 'bg-brand-red hover:bg-red-700 shadow-red-md'"
                   style="font-family:'Plus Jakarta Sans',sans-serif;">
                   <component :is="agotado ? XCircleIcon : editingUid ? CheckCircleIcon : ShoppingCartIcon"
                     class="w-4 h-4" />
@@ -266,10 +260,11 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import AppIcon from '@/components/AppIcon.vue'
 import {
   XMarkIcon, CheckIcon, ShoppingCartIcon,
   ExclamationCircleIcon, PencilIcon, CheckCircleIcon,
-  SparklesIcon, ArrowsPointingOutIcon, ArchiveBoxIcon,
+  ArchiveBoxIcon,
   XCircleIcon,
 } from '@heroicons/vue/24/outline'
 import { useCartStore } from '@/stores/cart'
@@ -289,6 +284,46 @@ const extrasMap = ref<Map<number, CartExtra>>(new Map())
 const errors = ref<Record<number, string>>({})
 const qty = ref(1)
 
+// Si el cliente eligió una opción con foto propia (ej. un color), se
+// muestra esa en vez de la foto genérica del producto — salvo que haya
+// tocado una miniatura de la galería a mano, eso manda primero.
+const manualImage = ref<string | null>(null)
+const displayImageUrl = computed(() => {
+  if (manualImage.value) return manualImage.value
+  if (!product.value) return null
+  for (const section of product.value.customization_sections) {
+    if (section.multiple) continue
+    const sel = selections.value.get(section.id)
+    if (!sel || sel.selections.length === 0) continue
+    const opt = section.options.find(o => o.id === sel.selections[0].option_id)
+    if (opt?.image_url) return opt.image_url
+  }
+  return product.value.image_url
+})
+
+// Todas las fotos disponibles para la tira de miniaturas: principal +
+// galería general + variantes con foto propia (sin duplicados).
+const galleryThumbs = computed(() => {
+  if (!product.value) return []
+  const seen = new Set<string>()
+  const thumbs: { key: string; url: string }[] = []
+
+  const add = (key: string, url: string | null | undefined) => {
+    if (!url || seen.has(url)) return
+    seen.add(url)
+    thumbs.push({ key, url })
+  }
+
+  add('main', product.value.image_url)
+  product.value.images?.forEach(img => add(`gallery-${img.id}`, img.image_url))
+  product.value.customization_sections.forEach(section => {
+    if (section.multiple) return
+    section.options.forEach(opt => add(`opt-${opt.id}`, opt.image_url))
+  })
+
+  return thumbs
+})
+
 // ── Expose ────────────────────────────────────────────────
 defineExpose({
   // Abrir para agregar nuevo
@@ -299,6 +334,7 @@ defineExpose({
     extrasMap.value = new Map()
     errors.value = {}
     qty.value = 1
+    manualImage.value = null
     isOpen.value = true
   },
 
@@ -308,6 +344,7 @@ defineExpose({
     editingUid.value = item._uid
     errors.value = {}
     qty.value = item.qty
+    manualImage.value = null
 
     // Precargar personalización
     const selMap = new Map<number, CartCustomization>()
@@ -329,25 +366,6 @@ function close() {
   isOpen.value = false
   product.value = null
   editingUid.value = null
-}
-
-// ── Atributos florería ────────────────────────────────────
-const hasAttributes = computed(() =>
-  !!(product.value?.ocasion || product.value?.color || product.value?.tamano)
-)
-
-// Mapa de colores comunes en florería → hex para el swatch
-const COLOR_MAP: Record<string, string> = {
-  rojo: '#DC2626', rosa: '#EC4899', rosado: '#F472B6', blanco: '#F9FAFB',
-  amarillo: '#FACC15', naranja: '#FB923C', morado: '#9333EA', lila: '#C084FC',
-  azul: '#3B82F6', celeste: '#7DD3FC', verde: '#22C55E', fucsia: '#D946EF',
-  durazno: '#FDBA74', coral: '#FF7F6B', crema: '#FEF3C7', vino: '#7F1D1D',
-  multicolor: 'linear-gradient(135deg,#EC4899,#FACC15,#22C55E,#3B82F6)',
-}
-
-function colorHex(name: string): string {
-  const key = name.trim().toLowerCase()
-  return COLOR_MAP[key] ?? '#D1D5DB'
 }
 
 // ── Control de stock ──────────────────────────────────────
@@ -440,6 +458,7 @@ function selectSingle(sectionId: number, opt: CustomizationOption) {
       label: section.label,
       selections: [{ option_id: opt.id, name: opt.name }],
     })
+    manualImage.value = null
   }
   selections.value = new Map(selections.value)
 }
@@ -518,19 +537,3 @@ watch(isOpen, val => {
   }
 })
 </script>
-
-<style scoped>
-.attr-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #f9fafb;
-  border: 1.5px solid #f0f0f0;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #4b5563;
-  text-transform: capitalize;
-}
-</style>

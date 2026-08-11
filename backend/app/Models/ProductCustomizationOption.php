@@ -14,7 +14,10 @@ class ProductCustomizationOption extends Model
         'name',
         'price_modifier',
         'sort_order',
+        'image',
     ];
+
+    protected $appends = ['image_url'];
 
     protected $casts = [
         'price_modifier' => 'decimal:2',
@@ -24,5 +27,12 @@ class ProductCustomizationOption extends Model
     public function section(): BelongsTo
     {
         return $this->belongsTo(ProductCustomizationSection::class, 'section_id');
+    }
+
+    public function getImageUrlAttribute(): string|null
+    {
+        return $this->image
+            ? asset('storage/' . $this->image)
+            : null;
     }
 }

@@ -23,6 +23,14 @@ api.interceptors.response.use(
       localStorage.removeItem("brasero_admin_user");
       window.location.href = "/admin/login";
     }
+
+    if (
+      error.response?.status === 403 &&
+      error.response?.data?.must_change_password &&
+      window.location.pathname !== "/admin/cambiar-clave"
+    ) {
+      window.location.href = "/admin/cambiar-clave";
+    }
     return Promise.reject(error);
   },
 );

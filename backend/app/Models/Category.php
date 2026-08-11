@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Enums\BusinessLine;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model
@@ -11,8 +11,8 @@ class Category extends Model
     protected $fillable = [
         'name',
         'slug',
-        'business_line',
-        'emoji',
+        'parent_id',
+        'icon',
         'sort_order',
         'active',
     ];
@@ -20,9 +20,8 @@ class Category extends Model
     protected function casts(): array
     {
         return [
-            'business_line' => BusinessLine::class,
-            'active'        => 'boolean',
-            'sort_order'    => 'integer',
+            'active'     => 'boolean',
+            'sort_order' => 'integer',
         ];
     }
 
@@ -31,8 +30,27 @@ class Category extends Model
         return $this->hasMany(Product::class);
     }
 
-    public function scopeOfBusinessLine($query, BusinessLine $line)
+    // Categoría padre (null si esta ya es una categoría principal)
+    public function parent(): BelongsTo
     {
-        return $query->where('business_line', $line->value);
+        return $this->belongsTo(Category::class, 'parent_id');
+    }
+
+    // Subcategorías directas
+    public function children(): HasMany
+    {
+        return $this->hasMany(Category::class, 'parent_id')
+            ->orderBy('sort_order');
+    }
+
+    public function isRoot(): bool
+    {
+        return $this->parent_id === null;
+    }
+
+    // Categoría principal a la que pertenece (ella misma si ya es raíz)
+    public function root(): Category
+    {
+        return $this->isRoot() ? $this : $this->parent;
     }
 }

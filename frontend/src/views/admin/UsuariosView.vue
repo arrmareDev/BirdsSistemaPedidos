@@ -65,7 +65,7 @@
                                 <div class="flex flex-col gap-1.5">
                                     <label class="text-[10.5px] font-black uppercase
                                 tracking-widest text-gray-500">
-                                        {{ editingUser ? 'Nueva contraseña (dejar vacío para no cambiar)' : 'Contraseña *' }}
+                                        {{ editingUser ? 'Nueva contraseña (dejar vacío para no cambiar)' : 'Contraseña*' }}
                                     </label>
                                     <div class="relative">
                                         <input v-model="form.password" :type="showPass ? 'text' : 'password'"
@@ -78,6 +78,43 @@
                                             <EyeSlashIcon v-if="showPass" class="w-4 h-4" />
                                             <EyeIcon v-else class="w-4 h-4" />
                                         </button>
+                                    </div>
+                                </div>
+
+                                <!-- Reset de emergencia — solo al editar un usuario existente -->
+                                <div v-if="editingUser" class="flex flex-col gap-2">
+                                    <button type="button" @click="handleResetPassword" :disabled="resettingPassword"
+                                        class="flex items-center justify-center gap-2 py-2.5 rounded-xl border-2
+                             border-amber-200 bg-amber-50 text-amber-700 font-bold text-[12.5px]
+                             cursor-pointer hover:bg-amber-100 transition-all duration-150
+                             disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <span v-if="resettingPassword"
+                                            class="w-3.5 h-3.5 border-2 border-amber-300 border-t-amber-700 rounded-full animate-spin" />
+                                        <KeyIcon v-else class="w-4 h-4" />
+                                        {{ resettingPassword ? 'Generando...' : 'Resetear contraseña de emergencia' }}
+                                    </button>
+                                    <p class="text-[11px] text-gray-400 m-0 -mt-1">
+                                        Genera una clave temporal aleatoria — el usuario deberá cambiarla al iniciar
+                                        sesión.
+                                    </p>
+
+                                    <div v-if="resetResult"
+                                        class="flex flex-col gap-2 p-3.5 rounded-2xl bg-green-50 border border-green-200">
+                                        <p class="text-[11.5px] font-bold text-green-700 m-0">
+                                            Contraseña temporal generada — compártela con {{ resetResult.name }}:
+                                        </p>
+                                        <div class="flex items-center gap-2">
+                                            <code class="flex-1 px-3 py-2 rounded-lg bg-white border border-green-200
+                                     text-[14px] font-bold text-gray-900 tracking-wide select-all">
+                                                {{ resetResult.temp_password }}
+                                            </code>
+                                            <button type="button" @click="copyResetPassword" class="px-3 py-2 rounded-lg border-none cursor-pointer text-[11px] font-bold
+                                     transition-all duration-150" :class="copied
+                                        ? 'bg-green-600 text-white'
+                                        : 'bg-white border border-green-300 text-green-700 hover:bg-green-100'">
+                                                {{ copied ? '✓ Copiado' : 'Copiar' }}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -132,7 +169,7 @@
                                             <input type="checkbox" :value="view.value" v-model="form.permissions"
                                                 class="accent-brand-red" />
                                             <span class="text-[12.5px] font-semibold text-gray-700">{{ view.label
-                                            }}</span>
+                                                }}</span>
                                         </label>
                                     </div>
                                     <p class="text-[11px] text-gray-400 m-0 mt-1">
@@ -169,7 +206,7 @@
                                 <button @click="saveUser" :disabled="submitting || !canSave" class="w-full py-3.5 rounded-2xl font-black text-[14px]
                          text-white border-none cursor-pointer
                          bg-brand-red uppercase tracking-wide
-                         shadow-[0_4px_20px_rgba(196,30,30,0.3)]
+                         shadow-red-md
                          hover:bg-red-700 hover:-translate-y-0.5
                          active:scale-[0.98] transition-all duration-200
                          disabled:opacity-40 disabled:cursor-not-allowed
@@ -401,7 +438,7 @@ import {
     PlusIcon, XMarkIcon, TrashIcon, PencilIcon,
     MagnifyingGlassIcon, CheckCircleIcon,
     UsersIcon, UserPlusIcon, ExclamationCircleIcon,
-    EyeIcon, EyeSlashIcon,
+    EyeIcon, EyeSlashIcon, KeyIcon,
     StarIcon, CpuChipIcon, BanknotesIcon, ClipboardDocumentListIcon,
 } from '@heroicons/vue/24/outline'
 
@@ -417,6 +454,37 @@ const showPass = ref(false)
 const submitting = ref(false)
 const modalError = ref('')
 const editingUser = ref<any>(null)
+
+// ── Reset de contraseña de emergencia ──────────────────────
+const resettingPassword = ref(false)
+const resetResult = ref<{ name: string; email: string; temp_password: string } | null>(null)
+const copied = ref(false)
+
+async function handleResetPassword() {
+    if (!editingUser.value) return
+    if (!confirm(`¿Resetear la contraseña de ${editingUser.value.name}? La clave actual dejará de funcionar de inmediato.`)) return
+
+    resettingPassword.value = true
+    resetResult.value = null
+    copied.value = false
+    try {
+        const { data } = await api.post(`/admin/users/${editingUser.value.id}/reset`)
+        resetResult.value = data.data
+    } catch (e: any) {
+        modalError.value = e.response?.data?.message ?? 'No se pudo resetear la contraseña'
+    } finally {
+        resettingPassword.value = false
+    }
+}
+
+async function copyResetPassword() {
+    if (!resetResult.value) return
+    try {
+        await navigator.clipboard.writeText(resetResult.value.temp_password)
+        copied.value = true
+        setTimeout(() => { copied.value = false }, 2_000)
+    } catch { }
+}
 
 const deleteModal = reactive({
     show: false,
@@ -598,6 +666,8 @@ function openModal(user?: any) {
     editingUser.value = user ?? null
     modalError.value = ''
     showPass.value = false
+    resetResult.value = null
+    copied.value = false
     if (user) {
         form.name = user.name
         form.email = user.email
@@ -618,6 +688,8 @@ function closeModal() {
     showModal.value = false
     editingUser.value = null
     modalError.value = ''
+    resetResult.value = null
+    copied.value = false
 }
 
 function askDelete(user: any) {
@@ -708,9 +780,9 @@ onMounted(() => fetchUsers())
 }
 
 .modal-input:focus {
-    border-color: #C41E1E;
+    border-color: var(--color-brand-primary, #C41E1E);
     background: white;
-    box-shadow: 0 0 0 3px rgba(196, 30, 30, 0.08);
+    box-shadow: 0 0 0 3px rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.08);
 }
 
 .user-row-enter-active {

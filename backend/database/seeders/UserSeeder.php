@@ -14,7 +14,7 @@ class UserSeeder extends Seeder
             // ── Sistema — dueño de la plataforma ─────────
             [
                 'name'     => 'Sistema',
-                'email'    => 'sistema@mahoma.pe',
+                'email'    => 'sistema@pro.pe',
                 'password' => Hash::make('sistema1234'),
                 'role'     => 'sistema',
             ],
@@ -22,7 +22,7 @@ class UserSeeder extends Seeder
             // ── Admin — administrador del negocio ─────────
             [
                 'name'     => 'Administrador',
-                'email'    => 'admin@mahoma.pe',
+                'email'    => 'admin@pro.pe',
                 'password' => Hash::make('admin1234'),
                 'role'     => 'admin',
             ],
@@ -30,7 +30,7 @@ class UserSeeder extends Seeder
             // ── Cajero/Contador — operador de caja ────────
             [
                 'name'     => 'Cajero',
-                'email'    => 'cajero@mahoma.pe',
+                'email'    => 'cajero@pro.pe',
                 'password' => Hash::make('cajero1234'),
                 'role'     => 'contador', // <--- ¡AQUÍ ESTÁ EL CAMBIO!
             ],

@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductCustomizationSection;
 use App\Models\ProductCustomizationOption;
 use App\Models\ProductExtra;
+use App\Models\ProductImage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,10 +18,12 @@ class ProductController extends Controller
 {
     private function withRelations(): array
     {
-        return ['category', 'customizationSections.options', 'extras', 'extrasCompartidos'];
+        return ['category', 'customizationSections.options', 'extras', 'extrasCompartidos', 'images'];
     }
 
-    // GET /api/v1/products?linea=cafeteria — público
+    // GET /api/v1/products?category=bebidas-calientes&grupo=bebidas&page=2 — público
+    // "category" filtra por el slug exacto de la categoría/subcategoría.
+    // "grupo" filtra por la categoría principal (incluye sus subcategorías).
     public function index(Request $request): JsonResponse
     {
         $products = Product::with($this->withRelations())
@@ -33,19 +36,25 @@ class ProductController extends Controller
                 )
             )
             ->when(
-                $request->get('linea'),
-                fn($q, $linea) => $q->whereHas(
-                    'category',
-                    fn($c) => $c->where('business_line', $linea)
-                )
+                $request->get('grupo'),
+                fn($q, $grupo) => $this->filterByGrupo($q, $grupo)
+            )
+            ->when(
+                $request->get('q'),
+                fn($q, $term) => $q->where(function ($qq) use ($term) {
+                    $qq->where('name', 'ilike', "%{$term}%")
+                        ->orWhere('description', 'ilike', "%{$term}%");
+                })
             )
             ->orderBy('id')
-            ->get();
+            ->paginate($request->integer('per_page', 24));
 
-        return $this->success(ProductResource::collection($products));
+        return $this->success(
+            ProductResource::collection($products)->response()->getData(true)
+        );
     }
 
-    // GET /api/v1/admin/products?linea=cafeteria — admin
+    // GET /api/v1/admin/products?category_id=3&grupo=bebidas&q=rosa&page=2 — admin
     public function adminIndex(Request $request): JsonResponse
     {
         $products = Product::with($this->withRelations())
@@ -54,22 +63,43 @@ class ProductController extends Controller
                 fn($q, $id) => $q->where('category_id', $id)
             )
             ->when(
-                $request->get('linea'),
-                fn($q, $linea) => $q->whereHas(
-                    'category',
-                    fn($c) => $c->where('business_line', $linea)
-                )
+                $request->get('grupo'),
+                fn($q, $grupo) => $this->filterByGrupo($q, $grupo)
+            )
+            ->when(
+                $request->get('q'),
+                fn($q, $term) => $q->where(function ($qq) use ($term) {
+                    $qq->where('name', 'ilike', "%{$term}%")
+                        ->orWhere('description', 'ilike', "%{$term}%");
+                })
             )
             ->orderBy('id')
-            ->get();
+            ->paginate($request->integer('per_page', 30));
 
-        return $this->success(ProductResource::collection($products));
+        return $this->success(
+            ProductResource::collection($products)->response()->getData(true)
+        );
     }
 
-    // GET /api/v1/products/{id}
-    public function show(int $id): JsonResponse
+    // Filtra productos cuya categoría (o cuya categoría padre) tenga ese slug.
+    private function filterByGrupo($query, string $grupo)
     {
-        $product = Product::with($this->withRelations())->findOrFail($id);
+        return $query->whereHas('category', function ($c) use ($grupo) {
+            $c->where('slug', $grupo)
+                ->orWhereHas('parent', fn($p) => $p->where('slug', $grupo));
+        });
+    }
+
+    // GET /api/v1/products/{slug} — búsqueda directa por slug, no depende
+    // de tener el catálogo completo cargado (antes no existía este
+    // endpoint: la ficha de producto "buscaba" dentro de la lista ya
+    // cargada, lo cual se rompe en cuanto el catálogo se pagina).
+    public function show(string $slug): JsonResponse
+    {
+        $product = Product::with($this->withRelations())
+            ->where('slug', $slug)
+            ->firstOrFail();
+
         return $this->success(new ProductResource($product));
     }
 
@@ -80,11 +110,8 @@ class ProductController extends Controller
             'name'           => 'required|string|max:200',
             'category_id'    => 'nullable|exists:categories,id',
             'description'    => 'nullable|string',
-            'emoji'          => 'nullable|string|max:10',
+            'icon'           => 'nullable|string|max:50',
             'price'          => 'required|numeric|min:0',
-            'ocasion'        => 'nullable|string|max:60',
-            'color'          => 'nullable|string|max:40',
-            'tamano'         => 'nullable|string|max:40',
             'stock'          => 'nullable|integer|min:0',
             'controla_stock' => 'nullable',
         ]);
@@ -115,12 +142,12 @@ class ProductController extends Controller
                 'slug'        => Str::slug($request->input('name'))
                     . '-' . Str::random(4),
                 'description' => $request->input('description'),
-                'emoji'       => $request->input('emoji'),
+                'icon'        => $request->input('icon'),
                 'image'       => $imagePath,
                 'price'       => $request->input('price'),
                 'popular'     => $popular,
                 'available'   => $available,
-                ...$this->floreriaAttributes($request),
+                ...$this->catalogAttributes($request),
             ]);
 
             $this->syncSections($product, $sections);
@@ -141,11 +168,8 @@ class ProductController extends Controller
             'name'           => 'sometimes|string|max:200',
             'category_id'    => 'nullable|exists:categories,id',
             'description'    => 'nullable|string',
-            'emoji'          => 'nullable|string|max:10',
+            'icon'           => 'nullable|string|max:50',
             'price'          => 'sometimes|numeric|min:0',
-            'ocasion'        => 'nullable|string|max:60',
-            'color'          => 'nullable|string|max:40',
-            'tamano'         => 'nullable|string|max:40',
             'stock'          => 'nullable|integer|min:0',
             'controla_stock' => 'nullable',
         ]);
@@ -183,12 +207,12 @@ class ProductController extends Controller
                     ?: $product->category_id,
                 'name'        => $request->input('name', $product->name),
                 'description' => $request->input('description', $product->description),
-                'emoji'       => $request->input('emoji', $product->emoji),
+                'icon'        => $request->input('icon', $product->icon),
                 'image'       => $imagePath,
                 'price'       => $request->input('price', $product->price),
                 'popular'     => $popular,
                 'available'   => $available,
-                ...$this->floreriaAttributes($request),
+                ...$this->catalogAttributes($request),
             ]);
 
             if ($request->has('sections')) {
@@ -220,6 +244,102 @@ class ProductController extends Controller
         return $this->success(null, 'Producto eliminado');
     }
 
+    // POST /api/v1/admin/products/{productId}/options/{optionId}/image
+    // Sube (o reemplaza) la foto de una opción de personalización puntual
+    // (ej: la foto de "Rojo" dentro de la sección "Color"). Es un endpoint
+    // aparte del guardado del producto para no tener que reenviar el
+    // catálogo completo de secciones solo para cambiar una foto.
+    public function uploadOptionImage(Request $request, int $productId, int $optionId): JsonResponse
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:png,jpg,jpeg,webp|max:2048',
+        ]);
+
+        $option = ProductCustomizationOption::whereHas(
+            'section',
+            fn($q) => $q->where('product_id', $productId)
+        )->findOrFail($optionId);
+
+        if ($option->image) {
+            Storage::disk('public')->delete($option->image);
+        }
+
+        $path = $request->file('image')->store('customization-options', 'public');
+        $option->update(['image' => $path]);
+
+        return $this->success([
+            'id'        => $option->id,
+            'image_url' => $option->image_url,
+        ], 'Imagen actualizada');
+    }
+
+    // DELETE /api/v1/admin/products/{productId}/options/{optionId}/image
+    public function deleteOptionImage(int $productId, int $optionId): JsonResponse
+    {
+        $option = ProductCustomizationOption::whereHas(
+            'section',
+            fn($q) => $q->where('product_id', $productId)
+        )->findOrFail($optionId);
+
+        if ($option->image) {
+            Storage::disk('public')->delete($option->image);
+            $option->update(['image' => null]);
+        }
+
+        return $this->success(null, 'Imagen eliminada');
+    }
+
+    // POST /api/v1/admin/products/{id}/images — sube una o varias fotos
+    // generales a la galería del producto (además de la imagen principal)
+    public function uploadImages(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'images'   => 'required|array|min:1',
+            'images.*' => 'image|mimes:png,jpg,jpeg,webp|max:2048',
+        ]);
+
+        $product = Product::findOrFail($id);
+        $maxOrden = $product->images()->max('sort_order') ?? -1;
+
+        foreach ($request->file('images') as $i => $file) {
+            $path = $file->store('products/gallery', 'public');
+            $product->images()->create([
+                'image'      => $path,
+                'sort_order' => $maxOrden + 1 + $i,
+            ]);
+        }
+
+        return $this->success(
+            $product->images()->get()->map(fn($img) => [
+                'id' => $img->id, 'image_url' => $img->image_url, 'sort_order' => $img->sort_order,
+            ]),
+            'Fotos agregadas'
+        );
+    }
+
+    // DELETE /api/v1/admin/products/{productId}/images/{imageId}
+    public function deleteImage(int $productId, int $imageId): JsonResponse
+    {
+        $image = ProductImage::where('product_id', $productId)->findOrFail($imageId);
+        if ($image->image) Storage::disk('public')->delete($image->image);
+        $image->delete();
+
+        return $this->success(null, 'Foto eliminada');
+    }
+
+    // POST /api/v1/admin/products/{id}/images/reorder — body: { ids: [3,1,2] }
+    public function reorderImages(Request $request, int $id): JsonResponse
+    {
+        $data = $request->validate(['ids' => 'required|array', 'ids.*' => 'integer']);
+
+        foreach ($data['ids'] as $orden => $imageId) {
+            ProductImage::where('product_id', $id)->where('id', $imageId)
+                ->update(['sort_order' => $orden]);
+        }
+
+        return $this->success(null, 'Orden actualizado');
+    }
+
     // POST /api/v1/admin/products/{id}/toggle
     public function toggle(int $id): JsonResponse
     {
@@ -234,17 +354,13 @@ class ProductController extends Controller
     // ── Helpers ───────────────────────────────────────────
 
     /**
-     * Atributos específicos de florería normalizados.
      * Strings vacíos → null; stock forzado a 0 si no se controla.
      */
-    private function floreriaAttributes(Request $request): array
+    private function catalogAttributes(Request $request): array
     {
         $controlaStock = $this->parseBool($request->input('controla_stock', '0'));
 
         return [
-            'ocasion'        => $this->nullableString($request->input('ocasion')),
-            'color'          => $this->nullableString($request->input('color')),
-            'tamano'         => $this->nullableString($request->input('tamano')),
             'controla_stock' => $controlaStock,
             'stock'          => $controlaStock
                 ? (int) $request->input('stock', 0)
@@ -274,35 +390,83 @@ class ProductController extends Controller
         return [];
     }
 
+    /**
+     * Sincroniza secciones y opciones de personalización actualizando por
+     * ID en vez de borrar-y-recrear — así una opción que ya tiene una foto
+     * subida no la pierde solo porque el admin guardó otro cambio del
+     * producto (precio, nombre, etc.).
+     */
     private function syncSections(Product $product, array $sections): void
     {
-        $product->customizationSections()->each(function ($s) {
-            $s->options()->delete();
-            $s->delete();
-        });
+        $sectionIdsVistos = [];
 
         foreach ($sections as $i => $sec) {
             if (empty($sec['seccion'])) continue;
 
-            $section = ProductCustomizationSection::create([
-                'product_id' => $product->id,
+            $sectionData = [
                 'seccion'    => $sec['seccion'],
                 'label'      => $sec['label']    ?? $sec['seccion'],
                 'required'   => $sec['required'] ?? false,
                 'multiple'   => $sec['multiple'] ?? false,
                 'sort_order' => $sec['sort_order'] ?? $i,
-            ]);
+            ];
+
+            $section = !empty($sec['id'])
+                ? $product->customizationSections()->find($sec['id'])
+                : null;
+
+            if ($section) {
+                $section->update($sectionData);
+            } else {
+                $section = $product->customizationSections()->create($sectionData);
+            }
+
+            $sectionIdsVistos[] = $section->id;
+
+            $optionIdsVistos = [];
 
             foreach ($sec['options'] ?? [] as $j => $opt) {
                 if (empty($opt['name'])) continue;
-                ProductCustomizationOption::create([
-                    'section_id'     => $section->id,
+
+                $optionData = [
                     'name'           => $opt['name'],
                     'price_modifier' => $opt['price_modifier'] ?? 0,
                     'sort_order'     => $opt['sort_order'] ?? $j,
-                ]);
+                ];
+
+                $option = !empty($opt['id'])
+                    ? $section->options()->find($opt['id'])
+                    : null;
+
+                if ($option) {
+                    $option->update($optionData);
+                } else {
+                    $option = $section->options()->create($optionData);
+                }
+
+                $optionIdsVistos[] = $option->id;
             }
+
+            // Borrar solo las opciones que ya no vienen en el payload
+            // (borra también su imagen del disco, si tenía)
+            $section->options()->whereNotIn('id', $optionIdsVistos ?: [0])
+                ->get()
+                ->each(function ($opt) {
+                    if ($opt->image) Storage::disk('public')->delete($opt->image);
+                    $opt->delete();
+                });
         }
+
+        // Borrar solo las secciones que ya no vienen en el payload
+        $product->customizationSections()
+            ->whereNotIn('id', $sectionIdsVistos ?: [0])
+            ->each(function ($s) {
+                $s->options()->get()->each(function ($opt) {
+                    if ($opt->image) Storage::disk('public')->delete($opt->image);
+                });
+                $s->options()->delete();
+                $s->delete();
+            });
     }
 
     private function syncExtras(Product $product, array $extras): void
@@ -322,8 +486,8 @@ class ProductController extends Controller
 
     /**
      * Sincroniza extras compartidos/reutilizables (tabla Extra + pivote extra_product).
-     * Se usan para cafetería/menú donde un mismo extra (ej: "leche de almendra")
-     * aplica a múltiples productos a la vez.
+     * Se usan cuando un mismo extra (ej: "leche de almendra") aplica a
+     * múltiples productos a la vez.
      *
      * $extraIds es un array simple de IDs: [1, 3, 7]
      */

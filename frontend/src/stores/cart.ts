@@ -9,7 +9,7 @@ export interface CartCustomization {
   selections: Array<{
     option_id: number;
     name: string;
-    price_modifier: number; // ← NUEVO — necesario para tamaños con precio distinto
+    price_modifier: number;
   }>;
 }
 
@@ -24,11 +24,11 @@ export interface CartItem {
   _uid: string;
   productId: number;
   name: string;
-  emoji: string | null;
+  icon: string | null;
   imageUrl: string | null;
-  businessLine: string | null; // ← NUEVO — 'floreria' | 'cafeteria' | 'menu'
+  rootCategorySlug: string | null; // slug de la categoría principal del producto
   basePrice: number;
-  modifiersPrice: number; // ← NUEVO — suma de price_modifier de la personalización
+  modifiersPrice: number;
   extrasPrice: number;
   price: number;
   qty: number;
@@ -46,14 +46,6 @@ export const useCartStore = defineStore("cart", () => {
   );
   const isEmpty = computed(() => items.value.length === 0);
 
-  // ── Detecta si el carrito tiene productos de florería ──────
-  // (para mostrar/ocultar el campo de "mensaje para la tarjeta" en checkout)
-  const hasFloreria = computed(() =>
-    items.value.some(
-      (i) => i.businessLine === "floreria" || i.businessLine === null,
-    ),
-  );
-
   function calcModifiersPrice(customization: CartCustomization[]): number {
     return customization.reduce(
       (sum, sec) =>
@@ -63,11 +55,11 @@ export const useCartStore = defineStore("cart", () => {
     );
   }
 
-function add(
+  function add(
     product: Product,
     customization: CartCustomization[],
     extras: CartExtra[],
-    qtyToAdd: number = 1 // ← Agregamos este parámetro para recibir la cantidad directa
+    qtyToAdd: number = 1, // ← Agregamos este parámetro para recibir la cantidad directa
   ) {
     const modifiersPrice = calcModifiersPrice(customization);
     const extrasPrice = extras.reduce((sum, e) => sum + e.price * e.qty, 0);
@@ -76,7 +68,7 @@ function add(
     // ── MAGIA: Buscamos si ya existe en el carrito ──
     // Comparamos que sea el mismo producto y que la personalización sea idéntica
     const existingItem = items.value.find(
-      (i) => i.productId === product.id && i.customSummary === summary
+      (i) => i.productId === product.id && i.customSummary === summary,
     );
 
     if (existingItem) {
@@ -88,9 +80,9 @@ function add(
         _uid: crypto.randomUUID(),
         productId: product.id,
         name: product.name,
-        emoji: product.emoji,
+        icon: product.icon,
         imageUrl: product.image_url,
-        businessLine: product.category?.business_line ?? null,
+        rootCategorySlug: product.category?.root_slug ?? null,
         basePrice: product.price,
         modifiersPrice,
         extrasPrice,
@@ -158,16 +150,15 @@ function add(
   }
 
   // ── Carga items directamente (para editar un pedido existente) ──
-function loadItems(newItems: CartItem[]) {
-  items.value = newItems;
-}
+  function loadItems(newItems: CartItem[]) {
+    items.value = newItems;
+  }
 
   return {
     items,
     count,
     total,
     isEmpty,
-    hasFloreria,
     add,
     updateItem,
     loadItems,

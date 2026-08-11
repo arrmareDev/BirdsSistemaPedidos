@@ -3,8 +3,8 @@
 
     <!-- Icono -->
     <div class="w-28 h-28 rounded-full bg-pink-50 border-4 border-pink-200
-                flex items-center justify-center mb-6">
-      <span class="text-6xl">{{ EMOJI.flor }}</span>
+                flex items-center justify-center mb-6 text-pink-500">
+      <PartyPopper :size="52" :stroke-width="1.5" />
     </div>
 
     <h1 class="font-black text-[32px] text-ink leading-tight m-0 mb-3
@@ -27,7 +27,7 @@
     <!-- Banner entrega programada -->
     <div v-if="order?.entrega_programada && order?.fecha_entrega" class="w-full max-w-xs mb-6 px-4 py-3.5 rounded-2xl bg-pink-50
              border border-pink-200 flex items-start gap-3 text-left">
-      <span class="text-xl shrink-0">{{ EMOJI.calendario }}</span>
+      <Calendar :size="20" class="shrink-0 text-pink-500" />
       <div>
         <p class="font-black text-[13px] text-pink-800 m-0">Entrega programada</p>
         <p class="text-[12px] text-pink-600 m-0 mt-0.5">
@@ -44,7 +44,7 @@
              shadow-[0_4px_20px_rgba(37,211,102,0.3)] uppercase tracking-wide
              hover:-translate-y-0.5 hover:shadow-[0_6px_28px_rgba(37,211,102,0.4)]
              transition-all duration-200 justify-center">
-      <span class="text-xl">{{ EMOJI.chat }}</span>
+      <MessageCircle :size="20" />
       Enviar por WhatsApp
     </button>
 
@@ -76,16 +76,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { PartyPopper, Calendar, MessageCircle } from 'lucide-vue-next'
 import { useOrderStore } from '@/stores/order'
-
-// ── Emojis para la UI (esto NO va al mensaje de WhatsApp) ──
-// Estos sí se pueden usar tranquilos: se renderizan en tu propia
-// página, no pasan por el bug de decodificación de wa.me.
-const EMOJI = {
-  flor: '\u{1F490}',        // 💐
-  calendario: '\u{1F4C5}',  // 📅
-  chat: '\u{1F4AC}',        // 💬
-}
 
 // ── Símbolos para el mensaje de WhatsApp ───────────────────
 // wa.me / api.whatsapp.com tiene un bug confirmado que corrompe
