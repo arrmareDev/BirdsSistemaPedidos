@@ -132,6 +132,15 @@
           </p>
         </div>
 
+        <!-- Activar sonido de pedidos nuevos -->
+        <button v-if="admin.can.orders && !soundEnabled" @click="enableSound" class="flex items-center gap-1.5 px-3 py-2 rounded-xl
+                 bg-amber-50 border border-amber-200 text-amber-700
+                 font-semibold text-[12px] cursor-pointer shrink-0
+                 hover:bg-amber-100 transition-all duration-150 animate-pulse">
+          <BellAlertIcon class="w-3.5 h-3.5" />
+          <span class="hidden sm:inline">Activar sonido de pedidos</span>
+        </button>
+
         <!-- Soporte WhatsApp -->
         <a :href="supportLink" target="_blank" class="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl
                  bg-[#25D366]/10 border border-[#25D366]/30 text-[#128C7E]
@@ -228,8 +237,9 @@
 import { ref, computed, provide, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAdminStore } from '@/stores/admin'
+import api from '@/utils/api'
 import {
-  Bars3Icon, ClockIcon,
+  Bars3Icon, ClockIcon, BellAlertIcon,
   ArrowRightOnRectangleIcon, ArrowTopRightOnSquareIcon,
   HomeIcon, ClipboardDocumentListIcon,
   TagIcon, BanknotesIcon, UsersIcon,
@@ -278,6 +288,69 @@ function updateTime() {
 
 onMounted(() => { updateTime(); clockTimer = setInterval(updateTime, 1_000) })
 onUnmounted(() => { if (clockTimer) clearInterval(clockTimer) })
+
+// ── Notificación sonora de pedidos nuevos ──────────────────
+// Corre acá (no en PedidosView) para que suene sin importar en qué
+// pantalla del admin esté la persona — no solo cuando ya está viendo
+// la lista de pedidos.
+const NOTIFICATION_SOUND_URL = '/sounds/notification.mp3'
+
+// El navegador exige que el audio se active con un clic real y explícito
+// del usuario. Por eso mostramos un banner hasta que la persona lo activa
+// a propósito, y lo recordamos para que no lo pida cada vez que entra.
+const soundEnabled = ref(localStorage.getItem('birds_admin_sound') === '1')
+
+function playNotificationOnce() {
+  try {
+    const audio = new Audio(NOTIFICATION_SOUND_URL)
+    audio.play().catch(() => { })
+  } catch { }
+}
+
+function playNewOrderSound() {
+  if (!soundEnabled.value) return
+  playNotificationOnce()
+}
+
+// Botón explícito del banner — esta sí cuenta como interacción real
+// para el navegador, a diferencia de un clic genérico en la página.
+function enableSound() {
+  soundEnabled.value = true
+  localStorage.setItem('birds_admin_sound', '1')
+  playNotificationOnce() // confirmación audible de que quedó activado
+}
+
+let lastSeenOrderId: number | null = null
+let orderPollTimer: ReturnType<typeof setInterval> | null = null
+
+async function checkForNewOrders() {
+  try {
+    const { data } = await api.get('/admin/orders', { params: { page: 1, per_page: 1 } })
+    const latest = data.data?.data?.[0]
+    if (!latest) return
+
+    if (lastSeenOrderId === null) {
+      // Primera vez: solo establece la base, no suena por pedidos
+      // que ya existían antes de abrir el panel.
+      lastSeenOrderId = latest.id
+      return
+    }
+    if (latest.id > lastSeenOrderId) {
+      lastSeenOrderId = latest.id
+      playNewOrderSound()
+    }
+  } catch { }
+}
+
+onMounted(() => {
+  if (admin.can.orders) {
+    checkForNewOrders()
+    orderPollTimer = setInterval(checkForNewOrders, 20_000)
+  }
+})
+onUnmounted(() => {
+  if (orderPollTimer) clearInterval(orderPollTimer)
+})
 
 // ── Soporte WhatsApp ──────────────────────────────────────
 const supportLink = computed(() => {
@@ -379,7 +452,7 @@ const NAV_GROUPS = computed((): NavGroup[] => {
   }
   if (admin.can.sistema) {
     analisis.push({
-      to: '/admin/sistema', icon: CpuChipIcon, label: 'Sistema',
+      to: '/admin/sistema', icon: CpuChipIcon, label: 'Ajustes',
     })
   }
 
@@ -397,7 +470,7 @@ const META: Record<string, { title: string; sub: string }> = {
   '/admin/clientes': { title: 'Clientes', sub: 'Base de datos de clientes' },
   '/admin/reportes': { title: 'Reportes', sub: 'Análisis e inteligencia' },
   '/admin/usuarios': { title: 'Usuarios', sub: 'Gestión de accesos y roles' },
-  '/admin/sistema': { title: 'Sistema', sub: 'Comisiones y configuración' },
+  '/admin/sistema': { title: 'Ajustes', sub: 'Comisiones y configuración' },
   '/admin/delivery-zones': { title: 'Zonas delivery', sub: 'Gestión de zonas delivery' },
 }
 
