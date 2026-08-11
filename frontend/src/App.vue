@@ -30,7 +30,7 @@ import CartDrawer from '@/components/cart/CartDrawer.vue'
 import CustomizerModal from '@/components/catalog/CustomizerModal.vue'
 import { useProductsStore } from '@/stores/products'
 import { useBrandingStore } from '@/stores/branding'
-import { usePedidoConfigStore } from '@/stores/pedidoconfig'
+import { usePedidoConfigStore } from '@/stores/pedidoConfig'
 import type { Product } from '@/stores/products'
 import type { CartItem } from '@/stores/cart'
 
