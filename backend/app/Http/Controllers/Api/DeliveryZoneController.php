@@ -27,7 +27,7 @@ class DeliveryZoneController extends Controller
 
         $localLat = (float) config('services.local.lat');
         $localLng = (float) config('services.local.lng');
-        $radioMax = (float) config('services.local.radio_max_km', 7.0);
+        $radioMax = (float) config('services.local.radio_max_km');
 
         $distancia = $this->haversine($data['lat'], $data['lng'], $localLat, $localLng);
 
