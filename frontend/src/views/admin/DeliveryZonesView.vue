@@ -8,7 +8,7 @@
                     Tarifas de delivery
                 </h1>
                 <p class="text-[13px] text-gray-400 mt-1 m-0">
-                    Precio según distancia desde el local · Máximo 7 km
+                    Precio según distancia desde el local.
                 </p>
             </div>
             <button @click="abrirCrear" class="flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-[13px]

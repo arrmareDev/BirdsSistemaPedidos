@@ -40,8 +40,6 @@ Route::prefix('v1')->group(function () {
     Route::get('delivery-zones', [DeliveryZoneController::class, 'index']);
 
     Route::get('branding', [SistemaController::class, 'getBranding']);
-    Route::get('atributos', [SistemaController::class, 'getAtributos']);
-
     Route::get('pedido-config', [SistemaController::class, 'getPedidoConfig']);
 
     Route::post('webhooks/despacho', [DespachoWebhookController::class, 'handle']);
@@ -208,7 +206,6 @@ Route::prefix('v1/admin')
         // poder editar esto — es su propia configuración de catálogo.
         Route::middleware('role:admin,sistema')->group(function () {
             Route::post('sistema/branding', [SistemaController::class, 'updateBranding']);
-            Route::post('sistema/atributos', [SistemaController::class, 'updateAtributos']);
             Route::post('sistema/pedido-config', [SistemaController::class, 'updatePedidoConfig']);
         });
 
@@ -221,7 +218,19 @@ Route::prefix('v1/admin')
 
         // ══ ZONAS DE DELIVERY — solo admin/sistema ═════════════
 
-        // Junto al grupo de rutas admin de delivery-zones, después de su cierre:
+        Route::middleware(['role:admin,sistema', 'permission:catalog'])->group(function () {
+            Route::get('delivery-zones', [DeliveryZoneController::class, 'adminIndex']);
+            Route::post('delivery-zones', [DeliveryZoneController::class, 'store']);
+            Route::post('delivery-zones/reorder', [DeliveryZoneController::class, 'reorder']);
+            Route::put('delivery-zones/{id}', [DeliveryZoneController::class, 'update'])
+                ->where('id', '[0-9]+');
+            Route::delete('delivery-zones/{id}', [DeliveryZoneController::class, 'destroy'])
+                ->where('id', '[0-9]+');
+            Route::patch('delivery-zones/{id}/toggle', [DeliveryZoneController::class, 'toggle'])
+                ->where('id', '[0-9]+');
+        });
+
+        // ══ TIPOS DE SECCIÓN DE PERSONALIZACIÓN — solo admin/sistema ═══
         Route::middleware(['role:admin,sistema', 'permission:catalog'])->group(function () {
             Route::get('seccion-tipos', [SeccionTipoController::class, 'adminIndex']);
             Route::post('seccion-tipos', [SeccionTipoController::class, 'store']);
