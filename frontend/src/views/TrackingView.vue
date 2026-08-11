@@ -456,10 +456,10 @@ const waConsultaLink = computed(() => {
 const tiempoEstimado = computed(() => {
   const m: Record<string, string> = {
     nuevo: 'Esperando confirmación del local...',
-    confirmado: 'Confirmado · Preparación en ~20 minutos',
-    preparando: 'Alistando tu pedido · ~15 minutos',
+    confirmado: 'Confirmado · Preparación en curso',
+    preparando: 'Alistando tu pedido . espera unos minutos',
     listo: '¡Tu pedido está listo para entregar!',
-    en_camino: 'En camino a tu dirección · ~10 minutos',
+    en_camino: 'En camino a tu dirección · ¡Prepárate!',
     entregado: 'Pedido entregado',
   }
   return m[order.value?.status] ?? ''
@@ -555,7 +555,7 @@ function stepSubtitle(step: any): string {
     const m: Record<string, string> = {
       nuevo: 'Notificando al local...',
       confirmado: 'El local revisó tu pedido',
-      preparando: 'Alistando con amor! ~15 min',
+      preparando: 'Alistando con amor!',
       listo: '¡Listo para entregar!',
       en_camino: 'En camino a tu dirección',
       entregado: '¡Que lo disfrutes!',

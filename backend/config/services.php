@@ -46,7 +46,7 @@ return [
     'local' => [
         'lat'          => env('LOCAL_LAT'),
         'lng'          => env('LOCAL_LNG'),
-        'radio_max_km' => env('LOCAL_RADIO_MAX_KM', 15.0),
+        'radio_max_km' => env('LOCAL_RADIO_MAX_KM', 25.0),
     ],
 
 ];
