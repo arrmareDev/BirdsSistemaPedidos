@@ -1224,7 +1224,7 @@ import { LayoutGrid, PackageSearch, Calendar, Banknote, StickyNote, Heart } from
 import CustomizerModal from '@/components/catalog/CustomizerModal.vue'
 import { useOrdersStore } from '@/stores/orders'
 import { useProductsStore } from '@/stores/products'
-import { usePedidoConfigStore } from '@/stores/pedidoconfig'
+import { usePedidoConfigStore } from '@/stores/pedidoConfig'
 import { useCartStore } from '@/stores/cart'
 import { useAdminStore } from '@/stores/admin'
 import { storeToRefs } from 'pinia'
