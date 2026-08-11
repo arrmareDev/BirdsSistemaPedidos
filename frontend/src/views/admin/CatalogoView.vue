@@ -122,6 +122,11 @@
               <strong class="text-gray-700">{{ deleteCatTarget.name }}</strong>
               será eliminada permanentemente.
             </p>
+            <div v-if="deleteCatError" class="flex items-center gap-2 px-3.5 py-3 rounded-2xl bg-red-50
+                     border border-red-200 text-[12.5px] text-red-600 mb-4 text-left">
+              <ExclamationCircleIcon class="w-4 h-4 shrink-0" />
+              {{ deleteCatError }}
+            </div>
             <div class="flex gap-3">
               <button @click="deleteCatTarget = null" class="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600
                        font-semibold text-[13.5px] cursor-pointer bg-white
@@ -592,72 +597,91 @@
             <div v-for="group in categoriesGrouped" :key="group.id">
 
               <!-- Header de la categoría principal -->
-              <div class="flex items-center gap-2 px-5 py-2.5 bg-gray-50/70 border-y border-gray-100">
+              <button @click="toggleGroupExpanded(group.id)" class="w-full flex items-center gap-2 px-5 py-2.5 bg-gray-50/70 border-y border-gray-100
+                       cursor-pointer border-none text-left hover:bg-gray-100/70 transition-colors">
+                <ChevronDownIcon class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200 shrink-0"
+                  :class="isGroupExpanded(group.id) ? 'rotate-180' : ''" />
                 <AppIcon :name="group.icon" :size="15" class="text-gray-500" />
                 <p class="font-black text-[11px] uppercase tracking-wider text-gray-500 m-0">
                   {{ group.label }}
                 </p>
                 <span class="text-[10.5px] font-bold text-gray-400">
                   {{ group.categories.length }} subcategoría{{ group.categories.length !== 1 ? 's' : '' }}
+                  <template v-if="(group.root.products_count ?? 0) > 0">
+                    · {{ group.root.products_count }} producto{{ group.root.products_count !== 1 ? 's' : '' }} propio{{ group.root.products_count !== 1 ? 's' : '' }}
+                  </template>
                 </span>
-                <button @click="openEditCat(group.root)" title="Editar esta categoría principal"
+                <span @click.stop="openEditCat(group.root)" title="Editar esta categoría principal"
                   class="ml-auto w-6 h-6 rounded-lg flex items-center justify-center text-gray-400
-                         cursor-pointer border-none bg-transparent hover:bg-white hover:text-brand-red transition-all">
+                         cursor-pointer hover:bg-white hover:text-brand-red transition-all">
                   <PencilIcon class="w-3 h-3" />
-                </button>
-              </div>
+                </span>
+                <span @click.stop="askDeleteCat(group.root)" :title="group.categories.length > 0
+                    ? 'Tiene subcategorías — no se puede eliminar'
+                    : (group.root.products_count ?? 0) > 0
+                      ? 'Tiene productos — no se puede eliminar'
+                      : 'Eliminar categoría principal'"
+                  class="w-6 h-6 rounded-lg flex items-center justify-center transition-all"
+                  :class="group.categories.length > 0 || (group.root.products_count ?? 0) > 0
+                    ? 'text-gray-200 cursor-not-allowed'
+                    : 'text-gray-400 cursor-pointer hover:bg-white hover:text-red-500'">
+                  <TrashIcon class="w-3 h-3" />
+                </span>
+              </button>
 
-              <!-- Vacío dentro del grupo -->
-              <div v-if="group.categories.length === 0"
-                class="flex items-center gap-2 px-5 py-4 text-[12.5px] text-gray-300 italic">
-                Sin subcategorías en {{ group.label.toLowerCase() }} todavía
-              </div>
+              <template v-if="isGroupExpanded(group.id)">
+                <!-- Vacío dentro del grupo -->
+                <div v-if="group.categories.length === 0"
+                  class="flex items-center gap-2 px-5 py-4 text-[12.5px] text-gray-300 italic">
+                  Sin subcategorías en {{ group.label.toLowerCase() }} todavía
+                </div>
 
-              <!-- Categorías de esta línea -->
-              <div v-else class="divide-y divide-gray-50">
-                <div v-for="cat in group.categories" :key="cat.id"
-                  class="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
+                <!-- Categorías de esta línea -->
+                <div v-else class="divide-y divide-gray-50">
+                  <div v-for="cat in group.categories" :key="cat.id"
+                    class="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
 
-                  <div class="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center
+                    <div class="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center
                     text-gray-500 shrink-0">
-                    <AppIcon :name="cat.icon" :size="18" />
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2">
-                      <p class="font-bold text-[13.5px] text-gray-900 m-0 truncate">{{ cat.name }}</p>
-                      <span v-if="!cat.active" class="text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded-full
-                     bg-gray-100 text-gray-500 shrink-0">
-                        Inactiva
-                      </span>
+                      <AppIcon :name="cat.icon" :size="18" />
                     </div>
-                    <p class="text-[11px] text-gray-400 m-0">
-                      {{ cat.products_count ?? 0 }} producto{{ (cat.products_count ?? 0) !== 1 ? 's' : '' }}
-                      · orden {{ cat.sort_order }}
-                    </p>
-                  </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2">
+                        <p class="font-bold text-[13.5px] text-gray-900 m-0 truncate">{{ cat.name }}</p>
+                        <span v-if="!cat.active" class="text-[9.5px] font-black uppercase px-1.5 py-0.5 rounded-full
+                     bg-gray-100 text-gray-500 shrink-0">
+                          Inactiva
+                        </span>
+                      </div>
+                      <p class="text-[11px] text-gray-400 m-0">
+                        {{ cat.products_count ?? 0 }} producto{{ (cat.products_count ?? 0) !== 1 ? 's' : '' }}
+                        · orden {{ cat.sort_order }}
+                      </p>
+                    </div>
 
-                  <div class="flex items-center gap-1.5 shrink-0">
-                    <button @click="toggleCat(cat)" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold border cursor-pointer
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <button @click="toggleCat(cat)" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold border cursor-pointer
                    transition-all duration-150" :class="cat.active
                     ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
                     : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'">
-                      {{ cat.active ? 'Activa' : 'Inactiva' }}
-                    </button>
-                    <button @click="openEditCat(cat)" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-500
+                        {{ cat.active ? 'Activa' : 'Inactiva' }}
+                      </button>
+                      <button @click="openEditCat(cat)" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-500
                    cursor-pointer border-none bg-gray-100 hover:bg-red-50 hover:text-brand-red
                    transition-all duration-150">
-                      <PencilIcon class="w-3.5 h-3.5" />
-                    </button>
-                    <button @click="askDeleteCat(cat)" :disabled="(cat.products_count ?? 0) > 0" class="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer
+                        <PencilIcon class="w-3.5 h-3.5" />
+                      </button>
+                      <button @click="askDeleteCat(cat)" :disabled="(cat.products_count ?? 0) > 0" class="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer
                    border-none transition-all duration-150" :class="(cat.products_count ?? 0) > 0
                     ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
                     : 'bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500'"
-                      :title="(cat.products_count ?? 0) > 0 ? 'Tiene productos — no se puede eliminar' : 'Eliminar'">
-                      <TrashIcon class="w-3.5 h-3.5" />
-                    </button>
+                        :title="(cat.products_count ?? 0) > 0 ? 'Tiene productos — no se puede eliminar' : 'Eliminar'">
+                        <TrashIcon class="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </template>
             </div>
           </div>
         </div>
@@ -1080,9 +1104,22 @@ const imagePreview = ref<string | null>(null)
 
 // ── Estado categorías ─────────────────────────────────────
 const showCatPanel = ref(false)
+const expandedGroups = ref<Set<number>>(new Set())
+
+function isGroupExpanded(groupId: number): boolean {
+  return expandedGroups.value.has(groupId)
+}
+
+function toggleGroupExpanded(groupId: number) {
+  const next = new Set(expandedGroups.value)
+  if (next.has(groupId)) next.delete(groupId)
+  else next.add(groupId)
+  expandedGroups.value = next
+}
 const showCatModal = ref(false)
 const editingCat = ref<Category | null>(null)
 const deleteCatTarget = ref<Category | null>(null)
+const deleteCatError = ref('')
 const savingCat = ref(false)
 const deletingCat = ref(false)
 const catError = ref('')
@@ -1431,19 +1468,21 @@ async function toggleCat(cat: Category) {
 
 function askDeleteCat(cat: Category) {
   if ((cat.products_count ?? 0) > 0) return
+  if (categories.value.some(c => c.parent_id === cat.id)) return
+  deleteCatError.value = ''
   deleteCatTarget.value = cat
 }
 
 async function confirmDeleteCat() {
   if (!deleteCatTarget.value) return
   deletingCat.value = true
+  deleteCatError.value = ''
   try {
     await api.delete(`/admin/categories/${deleteCatTarget.value.id}`)
     await loadCategories()
     deleteCatTarget.value = null
   } catch (e: any) {
-    // El backend retorna 422 si tiene productos
-    deleteCatTarget.value = null
+    deleteCatError.value = e.response?.data?.message ?? 'No se pudo eliminar la categoría'
   } finally {
     deletingCat.value = false
   }
