@@ -127,6 +127,13 @@ const router = createRouter({
         },
 
         {
+          path: "/admin/proveedores",
+          name: "proveedores",
+          component: () => import("@/views/admin/ProveedoresView.vue"),
+          meta: { auth: true },
+        },
+
+        {
           path: "/admin/sistema",
           component: () => import("@/views/admin/SistemaView.vue"),
           meta: { requiresAuth: true, role: ["sistema"] },

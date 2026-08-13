@@ -255,7 +255,7 @@ import {
   ArrowRightOnRectangleIcon, ArrowTopRightOnSquareIcon,
   HomeIcon, ClipboardDocumentListIcon,
   TagIcon, BanknotesIcon, UsersIcon,
-  ChartBarIcon, StarIcon, CpuChipIcon, MapPinIcon,
+  ChartBarIcon, StarIcon, CpuChipIcon, MapPinIcon, BuildingStorefrontIcon,
 } from '@heroicons/vue/24/outline'
 
 // ── Stores ────────────────────────────────────────────────
@@ -505,6 +505,12 @@ const NAV_GROUPS = computed((): NavGroup[] => {
   if (admin.can.zones) {
     gestion.push({
       to: '/admin/delivery-zones', icon: MapPinIcon, label: 'Zonas delivery',
+    })
+  }
+
+  if (admin.can.dashboard) {
+    gestion.push({
+      to: '/admin/proveedores', icon: BuildingStorefrontIcon, label: 'Proveedores',
     })
   }
 

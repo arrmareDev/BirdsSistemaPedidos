@@ -266,8 +266,10 @@ const isOpen = computed(() => {
 })
 </script>
 
-
 <style scoped>
+/* Oculta el botón nativo de "limpiar" que el navegador agrega solo a
+   los input type="search" — usamos el nuestro para poder resetear
+   también el estado de la búsqueda, no solo el texto. */
 .search-input-clean::-webkit-search-cancel-button,
 .search-input-clean::-webkit-search-decoration {
   -webkit-appearance: none;

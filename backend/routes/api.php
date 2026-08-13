@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\DespachoController;
 use App\Http\Controllers\Api\DespachoWebhookController;
 use App\Http\Controllers\Api\DeliveryZoneController;
 use App\Http\Controllers\Api\SeccionTipoController;
+use App\Http\Controllers\Api\ProveedorController;
 
 // ══════════════════════════════════════════════════════════
 // ── Públicas — sin auth ────────────────────────────────────
@@ -57,6 +58,12 @@ Route::prefix('v1/admin')
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::get('auth/me',      [AuthController::class, 'me']);
         Route::put('auth/password', [AuthController::class, 'changePassword']);
+
+        // Cualquier rol logueado puede ver el directorio de proveedores —
+        // solo crear/editar/borrar queda restringido a sistema, más abajo.
+        Route::get('proveedores', [ProveedorController::class, 'adminIndex']);
+        Route::post('proveedores/{id}/clic', [ProveedorController::class, 'registrarClic'])
+            ->where('id', '[0-9]+');
 
         Route::post('push/subscribe', [PushSubscriptionController::class, 'subscribe']);
         Route::post('push/unsubscribe', [PushSubscriptionController::class, 'unsubscribe']);
@@ -205,6 +212,20 @@ Route::prefix('v1/admin')
             Route::get('sistema/config', [SistemaController::class, 'getConfig']);
             Route::put('sistema/config', [SistemaController::class, 'updateConfig']);
             Route::post('sistema/cobrar', [SistemaController::class, 'marcarCobrado']);
+
+            // Directorio de proveedores aliados — lo curamos nosotros,
+            // no cada negocio individual. Cualquier rol puede consultarlo
+            // (arriba), pero solo sistema puede crear/editar/borrar.
+            Route::post('proveedores', [ProveedorController::class, 'store']);
+            Route::post('proveedores/reorder', [ProveedorController::class, 'reorder']);
+            Route::put('proveedores/{id}', [ProveedorController::class, 'update'])
+                ->where('id', '[0-9]+');
+            // También por POST — permite mandar archivos (logo) al editar,
+            // sin depender de que el navegador spoofee el método PUT.
+            Route::post('proveedores/{id}', [ProveedorController::class, 'update'])
+                ->where('id', '[0-9]+');
+            Route::delete('proveedores/{id}', [ProveedorController::class, 'destroy'])
+                ->where('id', '[0-9]+');
         });
 
         // Marca/atributos/campos de pedido: el admin del negocio SÍ debe
