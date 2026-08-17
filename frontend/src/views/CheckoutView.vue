@@ -212,38 +212,6 @@
               </div>
             </Transition>
 
-            <!-- 3. MÉTODO DE PAGO -->
-            <div>
-              <label class="block text-[10.5px] font-black uppercase tracking-wider text-brand-red mb-2">
-                ¿Cómo vas a pagar? *
-              </label>
-              <div class="flex flex-col gap-2">
-                <button @click="form.metodo_pago = 'contraentrega_efectivo'"
-                  class="flex items-center gap-3 p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-150"
-                  :class="form.metodo_pago === 'contraentrega_efectivo'
-                    ? 'border-brand-red bg-brand-red/8'
-                    : 'border-surface-border bg-white hover:border-brand-red/40'">
-                  <Banknote :size="20" class="text-green-600" />
-                  <div>
-                    <p class="font-bold text-[13px] text-ink m-0">Efectivo al repartidor</p>
-                    <p class="text-[11.5px] text-ink-muted m-0">Pago contraentrega en efectivo</p>
-                  </div>
-                </button>
-
-                <button @click="form.metodo_pago = 'contraentrega_yape'"
-                  class="flex items-center gap-3 p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-150"
-                  :class="form.metodo_pago === 'contraentrega_yape'
-                    ? 'border-brand-red bg-brand-red/8'
-                    : 'border-surface-border bg-white hover:border-brand-red/40'">
-                  <Smartphone :size="20" class="text-purple-600" />
-                  <div>
-                    <p class="font-bold text-[13px] text-ink m-0">Yape / Plin</p>
-                    <p class="text-[11.5px] text-ink-muted m-0">Pago contraentrega digital</p>
-                  </div>
-                </button>
-              </div>
-            </div>
-
           </div>
         </Transition>
 
@@ -465,7 +433,7 @@ import { useOrderStore } from '@/stores/order'
 import { usePedidoConfigStore } from '@/stores/pedidoConfig'
 import AppIcon from '@/components/AppIcon.vue'
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon.vue'
-import { Armchair, MapPin, TriangleAlert, Truck, Banknote, Smartphone, Store, Calendar, X } from 'lucide-vue-next'
+import { Armchair, MapPin, TriangleAlert, Truck, Store, Calendar, X } from 'lucide-vue-next'
 import api from '@/utils/api'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -516,7 +484,7 @@ const form = reactive({
   address: '',
   reference: '',
   delivery_zone_id: 0,
-  metodo_pago: '' as '' | 'anticipado' | 'contraentrega_efectivo' | 'contraentrega_yape',
+  metodo_pago: 'anticipado' as 'anticipado',
   note: '',
   lat: null as number | null,
   lng: null as number | null,
@@ -577,7 +545,6 @@ const canSubmit = computed(() => {
     return !!form.delivery_zone_id
       && !!form.address.trim()
       && !!form.reference.trim()
-      && !!form.metodo_pago
   }
 
   // recoger
@@ -770,7 +737,6 @@ async function handleOrder() {
     }
     if (!form.address.trim()) { errorMsg.value = 'Ingresa tu dirección de entrega'; return }
     if (!form.reference.trim()) { errorMsg.value = 'La referencia es obligatoria'; return }
-    if (!form.metodo_pago) { errorMsg.value = 'Selecciona cómo vas a pagar'; return }
   }
 
   if (form.entrega_programada && !form.fecha_entrega) {

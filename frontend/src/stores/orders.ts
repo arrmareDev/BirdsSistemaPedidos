@@ -4,6 +4,7 @@ import api from "@/utils/api";
 
 export interface AdminOrder {
   id: number;
+  codigo: number;
   client_name: string;
   client_phone: string;
   type: "local" | "recoger" | "delivery";

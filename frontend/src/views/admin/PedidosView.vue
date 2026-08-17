@@ -30,7 +30,7 @@
                   <div>
                     <h2 class="font-black text-[17px] text-gray-900 m-0 leading-none"
                       style="font-family:'Plus Jakarta Sans',sans-serif;">
-                      {{ isEditMode ? `Editar Pedido #${editingOrderId}` : 'Nuevo Pedido' }}
+                      {{ isEditMode ? `Editar Pedido #${editingOrderCodigo}` : 'Nuevo Pedido' }}
                     </h2>
                     <p class="text-[11px] text-gray-400 m-0 mt-0.5">
                       {{ cartItems.length > 0
@@ -290,7 +290,7 @@
                 <div v-if="isEditMode" class="lg:w-72 xl:w-80 shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-100 bg-white">
                   <div class="flex-1 overflow-y-auto p-4 sm:p-5">
                     <p class="text-[13px] text-gray-500 leading-relaxed">
-                      Estás editando los productos del pedido <strong class="text-gray-900">#{{ editingOrderId }}</strong>.
+                      Estás editando los productos del pedido <strong class="text-gray-900">#{{ editingOrderCodigo }}</strong>.
                       Los datos del cliente y entrega no se modifican aquí.
                     </p>
                   </div>
@@ -531,17 +531,17 @@
               </h3>
               <p class="text-[13.5px] text-gray-400 m-0 mb-6 leading-relaxed">
                 <template v-if="confirmModal.type === 'cancelar'">
-                  El pedido <strong class="text-gray-700">#{{ confirmModal.order?.id }}</strong>
+                  El pedido <strong class="text-gray-700">#{{ confirmModal.order?.codigo }}</strong>
                   de <strong class="text-gray-700">{{ confirmModal.order?.client_name }}</strong>
                   será marcado como cancelado.
                 </template>
                 <template v-else-if="confirmModal.type === 'forzar'">
-                  El pedido <strong class="text-gray-700">#{{ confirmModal.order?.id }}</strong>
+                  El pedido <strong class="text-gray-700">#{{ confirmModal.order?.codigo }}</strong>
                   se borrará <strong class="text-red-600">para siempre</strong> de la base de datos, junto con sus productos.
                   Esta acción <strong class="text-red-600">no se puede deshacer</strong>.
                 </template>
                 <template v-else>
-                  El pedido <strong class="text-gray-700">#{{ confirmModal.order?.id }}</strong>
+                  El pedido <strong class="text-gray-700">#{{ confirmModal.order?.codigo }}</strong>
                   se moverá a la papelera. Podrás restaurarlo después desde "Eliminados".
                 </template>
               </p>
@@ -590,7 +590,7 @@
               <div class="bg-gray-50 rounded-2xl p-4 mb-6 text-left border border-gray-100 flex flex-col gap-2">
                 <div class="flex justify-between text-[13px]">
                   <span class="text-gray-500">Pedido</span>
-                  <span class="font-bold text-gray-700">#{{ despachoModal.order?.id }}</span>
+                  <span class="font-bold text-gray-700">#{{ despachoModal.order?.codigo }}</span>
                 </div>
                 <div class="flex justify-between text-[13px]">
                   <span class="text-gray-500">Cliente</span>
@@ -660,7 +660,7 @@
                 ¿Confirmar con tu propio repartidor?
               </h3>
               <p class="text-[13.5px] text-gray-400 m-0 mb-6 leading-relaxed">
-                El pedido <strong class="text-gray-700">#{{ yaTengoModal.order?.id }}</strong>
+                El pedido <strong class="text-gray-700">#{{ yaTengoModal.order?.codigo }}</strong>
                 de <strong class="text-gray-700">{{ yaTengoModal.order?.client_name }}</strong>
                 pasará directamente a <strong class="text-gray-700">En camino</strong>.
               </p>
@@ -698,7 +698,7 @@
               </div>
               <h3 class="font-black text-[19px] text-gray-900 m-0 mb-2"
                 style="font-family:'Plus Jakarta Sans',sans-serif;">
-                Cobrar pedido #{{ cobroModal.order?.id }}
+                Cobrar pedido #{{ cobroModal.order?.codigo }}
               </h3>
               <p class="text-[13.5px] text-gray-400 m-0 mb-5 leading-relaxed">
                 Selecciona el método de pago para completar el pedido de
@@ -743,6 +743,47 @@
                   <span v-if="cobroModal.loading"
                     class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   {{ cobroModal.loading ? 'Cobrando...' : 'Confirmar cobro' }}
+                </button>
+              </div>
+            </div>
+          </Transition>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Modal confirmar pago (paso a "Confirmado") -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition-opacity duration-200"
+        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
+        <div v-if="confirmarPagoModal.show" class="fixed inset-0 z-[400] bg-black/50 backdrop-blur-sm
+             flex items-center justify-center p-4" @click.self="confirmarPagoModal.show = false">
+          <Transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 scale-95"
+            leave-to-class="opacity-0 scale-95">
+            <div v-if="confirmarPagoModal.show" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-7 text-center">
+              <div class="w-14 h-14 rounded-2xl bg-green-50 mx-auto mb-5 flex items-center justify-center text-green-500">
+                <CheckCircle :size="26" />
+              </div>
+              <h3 class="font-black text-[19px] text-gray-900 m-0 mb-2"
+                style="font-family:'Plus Jakarta Sans',sans-serif;">
+                Confirmar pedido #{{ confirmarPagoModal.order?.codigo }}
+              </h3>
+              <p class="text-[13.5px] text-gray-400 m-0 mb-6 leading-relaxed">
+                Al confirmar, se entiende que <strong class="text-gray-700">{{ confirmarPagoModal.order?.client_name }}</strong>
+                ya realizó el pago (Yape/transferencia coordinado por WhatsApp). El pedido pasará a preparación.
+              </p>
+
+              <div class="flex gap-3">
+                <button @click="confirmarPagoModal.show = false"
+                  class="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600
+                         font-semibold text-[13.5px] cursor-pointer bg-white hover:border-gray-300 transition-all duration-150">
+                  Cancelar
+                </button>
+                <button @click="confirmarPagoYAvanzar" :disabled="confirmarPagoModal.loading" class="flex-1 py-3 rounded-2xl text-white font-bold text-[13.5px] cursor-pointer border-none
+                         bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all duration-150
+                         flex items-center justify-center gap-2">
+                  <span v-if="confirmarPagoModal.loading"
+                    class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  {{ confirmarPagoModal.loading ? 'Confirmando...' : 'Ya pagó, confirmar' }}
                 </button>
               </div>
             </div>
@@ -836,7 +877,7 @@
               <div class="flex items-center gap-2 min-w-0 flex-1">
                 <span class="text-[11px] font-black px-2 py-0.5 rounded-lg shrink-0
                              bg-gray-100 text-gray-600 border border-gray-200 font-mono">
-                  #{{ o.id }}
+                  #{{ o.codigo }}
                 </span>
                 <span class="font-bold text-[14px] text-gray-900 truncate">{{ o.client_name }}</span>
                 <span class="hidden sm:inline text-[10.5px] font-medium px-2 py-0.5 rounded-full
@@ -997,7 +1038,7 @@
             <div>
               <p class="font-black text-[17px] text-gray-900 m-0 leading-none"
                 style="font-family:'Plus Jakarta Sans',sans-serif;">
-                Pedido #{{ selected.id }}
+                Pedido #{{ selected.codigo }}
               </p>
               <p class="text-[12.5px] text-gray-600 mt-1 m-0 font-semibold">{{ selected.client_name }}</p>
             </div>
@@ -1220,7 +1261,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon.vue'
 import AppIcon from '@/components/AppIcon.vue'
-import { LayoutGrid, PackageSearch, Calendar, Banknote, StickyNote, Heart } from 'lucide-vue-next'
+import { LayoutGrid, PackageSearch, Calendar, Banknote, StickyNote, Heart, CheckCircle } from 'lucide-vue-next'
 import CustomizerModal from '@/components/catalog/CustomizerModal.vue'
 import { useOrdersStore } from '@/stores/orders'
 import { useProductsStore } from '@/stores/products'
@@ -1262,6 +1303,7 @@ const modalError = ref('')
 const rightTab = ref<'catalogo' | 'carrito'>('catalogo')
 const activeCat = ref('all')
 const editingOrderId = ref<number | null>(null)
+const editingOrderCodigo = ref<number | null>(null)
 const isEditMode = computed(() => editingOrderId.value !== null)
 const showTrashed = ref(false)
 
@@ -1286,6 +1328,10 @@ const yaTengoModal = reactive({
 
 const cobroModal = reactive({
   show: false, order: null as any, metodoPago: '', loading: false, error: '',
+})
+
+const confirmarPagoModal = reactive({
+  show: false, order: null as any, loading: false,
 })
 
 // ── Form nuevo pedido ──────────────────────────────────────
@@ -1506,6 +1552,7 @@ function openEditItemsModal(order: any) {
   if (order.status === 'entregado' || order.status === 'cancelado' || order.status === 'en_camino') return
 
   editingOrderId.value = order.id
+  editingOrderCodigo.value = order.codigo
 
   const mapped = (order.items ?? []).map((i: any) => ({
     _uid: crypto.randomUUID(),
@@ -1854,10 +1901,34 @@ async function advanceOrder(o: any) {
   const flow = flowFor(o.type)
   const idx = flow.indexOf(o.status)
   if (idx >= flow.length - 1) return
-  const updated = await ordersStore.updateStatus(o.id, flow[idx + 1])
+  const siguienteEstado = flow[idx + 1]
+
+  // Ya no existe pago contraentrega — pasar a "confirmado" es el único
+  // punto donde el staff verifica manualmente que el cliente ya pagó
+  // (por Yape/transferencia, coordinado por WhatsApp). Por eso primero
+  // se pide confirmar, en vez de avanzar directo.
+  if (siguienteEstado === 'confirmado') {
+    confirmarPagoModal.order = o
+    confirmarPagoModal.show = true
+    return
+  }
+
+  const updated = await ordersStore.updateStatus(o.id, siguienteEstado)
   if (selected.value?.id === o.id && updated) {
     selected.value = { ...selected.value, status: updated.status }
   }
+}
+
+async function confirmarPagoYAvanzar() {
+  if (!confirmarPagoModal.order) return
+  confirmarPagoModal.loading = true
+  const updated = await ordersStore.updateStatus(confirmarPagoModal.order.id, 'confirmado')
+  confirmarPagoModal.loading = false
+  confirmarPagoModal.show = false
+  if (selected.value?.id === confirmarPagoModal.order.id && updated) {
+    selected.value = { ...selected.value, status: updated.status }
+  }
+  confirmarPagoModal.order = null
 }
 
 function askCancel(o: any) {
@@ -1917,14 +1988,14 @@ function sendWA(o: any) {
   // confirmado que corrompe el emoji de color al armar el mensaje
   // (llegan como � tanto en escritorio como en el celular).
   const lines = [
-    `*Pedido #${o.id}*`,
+    `*Pedido #${o.codigo}*`,
     `${o.client_name} · ${typeLabel(o.type)}`,
     `Estado: *${statusLabel(o.status)}*`,
   ]
   if (o.entrega_programada && o.fecha_entrega) lines.push(`Entrega: ${o.fecha_entrega}${o.hora_entrega ? ' · ' + o.hora_entrega : ''}`)
   if (o.mensaje_tarjeta) lines.push(`Tarjeta: "${o.mensaje_tarjeta}"`)
   lines.push(`Total: *S/ ${parseFloat(o.total).toFixed(2)}*`, ``)
-  lines.push(`Seguimiento: ${import.meta.env.VITE_APP_URL ?? ''}/seguimiento/${o.id}?tel=${clientPhone}`)
+  lines.push(`Seguimiento: ${import.meta.env.VITE_APP_URL ?? ''}/seguimiento/${o.codigo}?tel=${clientPhone}`)
 
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank')
 }

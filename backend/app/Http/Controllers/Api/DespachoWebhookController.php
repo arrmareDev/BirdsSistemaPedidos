@@ -45,7 +45,7 @@ class DespachoWebhookController extends Controller
             'motorizado'    => 'nullable|array',
         ]);
 
-        $order = Order::find($data['order_id']);
+        $order = Order::where('codigo', $data['order_id'])->first();
 
         if (!$order) {
             Log::warning('Webhook recibido para pedido inexistente', [

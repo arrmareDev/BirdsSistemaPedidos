@@ -34,7 +34,7 @@ class StoreOrderRequest extends FormRequest
             'lng'              => 'nullable|numeric',
 
             // ── Pago ──────────────────────────────────────────────
-            'metodo_pago' => 'nullable|in:anticipado,contraentrega_efectivo,contraentrega_yape',
+            'metodo_pago' => 'nullable|in:anticipado',
 
             // ── Nota general ──────────────────────────────────────
             'note' => 'nullable|string|max:500',

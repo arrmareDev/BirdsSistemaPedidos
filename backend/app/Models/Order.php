@@ -17,6 +17,7 @@ class Order extends Model
         'client_phone',
         'type',           // local | recoger | delivery
         'status',
+        'codigo',
         'address',
         'reference',
         'district',
@@ -34,6 +35,25 @@ class Order extends Model
         'subtotal',
         'total',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Identificador de cara al cliente/staff — un número aleatorio de
+        // 5 cifras, no el id incremental de la base de datos. Se reintenta
+        // si por casualidad ya existe (con 90 000 combinaciones posibles,
+        // es rarísimo, pero mejor cubrirlo).
+        static::creating(function (Order $order) {
+            if ($order->codigo) return;
+
+            do {
+                $codigo = random_int(10000, 99999);
+            } while (static::where('codigo', $codigo)->exists());
+
+            $order->codigo = $codigo;
+        });
+    }
 
     protected function casts(): array
     {

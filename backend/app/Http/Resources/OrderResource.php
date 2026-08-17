@@ -12,6 +12,7 @@ class OrderResource extends JsonResource
         return [
             // ── Identificación ────────────────────────────────────
             'id'           => $this->id,
+            'codigo'       => $this->codigo,
             'client_name'  => $this->client_name,
             'client_phone' => $this->client_phone,
 
@@ -57,9 +58,6 @@ class OrderResource extends JsonResource
                         'id'      => $item->product->id,
                         'name'    => $item->product->name,
                         'icon'    => $item->product->icon,
-                        'atributo_1' => $item->product->atributo_1,
-                        'atributo_2' => $item->product->atributo_2,
-                        'atributo_3' => $item->product->atributo_3,
                     ] : null,
                     'qty'            => (int)   $item->qty,
                     'unit_price'     => (float) $item->unit_price,

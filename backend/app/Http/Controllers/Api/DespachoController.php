@@ -37,6 +37,9 @@ class DespachoController extends Controller
             'delivery_fee' => (float) $order->delivery_fee,
             'total'        => (float) $order->total,
             'metodo_pago'  => $order->metodo_pago,
+            // Ya no existe contraentrega — todo pedido que llega a
+            // solicitar un despacho se entiende como ya pagado.
+            'pagado'       => true,
             'lat'          => $order->lat,
             'lng'          => $order->lng,
             'note'         => $order->note,
@@ -48,7 +51,7 @@ class DespachoController extends Controller
                 'custom_summary' => $i->custom_summary,
             ])->toArray(),
         ];
-        $despacho = $this->deliveryCentral->solicitarDespacho($order->id, $orderData);
+        $despacho = $this->deliveryCentral->solicitarDespacho($order->codigo, $orderData);
 
         if (!$despacho) {
             return $this->error('No se pudo conectar con el servicio de delivery. Intenta de nuevo.', 502);
@@ -60,7 +63,10 @@ class DespachoController extends Controller
     // GET /admin/despachos/{order_id}/estado
     public function estado(int $orderId): JsonResponse
     {
-        $despacho = $this->deliveryCentral->consultarEstado($orderId);
+        $order = $this->orderRepository->findById($orderId);
+        if (!$order) return $this->notFound('Pedido no encontrado');
+
+        $despacho = $this->deliveryCentral->consultarEstado($order->codigo);
 
         if (!$despacho) {
             return $this->notFound('Sin despacho activo para este pedido');
@@ -72,7 +78,10 @@ class DespachoController extends Controller
     // POST /admin/despachos/{order_id}/cancelar
     public function cancelar(int $orderId): JsonResponse
     {
-        $ok = $this->deliveryCentral->cancelarDespacho($orderId);
+        $order = $this->orderRepository->findById($orderId);
+        if (!$order) return $this->notFound('Pedido no encontrado');
+
+        $ok = $this->deliveryCentral->cancelarDespacho($order->codigo);
 
         if (!$ok) {
             return $this->error('No se pudo cancelar el despacho', 502);

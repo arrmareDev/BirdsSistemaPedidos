@@ -48,7 +48,7 @@ export const useOrderStore = defineStore("order", () => {
           currentOrder: currentOrder.value,
           orderNumber: orderNumber.value,
           savedAt: Date.now(), // ← marca de tiempo para expiración
-        })
+        }),
       );
     } catch (e) {
       console.error("Error al guardar el último pedido:", e);
@@ -106,7 +106,7 @@ export const useOrderStore = defineStore("order", () => {
       });
 
       const order = data.data;
-      orderNumber.value = String(order.id);
+      orderNumber.value = String(order.codigo);
       currentOrder.value = {
         ...order,
         client_phone: formData.client_phone,

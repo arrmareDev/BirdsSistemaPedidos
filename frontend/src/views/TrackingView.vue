@@ -59,7 +59,8 @@
                 <div class="relative">
                   <HashtagIcon class="absolute left-4 top-1/2 -translate-y-1/2
                                       w-4 h-4 text-gray-400 pointer-events-none" />
-                  <input v-model="searchForm.orderId" type="number" placeholder="Ej: 27" @keyup.enter="doSearch" class="w-full pl-10 pr-4 py-3.5 rounded-2xl border-2
+                  <input v-model="searchForm.orderId" type="number" placeholder="Ej: 48213" @keyup.enter="doSearch"
+                    class="w-full pl-10 pr-4 py-3.5 rounded-2xl border-2
                            border-gray-100 bg-gray-50 text-[14px] text-gray-900
                            outline-none placeholder:text-gray-300
                            focus:border-brand-red focus:bg-white
@@ -170,7 +171,7 @@
                 <div class="flex items-center gap-2 mb-1 flex-wrap">
                   <h2 class="font-black text-[26px] text-gray-900 leading-none m-0"
                     style="font-family:'Plus Jakarta Sans',sans-serif;">
-                    Pedido #{{ order.id }}
+                    Pedido #{{ order.codigo }}
                   </h2>
                   <span :class="statusCls(order.status)">
                     {{ statusLabel(order.status) }}
@@ -198,7 +199,7 @@
                   <span class="text-[13px] font-semibold text-gray-400">S/</span>
                   <span class="font-black text-[28px] text-brand-red leading-none"
                     style="font-family:'Plus Jakarta Sans',sans-serif;">
-                    {{ parseFloat(order.total).toFixed(2) }}
+                    {{ order.total.toFixed(2) }}
                   </span>
                 </div>
               </div>
@@ -356,7 +357,7 @@
               <span class="text-[13px] font-semibold text-gray-400">S/</span>
               <span class="font-black text-[24px] text-brand-red leading-none"
                 style="font-family:'Plus Jakarta Sans',sans-serif;">
-                {{ parseFloat(order.total).toFixed(2) }}
+                {{ order.total.toFixed(2) }}
               </span>
             </div>
           </div>
@@ -431,8 +432,54 @@ import { SearchX, Store, Check } from 'lucide-vue-next'
 
 const route = useRoute()
 
+// Coincide exacto con lo que arma OrderController::track() en el backend.
+interface TrackedOrderStep {
+  status: string
+  label: string
+  icon: string
+  state: 'done' | 'active' | 'pending'
+}
+
+interface TrackedOrderItem {
+  name: string
+  icon: string
+  qty: number
+  unit_price: number
+  subtotal: number
+  customization: unknown[]
+  extras: unknown[]
+  custom_summary: string | null
+}
+
+interface TrackedOrder {
+  id: number
+  codigo: number
+  status: string
+  client_name: string
+  client_phone: string
+  type: 'local' | 'recoger' | 'delivery'
+  mesa: string | null
+  total: number
+  subtotal: number
+  delivery_fee: number
+  note: string | null
+  address: string | null
+  reference: string | null
+  district: string | null
+  lat: number | null
+  lng: number | null
+  mensaje_tarjeta: string | null
+  fecha_entrega: string | null
+  hora_entrega: string | null
+  entrega_programada: boolean
+  created_at: string | null
+  updated_at: string | null
+  items: TrackedOrderItem[]
+  status_history: TrackedOrderStep[]
+}
+
 // ── Estado ────────────────────────────────────────────────
-const order = ref<any>(null)
+const order = ref<TrackedOrder | null>(null)
 const loading = ref(false)
 const error = ref('')
 const refreshing = ref(false)
@@ -449,20 +496,20 @@ let refreshInterval: ReturnType<typeof setInterval> | null = null
 
 // ── Computed ──────────────────────────────────────────────
 const waConsultaLink = computed(() => {
-  const texto = `Hola tengo una consulta sobre mi pedido #${order.value?.id ?? ''}`
+  const texto = `Hola tengo una consulta sobre mi pedido #${order.value?.codigo ?? ''}`
   return `https://wa.me/${waPhone}?text=${encodeURIComponent(texto)}`
 })
 
 const tiempoEstimado = computed(() => {
   const m: Record<string, string> = {
     nuevo: 'Esperando confirmación del local...',
-    confirmado: 'Confirmado · Preparación en curso',
-    preparando: 'Alistando tu pedido . espera unos minutos',
+    confirmado: 'Confirmado · Preparación en ~20 minutos',
+    preparando: 'Alistando tu pedido · ~15 minutos',
     listo: '¡Tu pedido está listo para entregar!',
-    en_camino: 'En camino a tu dirección · ¡Prepárate!',
+    en_camino: 'En camino a tu dirección · ~10 minutos',
     entregado: 'Pedido entregado',
   }
-  return m[order.value?.status] ?? ''
+  return m[order.value?.status ?? ''] ?? ''
 })
 
 // ── Lifecycle ─────────────────────────────────────────────
@@ -515,7 +562,7 @@ async function doSearch() {
       order_id: parseInt(searchForm.value.orderId),
       phone: searchForm.value.phone.replace(/\s/g, ''),
     })
-    orderId.value = String(data.data.id)
+    orderId.value = String(data.data.codigo)
     phone.value = searchForm.value.phone.replace(/\s/g, '')
     await loadOrder()
     startRefresh()
@@ -549,13 +596,13 @@ function stopRefresh() {
 }
 
 // ── Helpers ───────────────────────────────────────────────
-function stepSubtitle(step: any): string {
+function stepSubtitle(step: TrackedOrderStep): string {
   if (step.state === 'done') return 'Completado'
   if (step.state === 'active') {
     const m: Record<string, string> = {
       nuevo: 'Notificando al local...',
       confirmado: 'El local revisó tu pedido',
-      preparando: 'Alistando con amor!',
+      preparando: 'Alistando con amor! ~15 min',
       listo: '¡Listo para entregar!',
       en_camino: 'En camino a tu dirección',
       entregado: '¡Que lo disfrutes!',

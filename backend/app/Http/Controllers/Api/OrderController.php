@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Resources\OrderResource;
+use App\Models\Order;
 use App\Repositories\OrderRepository;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
@@ -36,11 +37,18 @@ class OrderController extends Controller
         );
     }
 
+    // POST /orders — público (cliente hace pedido desde la web)
     public function store(StoreOrderRequest $request): JsonResponse
     {
         try {
             $order = $this->orderService->create($request->validated());
             $order->load('items.product');
+
+            // Notificar por push a todo el staff con acceso a pedidos —
+            // solo pedidos de clientes reales, no los que arma el propio
+            // staff manualmente desde el panel (adminStore). Si esto
+            // falla por lo que sea, el pedido ya quedó creado — no debe
+            // romperle la confirmación al cliente.
             try {
                 $staff = \App\Models\User::all()->filter(fn($u) => $u->hasViewAccess('orders'));
                 \Illuminate\Support\Facades\Notification::send(
@@ -65,6 +73,7 @@ class OrderController extends Controller
 
         return $this->success([
             'id'         => $order->id,
+            'codigo'     => $order->codigo,
             'status'     => $order->status,
             'updated_at' => $order->updated_at?->toISOString(),
         ]);
@@ -103,7 +112,7 @@ class OrderController extends Controller
             'lng'              => 'nullable|numeric',
 
             // ── Pago ──────────────────────────────────────────────
-            'metodo_pago' => 'nullable|in:anticipado,contraentrega_efectivo,contraentrega_yape,efectivo,yape,tarjeta',
+            'metodo_pago' => 'nullable|in:anticipado,efectivo,yape,tarjeta',
             // ── Nota y entrega personalizada ───────────────────────
             'note'               => 'nullable|string|max:500',
             'mensaje_tarjeta'    => 'nullable|string|max:300',
@@ -238,12 +247,12 @@ class OrderController extends Controller
         return $this->success(new OrderResource($order), 'Pedido restaurado');
     }
 
-    // GET /orders/{id}/track — público (seguimiento del cliente)
+    // GET /orders/{codigo}/track — público (seguimiento del cliente)
     public function track(Request $request, int $id): JsonResponse
     {
         $request->validate(['phone' => 'required|string']);
 
-        $order = $this->orderRepository->findById($id);
+        $order = Order::where('codigo', $id)->first();
         if (!$order) return $this->notFound('Pedido no encontrado');
 
         $phoneInput = ltrim(preg_replace('/\D/', '', $request->phone), '51');
@@ -257,6 +266,7 @@ class OrderController extends Controller
 
         return $this->success([
             'id'                 => $order->id,
+            'codigo'             => $order->codigo,
             'status'             => $order->status,
             'client_name'        => $order->client_name,
             'client_phone'       => $order->client_phone,
@@ -300,7 +310,7 @@ class OrderController extends Controller
             'phone'    => 'required|string',
         ]);
 
-        $order = $this->orderRepository->findById($request->order_id);
+        $order = Order::where('codigo', $request->order_id)->first();
 
         $phoneInput = ltrim(preg_replace('/\D/', '', $request->phone ?? ''), '51');
         $phoneOrder = $order
@@ -313,6 +323,7 @@ class OrderController extends Controller
 
         return $this->success([
             'id'     => $order->id,
+            'codigo' => $order->codigo,
             'status' => $order->status,
             'type'   => $order->type,
             'total'  => (float) $order->total,
