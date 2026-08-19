@@ -1,157 +1,128 @@
 <template>
-    <footer class="footer-root relative overflow-hidden">
+    <footer class="bg-[#121216] text-zinc-300 font-sans border-t border-zinc-800">
 
-        <!-- Fondo animado -->
-        <!-- Fondo animado -->
-        <div class="footer-bg" aria-hidden="true">
-            <div class="footer-blob footer-blob-1" />
-            <div class="footer-blob footer-blob-2" />
-            <div class="footer-grid" />
-            <svg class="footer-birds" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-                <defs>
-                    <pattern id="birdPattern" x="0" y="0" width="120" height="90" patternUnits="userSpaceOnUse">
-                        <path d="M10,45 C16,32 24,34 30,42 C34,36 40,36 44,42 C50,34 58,32 64,45
-                         C56,40 48,42 44,47 C40,43 34,43 30,47 C24,42 16,40 10,45 Z" fill="#F5C518" />
-                        <path d="M75,20 C79,13 84,14 87,18 C90,15 94,15 96,18 C100,14 105,13 109,20
-                         C104,17 99,18 96,21 C94,19 90,19 87,21 C84,18 79,17 75,20 Z" fill="#F5C518" opacity="0.7" />
-                    </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#birdPattern)" />
-            </svg>
-        </div>
+        <!-- Contenido Principal -->
+        <div class="max-w-7xl mx-auto px-6 pt-16 pb-12">
 
-        <!-- Contenido -->
-        <div class="relative z-10 max-w-7xl mx-auto px-6 pt-14 pb-8">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-12">
 
-            <!-- ── Grid principal ── -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
-
-                <!-- Brand -->
-                <div class="flex flex-col gap-5 items-left text-center">
-                    <div class="logo-wrap w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-24 
-              overflow-hidden shrink-0 flex items-center justify-center">
-                        <div v-if="!brandingStore.loaded" class="w-12 h-12 rounded-xl bg-white/10 animate-pulse" />
+                <!-- Columna 1: Branding (5 cols) -->
+                <div class="md:col-span-5 flex flex-col items-start gap-5">
+                    <div class="h-16 flex items-center">
+                        <div v-if="!brandingStore.loaded" class="w-12 h-12 rounded-xl bg-zinc-800 animate-pulse" />
                         <img v-else :src="brandingStore.branding.logo_url" :alt="brandingStore.branding.nombre_negocio"
-                            class="w-full h-full object-contain"
+                            class="h-full w-auto object-contain brightness-110"
                             @error="(e) => (e.target as HTMLImageElement).style.display = 'none'" />
                     </div>
 
-                    <div class="flex flex-col gap-5 items-end text-left">
-                        <p class="text-white/70">
-                            El aroma del café más especial de Chiclayo.<br>
-                            La frescura de las flores que emocionan cada ocasión.
-                        </p>
-                    </div>
+                    <p class="text-zinc-400 text-sm leading-relaxed max-w-sm">
+                        El aroma inconfundible del café más especial de Chiclayo se mezcla con la frescura de las flores que despiertan emociones en cada ocasión.
+                    </p>
                 </div>
 
-                <!-- Info contacto -->
-                <div class="flex flex-col items-center gap-4 text-center">
-                    <p class="section-label">Contacto</p>
+                <!-- Columna 2: Contacto (3 cols) -->
+                <div class="md:col-span-3 flex flex-col gap-4">
+                    <h4 class="text-xs font-semibold tracking-wider text-amber-400 uppercase">Contacto</h4>
 
-                    <a v-if="brandingStore.branding.telefono" :href="`tel:+51${brandingStore.branding.telefono}`"
-                        class="contact-link flex items-center gap-3 group w-fit mx-auto">
-                        <div class="contact-icon-wrap w-9 h-9 rounded-xl flex items-center
-                justify-center shrink-0 transition-all duration-200
-                group-hover:scale-110">
-                            <PhoneIcon class="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                            <p class="text-[13px] text-white/50 m-0 leading-none mb-0.5">Teléfono</p>
-                            <p class="text-[15px] font-bold text-white m-0 leading-none
-                 group-hover:text-brand-yellow transition-colors">
-                                984199340
-                            </p>
-                        </div>
-                    </a>
+                    <ul class="space-y-3.5">
+                        <li v-if="brandingStore.branding.telefono">
+                            <a :href="`tel:+51${brandingStore.branding.telefono}`"
+                                class="group flex items-center gap-3 text-sm text-zinc-300 hover:text-white transition-colors">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700/60 flex items-center justify-center text-zinc-400 group-hover:border-amber-400/40 group-hover:text-amber-400 transition-all">
+                                    <PhoneIcon class="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <p class="text-[11px] text-zinc-500 leading-none mb-1">Teléfono</p>
+                                    <span class="font-medium">+51 {{ brandingStore.branding.telefono }}</span>
+                                </div>
+                            </a>
+                        </li>
 
-                    <a :href="waLink" target="_blank" class="contact-link flex items-center gap-3 group w-fit mx-auto">
-                        <div class="contact-icon-wrap wa w-9 h-9 rounded-xl flex items-center
-                justify-center shrink-0 transition-all duration-200
-                group-hover:scale-110">
-                            <WhatsAppIcon :size="16" />
-                        </div>
-                        <div>
-                            <p class="text-[13px] text-white/50 m-0 leading-none mb-0.5">WhatsApp</p>
-                            <p class="text-[15px] font-bold text-white m-0 leading-none
-                 group-hover:text-[#25D366] transition-colors">
-                                Pedir por WhatsApp
-                            </p>
-                        </div>
-                    </a>
+                        <li>
+                            <a :href="waLink" target="_blank"
+                                class="group flex items-center gap-3 text-sm text-zinc-300 hover:text-white transition-colors">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-emerald-950/40 border border-emerald-800/40 flex items-center justify-center text-emerald-400 group-hover:scale-105 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                                    <WhatsAppIcon :size="15" />
+                                </div>
+                                <div>
+                                    <p class="text-[11px] text-zinc-500 leading-none mb-1">WhatsApp</p>
+                                    <span class="font-medium group-hover:text-emerald-400 transition-colors">Pedir por
+                                        WhatsApp</span>
+                                </div>
+                            </a>
+                        </li>
 
-                    <div class="flex items-center gap-3 mx-auto">
-                        <div class="contact-icon-wrap w-9 h-9 rounded-xl flex items-center
-                justify-center shrink-0">
-                            <MapPinIcon class="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                            <p class="text-[13px] text-white/50 m-0 leading-none mb-0.5">Ubicación</p>
-                            <p class="text-[15px] font-bold text-white m-0 leading-none">
-                                {{ brandingStore.branding.direccion }}
-                            </p>
-                        </div>
-                    </div>
+                        <li class="flex items-center gap-3 text-sm text-zinc-300">
+                            <div
+                                class="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700/60 flex items-center justify-center text-zinc-400 shrink-0">
+                                <MapPinIcon class="w-4 h-4" />
+                            </div>
+                            <div>
+                                <p class="text-[11px] text-zinc-500 leading-none mb-1">Ubicación</p>
+                                <span class="font-medium line-clamp-1">{{ brandingStore.branding.direccion || 'Chiclayo, Perú' }}</span>
+                            </div>
+                        </li>
+                    </ul>
                 </div>
 
-                <!-- Horarios + estado -->
-                <div class="flex flex-col gap-4">
-                    <p class="section-label">Horarios</p>
+                <!-- Columna 3: Horarios y Estado (4 cols) -->
+                <div class="md:col-span-4 flex flex-col gap-4">
+                    <h4 class="text-xs font-semibold tracking-wider text-amber-400 uppercase">Atención</h4>
 
-                    <div class="horario-card rounded-2xl p-4 flex flex-col gap-3">
+                    <div class="bg-zinc-800/50 border border-zinc-700/60 rounded-2xl p-4">
 
-                        <!-- Estado en tiempo real -->
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between pb-3 mb-3 border-b border-zinc-700/50">
                             <div class="flex items-center gap-2">
-                                <div class="w-2 h-2 rounded-full status-dot" :class="isOpen ? 'open' : 'closed'" />
-                                <span class="text-[13px] font-black"
-                                    :class="isOpen ? 'text-green-400' : 'text-red-400'">
-                                    {{ isOpen ? 'Abierto ahora' : 'Cerrado ahora' }}
+                                <span class="relative flex h-2.5 w-2.5">
+                                    <span v-if="isOpen"
+                                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2.5 w-2.5"
+                                        :class="isOpen ? 'bg-emerald-500' : 'bg-rose-500'"></span>
+                                </span>
+                                <span class="text-xs font-semibold tracking-wide uppercase"
+                                    :class="isOpen ? 'text-emerald-400' : 'text-rose-400'">
+                                    {{ isOpen ? 'Abierto ahora' : 'Cerrado' }}
                                 </span>
                             </div>
-                            <span class="text-[11px] text-white/40 font-mono">{{ currentTime }}</span>
+                            <span class="text-xs font-mono text-zinc-400">{{ currentTime }}</span>
                         </div>
 
-                        <div class="border-t border-white/10 pt-3 flex flex-col gap-2">
-                            <div v-for="h in HORARIOS" :key="h.dias" class="flex items-center justify-between">
-                                <span class="text-[12.5px] text-white/50">{{ h.dias }}</span>
-                                <span class="text-[12.5px] font-semibold text-white/80">{{ h.horas }}</span>
+                        <div class="space-y-2 text-xs">
+                            <div v-for="h in HORARIOS" :key="h.dias"
+                                class="flex justify-between items-center text-zinc-400">
+                                <span>{{ h.dias }}</span>
+                                <span class="font-medium text-zinc-200">{{ h.horas }}</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- CTA rápido -->
-                    <RouterLink to="/" class="cta-footer flex items-center justify-center gap-2
-                   py-3 rounded-2xl no-underline font-bold text-[14px]
-                   text-white transition-all duration-200
-                   hover:-translate-y-0.5 active:scale-[0.98]">
-                        Ver el catálogo
+                    <RouterLink to="/"
+                        class="w-full py-3 px-4 rounded-xl font-medium text-sm text-center text-white bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 transition-all duration-200 shadow-sm active:scale-[0.99] flex items-center justify-center gap-2">
+                        Ver el catálogo completo
+                        <span class="text-amber-400">→</span>
                     </RouterLink>
                 </div>
+
             </div>
 
-            <!-- ── Divisor ── -->
-            <div class="footer-divider mb-6" />
+        </div>
 
-            <!-- ── Bottom bar ── -->
-            <div class="flex flex-col sm:flex-row items-center
-                  justify-between gap-3">
-                <!-- ← MARCA -->
-                <p class="text-[12px] text-white/25 m-0">
-                    © {{ year }} {{ brandingStore.branding.nombre_negocio }} · Todos los derechos reservados
-                </p>
+        <!-- Barra Inferior en Gris Oscuro (Corporate Split) -->
+        <div class="bg-[#111113] border-t border-zinc-800/80 py-6">
+            <div
+                class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
+                <p>© {{ year }} {{ brandingStore.branding.nombre_negocio }}. Todos los derechos reservados.</p>
 
-                <div class="flex items-center gap-4">
-                    <span class="text-[12px] text-white/25">
-                        Chiclayo, Perú
-                    </span>
-                    <span class="text-white/10">·</span>
-                    <span class="text-[12px] text-white/25 inline-flex items-center gap-1">
-                        Hecho con
-                        <Heart :size="11" fill="currentColor" /> en Perú
-                    </span>
+                <div class="flex items-center gap-2">
+                    <span>Hecho con</span>
+                    <Heart :size="12" class="text-rose-500 fill-rose-500" />
+                    <span>en Chiclayo, Perú</span>
                 </div>
             </div>
         </div>
+
     </footer>
 </template>
 
@@ -163,23 +134,19 @@ import WhatsAppIcon from '@/components/icons/WhatsAppIcon.vue'
 import { useBrandingStore } from '@/stores/branding'
 
 const brandingStore = useBrandingStore()
-
-
 const year = new Date().getFullYear()
 
-// ── WhatsApp ──────────────────────────────────────────────
 const waLink = computed(() => {
     const phone = (brandingStore.branding.whatsapp ?? import.meta.env.VITE_WA_PHONE ?? '51984199340').replace(/\D/g, '')
     const msg = `Hola ${brandingStore.branding.nombre_negocio}, quisiera hacer un pedido`
     return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
 })
 
-// Y el array de horarios también:
 const HORARIOS = [
     { dias: 'Lunes – Sábado', horas: '9:00 am – 9:00 pm' },
     { dias: 'Domingos', horas: 'Cerrado' },
 ]
-// ── Reloj + estado ────────────────────────────────────────
+
 const currentTime = ref('')
 let clockTimer: ReturnType<typeof setInterval> | null = null
 
@@ -190,14 +157,14 @@ function updateTime() {
     })
 }
 
-// Footer.vue — corregir isOpen
 const isOpen = computed(() => {
     const now = new Date()
     const day = now.getDay()
-    if (day === 0) return false // domingo cerrado
+    if (day === 0) return false
     const h = now.getHours()
-    return h >= 9 && h < 22   // 9am – 10pm
+    return h >= 9 && h < 21
 })
+
 onMounted(() => {
     updateTime()
     clockTimer = setInterval(updateTime, 30_000)
@@ -207,206 +174,3 @@ onUnmounted(() => {
     if (clockTimer) clearInterval(clockTimer)
 })
 </script>
-
-<style scoped>
-/* ── Root ── */
-.footer-root {
-    background: #0F0B09;
-    border-top: 1px solid rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.15);
-    margin-top: 2.5rem;
-}
-
-/* ── Fondo animado ── */
-.footer-bg {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-}
-
-.footer-blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(70px);
-    opacity: 0.25;
-}
-
-.footer-blob-1 {
-    width: 500px;
-    height: 400px;
-    background: radial-gradient(circle, rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.5), transparent 70%);
-    top: -100px;
-    left: -80px;
-    animation: footer-blob-move 20s ease-in-out infinite;
-}
-
-.footer-blob-2 {
-    width: 400px;
-    height: 350px;
-    background: radial-gradient(circle, rgba(245, 197, 24, 0.2), transparent 70%);
-    bottom: -80px;
-    right: -60px;
-    animation: footer-blob-move 25s ease-in-out infinite reverse;
-}
-
-@keyframes footer-blob-move {
-
-    0%,
-    100% {
-        transform: translate(0, 0) scale(1);
-    }
-
-    40% {
-        transform: translate(40px, -30px) scale(1.08);
-    }
-
-    70% {
-        transform: translate(-20px, 20px) scale(0.94);
-    }
-}
-
-.footer-birds {
-    position: absolute;
-    inset: 0;
-    opacity: 0.07;
-    pointer-events: none;
-}
-
-.footer-grid {
-    position: absolute;
-    inset: 0;
-    background-image:
-        linear-gradient(rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.04) 1px, transparent 1px);
-    background-size: 40px 40px;
-}
-
-/* ── Brand sub ── */
-.brand-sub {
-    color: #F5C518;
-    letter-spacing: 2px;
-}
-
-/* ── Rating ── */
-.rating-pill {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(8px);
-}
-
-.star-icon {
-    animation: star-twinkle 2.5s ease-in-out infinite;
-}
-
-.star-icon:nth-child(2) {
-    animation-delay: 0.2s;
-}
-
-.star-icon:nth-child(3) {
-    animation-delay: 0.4s;
-}
-
-.star-icon:nth-child(4) {
-    animation-delay: 0.6s;
-}
-
-.star-icon:nth-child(5) {
-    animation-delay: 0.8s;
-}
-
-@keyframes star-twinkle {
-
-    0%,
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    50% {
-        opacity: 0.6;
-        transform: scale(0.85);
-    }
-}
-
-/* ── Section label ── */
-.section-label {
-    font-size: 10px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: #F5C518;
-    margin: 0;
-    padding-bottom: 4px;
-    border-bottom: 1px solid rgba(245, 197, 24, 0.15);
-}
-
-/* ── Contact ── */
-.contact-link {
-    text-decoration: none;
-}
-
-.contact-icon-wrap {
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.contact-icon-wrap.wa {
-    background: rgba(37, 211, 102, 0.15);
-    border-color: rgba(37, 211, 102, 0.25);
-}
-
-/* ── Horario card ── */
-.horario-card {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    backdrop-filter: blur(8px);
-}
-
-/* ── Status dot ── */
-.status-dot {
-    transition: all 0.3s ease;
-}
-
-.status-dot.open {
-    background: #4ade80;
-    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.2);
-    animation: pulse-green 2s ease-in-out infinite;
-}
-
-.status-dot.closed {
-    background: #f87171;
-}
-
-@keyframes pulse-green {
-
-    0%,
-    100% {
-        box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.2);
-    }
-
-    50% {
-        box-shadow: 0 0 0 6px rgba(74, 222, 128, 0.05);
-    }
-}
-
-/* ── CTA footer ── */
-.cta-footer {
-    background: linear-gradient(135deg, var(--color-brand-primary, #C41E1E) 0%, var(--color-brand-primary-dark, #9A0F0F) 100%);
-    box-shadow: 0 4px 20px rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.35);
-}
-
-.cta-footer:hover {
-    box-shadow: 0 8px 28px rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.5);
-}
-
-/* ── Divider ── */
-.footer-divider {
-    height: 1px;
-    background: linear-gradient(90deg,
-            transparent,
-            rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.3) 20%,
-            rgba(245, 197, 24, 0.2) 50%,
-            rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.3) 80%,
-            transparent);
-}
-</style>

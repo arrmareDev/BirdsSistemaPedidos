@@ -192,10 +192,10 @@
                       class="font-bold text-[12.5px] sm:text-[14px] md:text-[15px] leading-snug m-0 mb-1 sm:mb-1.5 line-clamp-2 product-name">
                       {{ product.name }}
                     </h3>
-                    <!-- <p
-                      class="hidden sm:block text-[12px] sm:text-[12.5px] leading-relaxed m-0 line-clamp-2 flex-1 mb-3 product-desc">
+                    <p
+                      class="text-[10.5px] sm:text-[12.5px] leading-snug sm:leading-relaxed m-0 line-clamp-2 flex-1 mb-2 sm:mb-3 product-desc">
                       {{ product.description }}
-                    </p> -->
+                    </p>
                     <div class="flex items-center justify-between gap-1.5 sm:gap-2 mt-auto pt-1 sm:pt-0">
                       <div class="flex items-baseline gap-0.5">
                         <span class="text-[10px] sm:text-[11px] font-bold product-currency">S/</span>
@@ -277,10 +277,10 @@
                   class="font-bold text-[12.5px] sm:text-[14px] md:text-[15px] leading-snug m-0 mb-1 sm:mb-1.5 line-clamp-2 product-name">
                   {{ product.name }}
                 </h3>
-                <!-- <p
-                  class="hidden sm:block text-[12px] sm:text-[12.5px] leading-relaxed m-0 line-clamp-2 flex-1 mb-3 product-desc">
+                <p
+                  class="text-[10.5px] sm:text-[12.5px] leading-snug sm:leading-relaxed m-0 line-clamp-2 flex-1 mb-2 sm:mb-3 product-desc">
                   {{ product.description }}
-                </p> -->
+                </p>
                 <div class="flex items-center justify-between gap-1.5 sm:gap-2 mt-auto pt-1 sm:pt-0">
                   <div class="flex items-baseline gap-0.5">
                     <span class="text-[10px] sm:text-[11px] font-bold product-currency">S/</span>
@@ -798,6 +798,16 @@ button:hover .cat-icon {
 
 .product-desc {
   color: #8A8580;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 640px) {
+  .product-desc {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
 }
 
 .product-price {
