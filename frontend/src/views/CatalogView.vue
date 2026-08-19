@@ -113,7 +113,7 @@
         </div>
 
         <!-- ── Catálogo completo ── -->
-        <div class="px-4 md:px-8 pb-32 lg:pb-10">
+        <div class="px-4 md:px-8" :class="cartStore.count > 0 ? 'pb-32 lg:pb-10' : 'pb-10'">
           <div class="flex items-center justify-between mb-4 sm:mb-5">
             <div class="flex items-center gap-2 sm:gap-3">
               <h2 class="font-black text-[18px] sm:text-[20px] text-ink m-0 tracking-tight"
@@ -149,10 +149,11 @@
                 <span class="text-[12px] font-semibold text-gray-400 shrink-0">{{ group.total }} en total</span>
               </div>
 
-              <!-- Cuadrícula — mismas columnas que la vista de categoría
-                   (2 / 3 / 4), para que "ver más" nunca salte de layout -->
+              <!-- Cuadrícula — misma cantidad de columnas siempre (2/3/4).
+                   Si ya se expandió esta categoría, se listan TODOS sus
+                   productos aquí mismo; si no, el preview de 8. -->
               <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
-                <div v-for="product in group.products" :key="product.id"
+                <div v-for="product in (expandedGroups[group.slug] ?? group.products)" :key="product.id"
                   @click="product.available && openProduct(product)"
                   class="product-card group rounded-2xl overflow-hidden flex flex-col transition-all duration-300 relative"
                   :class="product.available ? 'cursor-pointer product-card--available' : 'opacity-50 cursor-default'">
@@ -193,7 +194,7 @@
                       {{ product.name }}
                     </h3>
                     <p
-                      class="text-[10.5px] sm:text-[12.5px] leading-snug sm:leading-relaxed m-0 line-clamp-2 flex-1 mb-2 sm:mb-3 product-desc">
+                      class="text-[10.5px] sm:text-[12.5px] leading-snug sm:leading-relaxed m-0 line-clamp-2 flex-1 min-h-0 mb-2 sm:mb-3 product-desc">
                       {{ product.description }}
                     </p>
                     <div class="flex items-center justify-between gap-1.5 sm:gap-2 mt-auto pt-1 sm:pt-0">
@@ -214,14 +215,17 @@
                 </div>
               </div>
 
-              <!-- "Ver más" — SIEMPRE debajo de la cuadrícula, en
-                   cualquier tamaño de pantalla (antes solo existía
-                   en escritorio y quedaba pegado al título) -->
-              <div v-if="group.total > group.products.length" class="flex justify-center mt-6">
-                <button @click="productsStore.setCategory(group.slug)" class="ver-mas-btn flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-[13.5px]
-                         cursor-pointer transition-all duration-200 border-2">
-                  Ver los {{ group.total }} productos de {{ group.name }}
-                  <ArrowRightIcon class="w-4 h-4" />
+              <!-- "Ver más" — expande ESTA categoría en el mismo lugar,
+                   sin navegar ni ocultar las demás categorías de abajo -->
+              <div v-if="group.total > group.products.length && !expandedGroups[group.slug]"
+                class="flex justify-center mt-6">
+                <button @click="expandGroup(group)" :disabled="expandingSlug === group.slug" class="ver-mas-btn flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-[13.5px]
+                         cursor-pointer transition-all duration-200 border-2 disabled:opacity-60">
+                  <span v-if="expandingSlug === group.slug"
+                    class="w-4 h-4 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
+                  {{ expandingSlug === group.slug ? 'Cargando...' : `Ver los ${group.total} productos de ${group.name}`
+                  }}
+                  <ArrowRightIcon v-if="expandingSlug !== group.slug" class="w-4 h-4" />
                 </button>
               </div>
 
@@ -278,7 +282,7 @@
                   {{ product.name }}
                 </h3>
                 <p
-                  class="text-[10.5px] sm:text-[12.5px] leading-snug sm:leading-relaxed m-0 line-clamp-2 flex-1 mb-2 sm:mb-3 product-desc">
+                  class="text-[10.5px] sm:text-[12.5px] leading-snug sm:leading-relaxed m-0 line-clamp-2 flex-1 min-h-0 mb-2 sm:mb-3 product-desc">
                   {{ product.description }}
                 </p>
                 <div class="flex items-center justify-between gap-1.5 sm:gap-2 mt-auto pt-1 sm:pt-0">
@@ -365,6 +369,7 @@ import { ref, inject, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductsStore } from '@/stores/products'
 import { useCartStore } from '@/stores/cart'
+import api from '@/utils/api'
 import { useHead } from '@vueuse/head'
 import HeroCarousel from '@/components/layout/HeroCarousel.vue'
 import AppIcon from '@/components/AppIcon.vue'
@@ -420,6 +425,31 @@ function spawnParticles(event: MouseEvent) {
     setTimeout(() => {
       particles.value = particles.value.filter(p => p.id !== id)
     }, 750)
+  }
+}
+
+// ── Expandir una categoría en el lugar (sin navegar) ──────
+// El store comparte un solo array `products` para toda la vista
+// "Todo" agrupada — pedirle a setCategory() cambiar a una sola
+// categoría BORRA ese array completo, y con él, las demás
+// categorías que se veían debajo. Por eso esto pide los productos
+// por su cuenta, con api.get() directo, y los guarda aparte.
+const expandedGroups = ref<Record<string, Product[]>>({})
+const expandingSlug = ref<string | null>(null)
+
+async function expandGroup(group: { slug: string; total: number }) {
+  if (expandedGroups.value[group.slug]) return
+  expandingSlug.value = group.slug
+  try {
+    const { data } = await api.get('/products', {
+      params: { category: group.slug, per_page: group.total },
+    })
+    const raw = data?.data?.data ?? []
+    expandedGroups.value[group.slug] = productsStore.normalizeProducts(raw)
+  } catch (e) {
+    console.error('Error expandiendo categoría:', e)
+  } finally {
+    expandingSlug.value = null
   }
 }
 
@@ -798,16 +828,6 @@ button:hover .cat-icon {
 
 .product-desc {
   color: #8A8580;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (min-width: 640px) {
-  .product-desc {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
 }
 
 .product-price {

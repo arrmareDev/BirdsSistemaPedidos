@@ -8,15 +8,17 @@
 
                 <!-- Columna 1: Branding (5 cols) -->
                 <div class="md:col-span-5 flex flex-col items-start gap-5">
-                    <div class="h-16 flex items-center">
+                    <div class="h-24 flex items-center">
                         <div v-if="!brandingStore.loaded" class="w-12 h-12 rounded-xl bg-zinc-800 animate-pulse" />
                         <img v-else :src="brandingStore.branding.logo_url" :alt="brandingStore.branding.nombre_negocio"
                             class="h-full w-auto object-contain brightness-110"
                             @error="(e) => (e.target as HTMLImageElement).style.display = 'none'" />
                     </div>
 
+
                     <p class="text-zinc-400 text-sm leading-relaxed max-w-sm">
-                        El aroma inconfundible del café más especial de Chiclayo se mezcla con la frescura de las flores que despiertan emociones en cada ocasión.
+                        El aroma inconfundible del café más especial de Chiclayo se mezcla con la frescura de las flores
+                        que despiertan emociones en cada ocasión.
                     </p>
                 </div>
 

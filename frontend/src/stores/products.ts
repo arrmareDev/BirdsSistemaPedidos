@@ -419,5 +419,6 @@ export const useProductsStore = defineStore("products", () => {
 
     setCategory,
     setGroup,
+    normalizeProducts,
   };
 });

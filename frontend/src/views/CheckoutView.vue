@@ -415,7 +415,7 @@
       <span v-if="orderStore.loading"
         class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
       <WhatsAppIcon v-else :size="18" />
-      {{ orderStore.loading ? 'Procesando...' : 'Confirmar y pedir por WhatsApp' }}
+      {{ orderStore.loading ? 'Procesando...' : 'Confirmar por WhatsApp' }}
     </button>
 
     <p class="text-center text-[12px] text-ink-muted mt-3">
