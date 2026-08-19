@@ -14,6 +14,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Sin esto, Laravel nunca se entera de que nginx recibe las
+        // peticiones por HTTPS — genera enlaces (imágenes, storage,
+        // etc.) con http:// aunque el sitio real sea https://.
+        $middleware->trustProxies(
+            at: '*',
+            headers: \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR
+                | \Illuminate\Http\Request::HEADER_X_FORWARDED_HOST
+                | \Illuminate\Http\Request::HEADER_X_FORWARDED_PORT
+                | \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO,
+        );
+
         $middleware->api(prepend: [
             ForceJsonResponse::class,
         ]);
