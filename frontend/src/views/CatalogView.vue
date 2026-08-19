@@ -36,6 +36,17 @@
         <div v-if="productsStore.rootCategories.length > 1" class="px-4 md:px-8 pt-6 pb-2">
           <div class="flex gap-3 sm:gap-4 overflow-x-auto pb-3 pt-2
                       -mx-4 px-5 md:-mx-8 md:px-9 scrollbar-none">
+            <!-- "Todo" — vuelve a ver el catálogo completo, agrupado
+                 por categoría. Sin esto no había forma de regresar
+                 aquí una vez que entrabas a un grupo específico. -->
+            <button @click="changeGroup('all')" class="flex items-center justify-center gap-2.5 sm:gap-3 px-4 py-3.5 sm:px-6 sm:py-4 rounded-full border-2
+                     font-black text-[13px] sm:text-[16px] cursor-pointer transition-all duration-300
+                     uppercase tracking-widest shrink-0 whitespace-nowrap"
+              :class="productsStore.activeGroup === 'all' ? 'cat-btn--active' : 'cat-btn--idle'">
+              <Squares2X2Icon class="cat-icon" :style="{ width: '22px', height: '22px' }" />
+              Todo
+            </button>
+
             <button v-for="root in productsStore.rootCategories" :key="root.id" @click="changeGroup(root.slug)" class="flex items-center justify-center gap-2.5 sm:gap-3 px-4 py-3.5 sm:px-6 sm:py-4 rounded-full border-2
                      font-black text-[13px] sm:text-[16px] cursor-pointer transition-all duration-300
                      uppercase tracking-widest shrink-0 whitespace-nowrap"
@@ -119,7 +130,7 @@
 
           <!-- Skeleton -->
           <div v-if="productsStore.loading"
-            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             <div v-for="n in 8" :key="n" class="rounded-2xl animate-pulse skeleton-card" style="aspect-ratio:3/4;" />
           </div>
 
@@ -129,20 +140,18 @@
             class="flex flex-col gap-10">
             <div v-for="(group, index) in groupedProducts" :key="group.slug">
 
-              <!-- Título de la Categoría, Línea divisora y Botón superior -->
+              <!-- Título de la Categoría + línea divisora -->
               <div class="flex items-center gap-4 mb-5">
                 <h3 class="font-black text-[20px] text-ink m-0" style="font-family:'Plus Jakarta Sans',sans-serif;">
                   {{ group.name }}
                 </h3>
                 <div class="h-px flex-1 bg-gray-200"></div>
-                <button v-if="group.total > group.products.length" @click="productsStore.setCategory(group.slug)"
-                  class="hidden sm:block text-[12.5px] font-bold text-brand-red cursor-pointer bg-red-50 hover:bg-red-100 px-4 py-1.5 rounded-full transition-colors border-none shrink-0">
-                  Ver todo ({{ group.total }})
-                </button>
+                <span class="text-[12px] font-semibold text-gray-400 shrink-0">{{ group.total }} en total</span>
               </div>
 
-              <!-- Cuadrícula de 6 productos -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              <!-- Cuadrícula — mismas columnas que la vista de categoría
+                   (2 / 3 / 4), para que "ver más" nunca salte de layout -->
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
                 <div v-for="product in group.products" :key="product.id"
                   @click="product.available && openProduct(product)"
                   class="product-card group rounded-2xl overflow-hidden flex flex-col transition-all duration-300 relative"
@@ -159,17 +168,17 @@
                     <div
                       class="absolute inset-0 product-img-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <span v-if="product.popular"
-                      class="badge-popular absolute top-3 left-3 inline-flex items-center gap-1">
-                      <Star :size="11" fill="currentColor" /> Popular
+                      class="badge-popular absolute top-2 left-2 sm:top-3 sm:left-3 inline-flex items-center gap-1">
+                      <Star :size="10" fill="currentColor" /> Popular
                     </span>
                     <div v-if="!product.available"
                       class="absolute inset-0 flex items-center justify-center backdrop-blur-[1px] bg-white/70">
                       <span class="sold-out-badge">Agotado</span>
                     </div>
 
-                    <!-- Botón + flotante en hover -->
+                    <!-- Botón + flotante en hover (solo pantallas con hover real) -->
                     <div
-                      class="absolute bottom-3 right-3 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200">
+                      class="hidden sm:block absolute bottom-3 right-3 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200">
                       <button v-if="product.available" @click.stop="handleAddToCart(product, $event)"
                         class="float-add-btn w-10 h-10 rounded-full flex items-center justify-center text-white text-2xl font-black border-none cursor-pointer leading-none transition-all duration-150 hover:scale-110 active:scale-95">
                         +
@@ -178,24 +187,26 @@
                   </div>
 
                   <!-- Info del producto -->
-                  <div class="flex flex-col flex-1 p-3 sm:p-4 product-info">
-                    <h3 class="font-bold text-[14px] sm:text-[15px] leading-snug m-0 mb-1.5 line-clamp-2 product-name">
+                  <div class="flex flex-col flex-1 p-2.5 sm:p-3.5 md:p-4 product-info">
+                    <h3
+                      class="font-bold text-[12.5px] sm:text-[14px] md:text-[15px] leading-snug m-0 mb-1 sm:mb-1.5 line-clamp-2 product-name">
                       {{ product.name }}
                     </h3>
-                    <p class="text-[12px] sm:text-[12.5px] leading-relaxed m-0 line-clamp-2 flex-1 mb-3 product-desc">
+                    <p
+                      class="hidden sm:block text-[12px] sm:text-[12.5px] leading-relaxed m-0 line-clamp-2 flex-1 mb-3 product-desc">
                       {{ product.description }}
                     </p>
-                    <div class="flex items-center justify-between gap-2 mt-auto">
+                    <div class="flex items-center justify-between gap-1.5 sm:gap-2 mt-auto pt-1 sm:pt-0">
                       <div class="flex items-baseline gap-0.5">
-                        <span class="text-[11px] font-bold product-currency">S/</span>
-                        <span class="font-black text-[22px] sm:text-[24px] leading-none product-price"
+                        <span class="text-[10px] sm:text-[11px] font-bold product-currency">S/</span>
+                        <span class="font-black text-[17px] sm:text-[20px] md:text-[22px] leading-none product-price"
                           style="font-family:'Plus Jakarta Sans',sans-serif;">
                           {{ product.price.toFixed(2) }}
                         </span>
                       </div>
                       <button v-if="product.available" @click.stop="handleAddToCart(product, $event)"
-                        class="pedir-btn flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-full font-bold text-[12px] border-none cursor-pointer hover:-translate-y-0.5 active:scale-95 transition-all duration-150 shrink-0 uppercase tracking-wide">
-                        <span class="text-[14px] leading-none font-black">+</span>
+                        class="pedir-btn flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full font-bold text-[10.5px] sm:text-[12px] border-none cursor-pointer hover:-translate-y-0.5 active:scale-95 transition-all duration-150 shrink-0 uppercase tracking-wide">
+                        <span class="text-[13px] sm:text-[14px] leading-none font-black">+</span>
                         <span>Pedir</span>
                       </button>
                     </div>
@@ -203,11 +214,14 @@
                 </div>
               </div>
 
-              <!-- Botón grande para celulares para Ver Más -->
-              <div v-if="group.total > group.products.length" class="flex justify-center mt-5 sm:hidden">
-                <button @click="productsStore.setCategory(group.slug)"
-                  class="w-full py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-bold text-[13px] bg-white cursor-pointer active:scale-95 transition-all">
-                  Explorar todos los {{ group.name }} →
+              <!-- "Ver más" — SIEMPRE debajo de la cuadrícula, en
+                   cualquier tamaño de pantalla (antes solo existía
+                   en escritorio y quedaba pegado al título) -->
+              <div v-if="group.total > group.products.length" class="flex justify-center mt-6">
+                <button @click="productsStore.setCategory(group.slug)" class="ver-mas-btn flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-[13.5px]
+                         cursor-pointer transition-all duration-200 border-2">
+                  Ver los {{ group.total }} productos de {{ group.name }}
+                  <ArrowRightIcon class="w-4 h-4" />
                 </button>
               </div>
 
@@ -218,9 +232,11 @@
             </div>
           </div>
 
-          <!-- Grid Clásico (Cuando se filtra por una categoría específica) -->
+          <!-- Grid Clásico (Cuando se filtra por una categoría específica) —
+               mismas columnas 2/3/4 que la vista agrupada, para que nunca
+               "salte" de 4 a 3 al entrar a ver todo de una categoría -->
           <div v-else-if="!productsStore.loading"
-            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4">
+            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
 
             <div v-for="product in productsStore.filtered" :key="product.id"
               @click="product.available && openProduct(product)"
@@ -237,17 +253,17 @@
                 </div>
                 <div
                   class="absolute inset-0 product-img-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <span v-if="product.popular" class="badge-popular absolute top-3 left-3 inline-flex items-center gap-1">
-                  <Star :size="11" fill="currentColor" /> Popular
+                <span v-if="product.popular"
+                  class="badge-popular absolute top-2 left-2 sm:top-3 sm:left-3 inline-flex items-center gap-1">
+                  <Star :size="10" fill="currentColor" /> Popular
                 </span>
                 <div v-if="!product.available"
                   class="absolute inset-0 flex items-center justify-center backdrop-blur-[1px] bg-white/70">
                   <span class="sold-out-badge">Agotado</span>
                 </div>
 
-                <!-- Botón + flotante en hover -->
                 <div
-                  class="absolute bottom-3 right-3 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200">
+                  class="hidden sm:block absolute bottom-3 right-3 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200">
                   <button v-if="product.available" @click.stop="handleAddToCart(product, $event)"
                     class="float-add-btn w-10 h-10 rounded-full flex items-center justify-center text-white text-2xl font-black border-none cursor-pointer leading-none transition-all duration-150 hover:scale-110 active:scale-95">
                     +
@@ -256,24 +272,26 @@
               </div>
 
               <!-- Info del producto -->
-              <div class="flex flex-col flex-1 p-3 sm:p-4 product-info">
-                <h3 class="font-bold text-[14px] sm:text-[15px] leading-snug m-0 mb-1.5 line-clamp-2 product-name">
+              <div class="flex flex-col flex-1 p-2.5 sm:p-3.5 md:p-4 product-info">
+                <h3
+                  class="font-bold text-[12.5px] sm:text-[14px] md:text-[15px] leading-snug m-0 mb-1 sm:mb-1.5 line-clamp-2 product-name">
                   {{ product.name }}
                 </h3>
-                <p class="text-[12px] sm:text-[12.5px] leading-relaxed m-0 line-clamp-2 flex-1 mb-3 product-desc">
+                <p
+                  class="hidden sm:block text-[12px] sm:text-[12.5px] leading-relaxed m-0 line-clamp-2 flex-1 mb-3 product-desc">
                   {{ product.description }}
                 </p>
-                <div class="flex items-center justify-between gap-2 mt-auto">
+                <div class="flex items-center justify-between gap-1.5 sm:gap-2 mt-auto pt-1 sm:pt-0">
                   <div class="flex items-baseline gap-0.5">
-                    <span class="text-[11px] font-bold product-currency">S/</span>
-                    <span class="font-black text-[22px] sm:text-[24px] leading-none product-price"
+                    <span class="text-[10px] sm:text-[11px] font-bold product-currency">S/</span>
+                    <span class="font-black text-[17px] sm:text-[20px] md:text-[22px] leading-none product-price"
                       style="font-family:'Plus Jakarta Sans',sans-serif;">
                       {{ product.price.toFixed(2) }}
                     </span>
                   </div>
                   <button v-if="product.available" @click.stop="handleAddToCart(product, $event)"
-                    class="pedir-btn flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-full font-bold text-[12px] border-none cursor-pointer hover:-translate-y-0.5 active:scale-95 transition-all duration-150 shrink-0 uppercase tracking-wide">
-                    <span class="text-[14px] leading-none font-black">+</span>
+                    class="pedir-btn flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full font-bold text-[10.5px] sm:text-[12px] border-none cursor-pointer hover:-translate-y-0.5 active:scale-95 transition-all duration-150 shrink-0 uppercase tracking-wide">
+                    <span class="text-[13px] sm:text-[14px] leading-none font-black">+</span>
                     <span>Pedir</span>
                   </button>
                 </div>
@@ -351,7 +369,7 @@ import { useHead } from '@vueuse/head'
 import HeroCarousel from '@/components/layout/HeroCarousel.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import type { Product } from '@/stores/products'
-import { Star, Flame, Dot, Plus, PackageSearch, X } from 'lucide-vue-next'
+import { Star, Flame, PackageSearch, X, ArrowRight as ArrowRightIcon, LayoutGrid as Squares2X2Icon } from 'lucide-vue-next'
 
 useHead({
   title: 'Birds Perú - Florería',
@@ -449,8 +467,8 @@ const groupedProducts = computed(() => {
     const group = groupsMap.get(catSlug)!
     group.total++ // Contamos el total real de esta categoría
 
-    // Mostramos máximo 6 para no cansar la vista
-    if (group.products.length < 6) {
+    // Mostramos máximo 8 para no cansar la vista (2 filas de 4 en desktop)
+    if (group.products.length < 8) {
       group.products.push(product)
     }
   })
@@ -575,9 +593,7 @@ function scrollToMenu() {
 
 
 /* ══════════════════════════════════════════════════════════════
-   BOTONES DE CATEGORÍAS — pastillas limpias sobre blanco, con
-   una sombra de color muy sutil en el estado activo (no un
-   degradado agresivo, que se ve genérico)
+   BOTONES DE CATEGORÍAS
    ══════════════════════════════════════════════════════════════ */
 
 .cat-btn--active {
@@ -682,10 +698,7 @@ button:hover .cat-icon {
 
 
 /* ══════════════════════════════════════════════════════════════
-   PRODUCT CARD — el componente central de la tienda. Borde casi
-   invisible + sombra en 2 capas (una muy pegada, una difusa) en
-   vez de una sola sombra plana: es lo que hace que una tarjeta
-   sobre blanco se sienta "elevada" y no solo recortada.
+   PRODUCT CARD
    ══════════════════════════════════════════════════════════════ */
 
 .product-card {
@@ -725,21 +738,19 @@ button:hover .cat-icon {
 
 
 /* ══════════════════════════════════════════════════════════════
-   BADGE POPULAR — pastilla flotante completa, separada del
-   borde (antes quedaba pegada y solo redondeada de un lado,
-   se sentía como una etiqueta vieja de descuento)
+   BADGE POPULAR
    ══════════════════════════════════════════════════════════════ */
 
 .badge-popular {
   background: #ffffff;
   color: #B8860B;
-  font-size: 9.5px;
+  font-size: 8.5px;
   font-weight: 900;
   text-transform: uppercase;
-  padding: 5px 10px;
+  padding: 4px 8px;
   border-radius: 999px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
-  letter-spacing: .06em;
+  letter-spacing: .05em;
   line-height: 1;
 }
 
@@ -749,13 +760,13 @@ button:hover .cat-icon {
    ══════════════════════════════════════════════════════════════ */
 
 .sold-out-badge {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   color: #555;
   text-transform: uppercase;
-  letter-spacing: .12em;
+  letter-spacing: .1em;
   background: rgba(255, 255, 255, .96);
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: 999px;
   border: 1px solid rgba(0, 0, 0, .08);
   box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
@@ -773,10 +784,7 @@ button:hover .cat-icon {
 
 
 /* ══════════════════════════════════════════════════════════════
-   INFORMACIÓN DE PRODUCTO — tipografía con más jerarquía: el
-   precio es el ancla visual (negro puro, no rojo — el color
-   de marca se reserva para el botón y los acentos, así el
-   precio se lee como precio, no como decoración)
+   INFORMACIÓN DE PRODUCTO
    ══════════════════════════════════════════════════════════════ */
 
 .product-info {
@@ -802,10 +810,7 @@ button:hover .cat-icon {
 
 
 /* ══════════════════════════════════════════════════════════════
-   BOTÓN PEDIR — color sólido con un highlight interior sutil
-   (como un botón físico con luz desde arriba) en vez de un
-   degradado diagonal ancho, que es lo primero que se ve
-   genérico/plantilla en un botón de e-commerce
+   BOTÓN PEDIR
    ══════════════════════════════════════════════════════════════ */
 
 .pedir-btn {
@@ -821,6 +826,25 @@ button:hover .cat-icon {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .18),
     0 6px 18px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .38);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   VER MÁS — ahora un único botón consistente, siempre debajo de
+   la cuadrícula, en cualquier tamaño de pantalla
+   ══════════════════════════════════════════════════════════════ */
+
+.ver-mas-btn {
+  background: #ffffff;
+  border-color: #ECECEC;
+  color: #4A3728;
+}
+
+.ver-mas-btn:hover {
+  border-color: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .35);
+  color: var(--color-brand-primary, #C41E1E);
+  background: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .04);
+  transform: translateY(-2px);
 }
 
 
@@ -930,7 +954,7 @@ button:hover .cat-icon {
 
 @media (max-width: 640px) {
   .product-card {
-    border-radius: 16px;
+    border-radius: 14px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, .03), 0 2px 6px rgba(0, 0, 0, .03);
   }
 
