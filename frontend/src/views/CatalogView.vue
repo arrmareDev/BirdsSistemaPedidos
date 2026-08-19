@@ -359,7 +359,7 @@ useHead({
     { name: 'description', content: 'Las flores más frescas de Chiclayo. Diseños que emocionan para cada ocasión especial.' },
   ],
   link: [
-    { rel: 'canonical', href: 'https://catalogo.birds.pe' },
+    { rel: 'canonical', href: 'https://floreria.birds.pe' },
   ],
 })
 
