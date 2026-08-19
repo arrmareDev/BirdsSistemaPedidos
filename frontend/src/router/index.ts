@@ -104,6 +104,11 @@ const router = createRouter({
           name: "admin-caja",
         },
         {
+          path: "caja/historial",
+          component: () => import("@/views/admin/CajaHistorialView.vue"),
+          name: "admin-caja-historial",
+        },
+        {
           path: "clientes",
           component: () => import("@/views/admin/ClientesView.vue"),
           name: "admin-clientes",

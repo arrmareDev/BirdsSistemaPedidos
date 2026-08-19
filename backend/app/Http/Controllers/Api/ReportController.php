@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
@@ -190,5 +191,149 @@ class ReportController extends Controller
             ->where('created_at', '>=', $from);
         if ($to) $q->where('created_at', '<', $to);
         return (float) $q->sum('total');
+    }
+
+    // GET /admin/reports/historico?periodo=dia|semana|mes|anio&anio=2026&mes=8
+    //
+    // Un solo endpoint flexible para las 4 granularidades — cada una
+    // trae su comparación automática contra el período equivalente del
+    // año anterior (excepto "anio", que ya es una comparación en sí
+    // misma al mostrar varios años seguidos).
+    public function historico(Request $request): JsonResponse
+    {
+        $periodo   = $request->query('periodo', 'mes');
+        $anio      = (int) $request->query('anio', now()->year);
+        $mes       = (int) $request->query('mes', now()->month);
+
+        return match ($periodo) {
+            'dia'    => $this->historicoDia($anio, $mes),
+            'semana' => $this->historicoSemana($anio, $mes),
+            'anio'   => $this->historicoAnio(),
+            default  => $this->historicoMes($anio),
+        };
+    }
+
+    private function historicoMes(int $anio): JsonResponse
+    {
+        $actual   = $this->ventasPorMes($anio);
+        $anterior = $this->ventasPorMes($anio - 1);
+
+        return $this->success([
+            'periodo'         => 'mes',
+            'anio_actual'     => $anio,
+            'anio_anterior'   => $anio - 1,
+            'series_actual'   => $actual,
+            'series_anterior' => $anterior,
+            'total_actual'    => round(array_sum(array_column($actual, 'total')), 2),
+            'total_anterior'  => round(array_sum(array_column($anterior, 'total')), 2),
+        ]);
+    }
+
+    private function historicoDia(int $anio, int $mes): JsonResponse
+    {
+        $actual   = $this->ventasPorDia($anio, $mes);
+        $anterior = $this->ventasPorDia($anio - 1, $mes);
+
+        return $this->success([
+            'periodo'         => 'dia',
+            'anio_actual'     => $anio,
+            'anio_anterior'   => $anio - 1,
+            'mes'             => $mes,
+            'series_actual'   => $actual,
+            'series_anterior' => $anterior,
+            'total_actual'    => round(array_sum(array_column($actual, 'total')), 2),
+            'total_anterior'  => round(array_sum(array_column($anterior, 'total')), 2),
+        ]);
+    }
+
+    private function historicoSemana(int $anio, int $mes): JsonResponse
+    {
+        $actual   = $this->ventasPorSemana($anio, $mes);
+        $anterior = $this->ventasPorSemana($anio - 1, $mes);
+
+        return $this->success([
+            'periodo'         => 'semana',
+            'anio_actual'     => $anio,
+            'anio_anterior'   => $anio - 1,
+            'mes'             => $mes,
+            'series_actual'   => $actual,
+            'series_anterior' => $anterior,
+            'total_actual'    => round(array_sum(array_column($actual, 'total')), 2),
+            'total_anterior'  => round(array_sum(array_column($anterior, 'total')), 2),
+        ]);
+    }
+
+    private function historicoAnio(): JsonResponse
+    {
+        // Todos los años que de verdad tienen pedidos — no inventamos
+        // años vacíos de relleno.
+        $anios = Order::selectRaw('DISTINCT EXTRACT(YEAR FROM created_at)::int as anio')
+            ->orderBy('anio')
+            ->pluck('anio');
+
+        $series = $anios->map(fn($a) => [
+            'clave' => (string) $a,
+            'total' => $this->sumOrders(
+                now()->setDate($a, 1, 1)->startOfDay(),
+                now()->setDate($a + 1, 1, 1)->startOfDay(),
+            ),
+        ]);
+
+        return $this->success([
+            'periodo'      => 'anio',
+            'series'       => $series,
+            'total'        => round($series->sum('total'), 2),
+        ]);
+    }
+
+    private function ventasPorMes(int $anio): array
+    {
+        $filas = Order::selectRaw('EXTRACT(MONTH FROM created_at)::int as mes, SUM(total) as total')
+            ->where('status', '!=', 'cancelado')
+            ->whereYear('created_at', $anio)
+            ->groupBy('mes')
+            ->pluck('total', 'mes');
+
+        $meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+        return collect(range(1, 12))->map(fn($m) => [
+            'clave' => $meses[$m - 1],
+            'total' => (float) ($filas[$m] ?? 0),
+        ])->all();
+    }
+
+    private function ventasPorDia(int $anio, int $mes): array
+    {
+        $diasEnMes = now()->setDate($anio, $mes, 1)->daysInMonth;
+
+        $filas = Order::selectRaw('EXTRACT(DAY FROM created_at)::int as dia, SUM(total) as total')
+            ->where('status', '!=', 'cancelado')
+            ->whereYear('created_at', $anio)
+            ->whereMonth('created_at', $mes)
+            ->groupBy('dia')
+            ->pluck('total', 'dia');
+
+        return collect(range(1, $diasEnMes))->map(fn($d) => [
+            'clave' => (string) $d,
+            'total' => (float) ($filas[$d] ?? 0),
+        ])->all();
+    }
+
+    private function ventasPorSemana(int $anio, int $mes): array
+    {
+        // Semana del mes = en qué bloque de 7 días cae el día (1-7 → sem 1,
+        // 8-14 → sem 2, etc.) — simple e intuitivo para el dueño, no usa
+        // semana ISO que puede cruzar meses de forma confusa.
+        $filas = Order::selectRaw("CEIL(EXTRACT(DAY FROM created_at) / 7.0)::int as semana, SUM(total) as total")
+            ->where('status', '!=', 'cancelado')
+            ->whereYear('created_at', $anio)
+            ->whereMonth('created_at', $mes)
+            ->groupBy('semana')
+            ->pluck('total', 'semana');
+
+        return collect(range(1, 5))->map(fn($s) => [
+            'clave' => "Sem {$s}",
+            'total' => (float) ($filas[$s] ?? 0),
+        ])->all();
     }
 }

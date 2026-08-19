@@ -39,41 +39,9 @@
             <button v-for="root in productsStore.rootCategories" :key="root.id" @click="changeGroup(root.slug)" class="flex items-center justify-center gap-2.5 sm:gap-3 px-4 py-3.5 sm:px-6 sm:py-4 rounded-full border-2
                      font-black text-[13px] sm:text-[16px] cursor-pointer transition-all duration-300
                      uppercase tracking-widest shrink-0 whitespace-nowrap"
-              :class="productsStore.activeGroup === root.slug
-                ? 'border-brand-red bg-brand-red text-white shadow-[0_8px_24px_rgba(var(--color-brand-primary-rgb,196,30,30),0.35)] scale-105'
-                : 'border-surface-border bg-white text-ink-muted hover:border-brand-red/40 hover:text-brand-red shadow-sm hover:shadow-md hover:-translate-y-0.5'">
-              <AppIcon :name="root.icon" :size="22" />
+              :class="productsStore.activeGroup === root.slug ? 'cat-btn--active' : 'cat-btn--idle'">
+              <AppIcon :name="root.icon" :size="22" class="cat-icon" />
               {{ root.name }}
-            </button>
-          </div>
-        </div>
-
-        <!-- ── Categorías ── -->
-        <div class="px-4 md:px-8 pt-8 pb-6">
-          <div class="flex items-center gap-3 mb-5">
-            <div class="section-pill">CATÁLOGO</div>
-            <h2 class="font-black text-[20px] sm:text-[22px] text-ink m-0 tracking-tight"
-              style="font-family:'Plus Jakarta Sans',sans-serif;">
-              ¿Qué estás buscando?
-            </h2>
-          </div>
-
-          <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-2.5">
-            <button @click="productsStore.setCategory('all')" class="cat-btn flex flex-col items-center gap-1.5 sm:gap-2
-                     py-3 sm:py-3.5 px-2 rounded-2xl border-2 font-bold
-                     text-[11px] sm:text-[12px] cursor-pointer transition-all duration-250"
-              :class="productsStore.activeCategory === 'all' ? 'cat-btn--active' : 'cat-btn--idle'">
-              <AppIcon name="layout-grid" :size="24" class="cat-icon" />
-              <span>Todo</span>
-            </button>
-
-            <button v-for="cat in categoriesForActiveGroup" :key="cat.id" @click="productsStore.setCategory(cat.slug)"
-              class="cat-btn flex flex-col items-center gap-1.5 sm:gap-2
-                     py-3 sm:py-3.5 px-2 rounded-2xl border-2 font-bold
-                     text-[11px] sm:text-[12px] cursor-pointer transition-all duration-250"
-              :class="productsStore.activeCategory === cat.slug ? 'cat-btn--active' : 'cat-btn--idle'">
-              <AppIcon :name="cat.icon" :size="24" class="cat-icon" />
-              <span class="truncate w-full text-center">{{ cat.name }}</span>
             </button>
           </div>
         </div>
@@ -191,7 +159,7 @@
                     <div
                       class="absolute inset-0 product-img-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <span v-if="product.popular"
-                      class="badge-popular absolute top-2.5 left-0 inline-flex items-center gap-1">
+                      class="badge-popular absolute top-3 left-3 inline-flex items-center gap-1">
                       <Star :size="11" fill="currentColor" /> Popular
                     </span>
                     <div v-if="!product.available"
@@ -269,8 +237,7 @@
                 </div>
                 <div
                   class="absolute inset-0 product-img-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <span v-if="product.popular"
-                  class="badge-popular absolute top-2.5 left-0 inline-flex items-center gap-1">
+                <span v-if="product.popular" class="badge-popular absolute top-3 left-3 inline-flex items-center gap-1">
                   <Star :size="11" fill="currentColor" /> Popular
                 </span>
                 <div v-if="!product.available"
@@ -524,75 +491,23 @@ function scrollToMenu() {
 <style scoped>
 .catalog-root {
   position: relative;
-  background: #FFFAF5;
+  background: #ffffff;
+  min-height: 100vh;
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   FONDO — desactivado a propósito, la tienda vive en blanco limpio
+   ══════════════════════════════════════════════════════════════ */
 
 .catalog-bg {
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
-.blob {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.35;
-}
 
-.blob-1 {
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(var(--color-brand-primary-rgb, 196, 30, 30), .18), rgba(245, 197, 24, .08));
-  top: -200px;
-  right: -150px;
-  animation: blob-float 18s ease-in-out infinite;
-}
-
-.blob-2 {
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(245, 197, 24, .12), rgba(var(--color-brand-primary-rgb, 196, 30, 30), .06));
-  bottom: 10%;
-  left: -100px;
-  animation: blob-float 22s ease-in-out infinite reverse;
-}
-
-.blob-3 {
-  width: 350px;
-  height: 350px;
-  background: radial-gradient(circle, rgba(var(--color-brand-primary-rgb, 196, 30, 30), .1), transparent);
-  top: 40%;
-  left: 40%;
-  animation: blob-float 16s ease-in-out infinite 4s;
-}
-
-.grid-pattern {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(var(--color-brand-primary-rgb, 196, 30, 30), .03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(var(--color-brand-primary-rgb, 196, 30, 30), .03) 1px, transparent 1px);
-  background-size: 48px 48px;
-}
-
-@keyframes blob-float {
-
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1)
-  }
-
-  33% {
-    transform: translate(30px, -40px) scale(1.05)
-  }
-
-  66% {
-    transform: translate(-20px, 20px) scale(.95)
-  }
-}
+/* ══════════════════════════════════════════════════════════════
+   PROMO BAR
+   ══════════════════════════════════════════════════════════════ */
 
 .promo-bar {
   background: #10461d;
@@ -608,12 +523,12 @@ function scrollToMenu() {
   0%,
   100% {
     opacity: 1;
-    transform: scale(1)
+    transform: scale(1);
   }
 
   50% {
     opacity: .7;
-    transform: scale(.85)
+    transform: scale(.85);
   }
 }
 
@@ -623,13 +538,18 @@ function scrollToMenu() {
 
 @keyframes marquee {
   from {
-    transform: translateX(0)
+    transform: translateX(0);
   }
 
   to {
-    transform: translateX(-50%)
+    transform: translateX(-50%);
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   SECTION PILL
+   ══════════════════════════════════════════════════════════════ */
 
 .section-pill {
   display: inline-flex;
@@ -637,8 +557,8 @@ function scrollToMenu() {
   justify-content: center;
   padding: 4px 12px;
   border-radius: 999px;
-  background: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .08);
-  border: 1.5px solid rgba(var(--color-brand-primary-rgb, 196, 30, 30), .15);
+  background: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .07);
+  border: 1px solid rgba(var(--color-brand-primary-rgb, 196, 30, 30), .14);
   font-size: 11px;
   font-weight: 900;
   color: var(--color-brand-primary, #C41E1E);
@@ -648,138 +568,185 @@ function scrollToMenu() {
 }
 
 .section-pill.fire {
-  background: rgba(245, 197, 24, .12);
-  border-color: rgba(245, 197, 24, .3);
+  background: rgba(245, 197, 24, .10);
+  border-color: rgba(245, 197, 24, .25);
   color: #B8860B;
 }
 
-.cat-btn {
-  backdrop-filter: blur(8px);
-}
+
+/* ══════════════════════════════════════════════════════════════
+   BOTONES DE CATEGORÍAS — pastillas limpias sobre blanco, con
+   una sombra de color muy sutil en el estado activo (no un
+   degradado agresivo, que se ve genérico)
+   ══════════════════════════════════════════════════════════════ */
 
 .cat-btn--active {
-  background: linear-gradient(135deg, var(--color-brand-primary, #C41E1E), var(--color-brand-primary-dark, #A01010));
+  background: var(--color-brand-primary, #C41E1E);
   border-color: var(--color-brand-primary, #C41E1E);
   color: white;
-  box-shadow: 0 6px 24px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .35), 0 0 0 3px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .1);
-  transform: scale(.97);
+  box-shadow:
+    0 1px 2px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .15),
+    0 8px 20px -4px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .35);
 }
 
 .cat-btn--idle {
-  background: rgba(255, 255, 255, .85);
-  border-color: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .1);
+  background: #ffffff;
+  border-color: #EEEEEE;
   color: #4A3728;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .03);
 }
 
 .cat-btn--idle:hover {
-  background: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .05);
-  border-color: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .25);
+  border-color: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .3);
+  color: var(--color-brand-primary, #C41E1E);
   transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .06);
 }
 
 .cat-icon {
   transition: transform .2s cubic-bezier(.34, 1.56, .64, 1);
 }
 
-.cat-btn:hover .cat-icon {
-  transform: scale(1.2) rotate(-5deg);
+button:hover .cat-icon {
+  transform: scale(1.15) rotate(-4deg);
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   CARDS — PRODUCTOS POPULARES
+   ══════════════════════════════════════════════════════════════ */
+
 .popular-card {
-  background: white;
-  border-radius: 20px;
-  border: 1.5px solid rgba(var(--color-brand-primary-rgb, 196, 30, 30), .08);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, .06);
-  transition: all .3s cubic-bezier(.34, 1.1, .64, 1);
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid rgba(0, 0, 0, .05);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .03), 0 3px 8px rgba(0, 0, 0, .03);
+  transition: transform .3s cubic-bezier(.34, 1.1, .64, 1), box-shadow .3s ease, border-color .3s ease;
 }
 
 .popular-card:hover {
-  transform: translateY(-6px) scale(1.01);
-  box-shadow: 0 16px 40px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .18);
-  border-color: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .2);
+  transform: translateY(-4px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .05), 0 16px 32px -8px rgba(0, 0, 0, .12);
+  border-color: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .16);
 }
 
 .popular-emoji-bg {
-  background: radial-gradient(circle at 50% 60%, rgba(236, 72, 153, .08), rgba(16, 185, 129, .04) 60%, transparent);
+  background: #FAFAF9;
 }
 
 .popular-info {
-  background: white;
+  background: #ffffff;
 }
 
 .popular-badge {
   background: #F5C518;
-  color: #7A5500;
+  color: #6B4E00;
   font-size: 9px;
   font-weight: 900;
   text-transform: uppercase;
   padding: 3px 8px;
   border-radius: 999px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
   letter-spacing: .05em;
 }
 
 .add-circle-btn {
-  background: linear-gradient(135deg, var(--color-brand-primary, #C41E1E), var(--color-brand-primary-dark, #A01010));
-  box-shadow: 0 4px 12px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .4);
+  background: var(--color-brand-primary, #C41E1E);
+  box-shadow: 0 3px 10px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .32);
 }
 
 .price-text {
   color: var(--color-brand-primary, #C41E1E);
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   SKELETON
+   ══════════════════════════════════════════════════════════════ */
+
 .skeleton-card {
-  background: linear-gradient(90deg,
-      rgba(var(--color-brand-primary-rgb, 196, 30, 30), .04) 25%,
-      rgba(var(--color-brand-primary-rgb, 196, 30, 30), .08) 50%,
-      rgba(var(--color-brand-primary-rgb, 196, 30, 30), .04) 75%);
+  background: linear-gradient(90deg, #F6F6F5 25%, #EFEFEE 50%, #F6F6F5 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
 
 @keyframes shimmer {
   0% {
-    background-position: 200% 0
+    background-position: 200% 0;
   }
 
   100% {
-    background-position: -200% 0
+    background-position: -200% 0;
   }
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   PRODUCT CARD — el componente central de la tienda. Borde casi
+   invisible + sombra en 2 capas (una muy pegada, una difusa) en
+   vez de una sola sombra plana: es lo que hace que una tarjeta
+   sobre blanco se sienta "elevada" y no solo recortada.
+   ══════════════════════════════════════════════════════════════ */
+
 .product-card {
-  background: rgba(255, 255, 255, .92);
-  border: 1.5px solid rgba(var(--color-brand-primary-rgb, 196, 30, 30), .08);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, .05);
-  backdrop-filter: blur(4px);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, .055);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .035), 0 2px 6px rgba(0, 0, 0, .03);
+  overflow: hidden;
+  transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
 }
 
 .product-card--available:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 36px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .14);
-  border-color: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .22);
+  transform: translateY(-6px);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, .05),
+    0 20px 40px -12px rgba(0, 0, 0, .14),
+    0 0 0 1px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .06);
+  border-color: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .18);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   IMAGEN DEL PRODUCTO
+   ══════════════════════════════════════════════════════════════ */
+
+.product-img-wrap {
+  background: #FAFAF9;
 }
 
 .product-emoji-bg {
-  background: radial-gradient(circle at 50% 60%, rgba(236, 72, 153, .06), rgba(16, 185, 129, .03) 60%, transparent);
+  background: #FAFAF9;
 }
 
 .product-img-overlay {
-  background: linear-gradient(to top, rgba(var(--color-brand-primary-rgb, 196, 30, 30), .08), transparent 60%);
+  background: linear-gradient(to top, rgba(0, 0, 0, .10), transparent 55%);
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   BADGE POPULAR — pastilla flotante completa, separada del
+   borde (antes quedaba pegada y solo redondeada de un lado,
+   se sentía como una etiqueta vieja de descuento)
+   ══════════════════════════════════════════════════════════════ */
+
 .badge-popular {
-  background: linear-gradient(90deg, #F5C518, #E8B800);
-  color: #7A5500;
-  font-size: 9px;
+  background: #ffffff;
+  color: #B8860B;
+  font-size: 9.5px;
   font-weight: 900;
   text-transform: uppercase;
-  padding: 4px 10px 4px 8px;
-  border-radius: 0 999px 999px 0;
+  padding: 5px 10px;
+  border-radius: 999px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
-  letter-spacing: .05em;
+  letter-spacing: .06em;
   line-height: 1;
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   AGOTADO
+   ══════════════════════════════════════════════════════════════ */
 
 .sold-out-badge {
   font-size: 11px;
@@ -787,76 +754,125 @@ function scrollToMenu() {
   color: #555;
   text-transform: uppercase;
   letter-spacing: .12em;
-  background: rgba(255, 255, 255, .95);
+  background: rgba(255, 255, 255, .96);
   padding: 6px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(0, 0, 0, .1);
+  border: 1px solid rgba(0, 0, 0, .08);
   box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   BOTÓN FLOTANTE +
+   ══════════════════════════════════════════════════════════════ */
+
 .float-add-btn {
-  background: linear-gradient(135deg, var(--color-brand-primary, #C41E1E), var(--color-brand-primary-dark, #A01010));
-  box-shadow: 0 4px 16px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .5);
+  background: var(--color-brand-primary, #C41E1E);
+  box-shadow: 0 4px 14px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .38);
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   INFORMACIÓN DE PRODUCTO — tipografía con más jerarquía: el
+   precio es el ancla visual (negro puro, no rojo — el color
+   de marca se reserva para el botón y los acentos, así el
+   precio se lee como precio, no como decoración)
+   ══════════════════════════════════════════════════════════════ */
+
 .product-info {
-  background: white;
+  background: #ffffff;
 }
 
 .product-name {
-  color: #1C1713;
+  color: #171310;
+  letter-spacing: -.005em;
 }
 
 .product-desc {
-  color: #8A7B70;
+  color: #8A8580;
 }
 
 .product-price {
-  color: #1C1713;
+  color: #171310;
 }
 
 .product-currency {
-  color: #8A7B70;
+  color: #A39D96;
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   BOTÓN PEDIR — color sólido con un highlight interior sutil
+   (como un botón físico con luz desde arriba) en vez de un
+   degradado diagonal ancho, que es lo primero que se ve
+   genérico/plantilla en un botón de e-commerce
+   ══════════════════════════════════════════════════════════════ */
+
 .pedir-btn {
-  background: linear-gradient(135deg, var(--color-brand-primary, #C41E1E) 0%, var(--color-brand-primary-dark, #A01010) 100%);
+  background: var(--color-brand-primary, #C41E1E);
   color: white;
-  box-shadow: 0 4px 14px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    0 3px 10px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .28);
 }
 
 .pedir-btn:hover {
-  box-shadow: 0 6px 20px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .45);
+  background: var(--color-brand-primary-dark, #A01010);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    0 6px 18px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .38);
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   EMPTY STATE
+   ══════════════════════════════════════════════════════════════ */
+
 .empty-icon-bg {
-  background: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .06);
+  background: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .05);
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   CONTADOR
+   ══════════════════════════════════════════════════════════════ */
 
 .count-badge {
   font-size: 12.5px;
   font-weight: 700;
   padding: 4px 12px;
   border-radius: 999px;
-  background: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .06);
-  border: 1.5px solid rgba(var(--color-brand-primary-rgb, 196, 30, 30), .12);
+  background: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .05);
+  border: 1px solid rgba(var(--color-brand-primary-rgb, 196, 30, 30), .10);
   color: var(--color-brand-primary, #C41E1E);
   white-space: nowrap;
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   LIMPIAR BÚSQUEDA
+   ══════════════════════════════════════════════════════════════ */
+
 .clear-search-btn {
-  background: rgba(0, 0, 0, .05);
-  color: var(--color-ink-muted, #7A9987);
+  background: rgba(0, 0, 0, .04);
+  color: #777777;
 }
 
 .clear-search-btn:hover {
-  background: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .08);
+  background: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .07);
   color: var(--color-brand-primary, #C41E1E);
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   FAB MOBILE
+   ══════════════════════════════════════════════════════════════ */
+
 .fab-mobile {
-  background: linear-gradient(135deg, var(--color-brand-primary, #C41E1E) 0%, var(--color-brand-primary-dark, #9A0F0F) 100%);
-  box-shadow: 0 8px 32px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .5), 0 0 0 1.5px rgba(255, 255, 255, .15) inset;
+  background: var(--color-brand-primary, #C41E1E);
+  box-shadow:
+    0 8px 28px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .35),
+    0 0 0 1px rgba(255, 255, 255, .12) inset;
   overflow: hidden;
 }
 
@@ -870,17 +886,22 @@ function scrollToMenu() {
 
 @keyframes fab-shine {
   0% {
-    background-position: 200% 0
+    background-position: 200% 0;
   }
 
   100% {
-    background-position: -200% 0
+    background-position: -200% 0;
   }
 }
 
 .fab-count {
-  background: rgba(255, 255, 255, .22);
+  background: rgba(255, 255, 255, .20);
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   PARTICLES
+   ══════════════════════════════════════════════════════════════ */
 
 .particle {
   animation: particle-fly .7s cubic-bezier(.22, .61, .36, 1) forwards;
@@ -889,16 +910,37 @@ function scrollToMenu() {
 @keyframes particle-fly {
   0% {
     transform: translate(0, 0) scale(1) rotate(0deg);
-    opacity: 1
+    opacity: 1;
   }
 
   60% {
-    opacity: 1
+    opacity: 1;
   }
 
   100% {
     transform: translate(var(--tx), var(--ty)) scale(.3) rotate(180deg);
-    opacity: 0
+    opacity: 0;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   AJUSTES RESPONSIVE
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  .product-card {
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .03), 0 2px 6px rgba(0, 0, 0, .03);
+  }
+
+  .product-card--available:hover {
+    transform: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .04), 0 4px 10px rgba(0, 0, 0, .04);
+  }
+
+  .popular-card {
+    border-radius: 16px;
   }
 }
 </style>

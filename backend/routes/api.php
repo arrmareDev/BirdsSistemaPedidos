@@ -160,8 +160,11 @@ Route::prefix('v1/admin')
 
         Route::middleware(['role:admin,sistema,contador', 'permission:caja'])->group(function () {
             Route::get('caja/hoy', [CajaController::class, 'hoy']);
+            Route::get('caja/historial', [CajaController::class, 'historial']);
             Route::post('caja/abrir',      [CajaController::class, 'abrir']);
             Route::post('caja/movimiento', [CajaController::class, 'movimiento']);
+            Route::post('caja/movimiento/{id}/anular', [CajaController::class, 'anular'])
+                ->where('id', '[0-9]+');
             Route::post('caja/cerrar',     [CajaController::class, 'cerrar']);
         });
 
@@ -178,6 +181,7 @@ Route::prefix('v1/admin')
         Route::middleware(['role:admin,sistema,contador', 'permission:reports'])->group(function () {
             Route::get('reports/sales',          [ReportController::class, 'sales']);
             Route::get('reports/customizations', [ReportController::class, 'customizations']);
+            Route::get('reports/historico',      [ReportController::class, 'historico']);
         });
 
         // ══ USUARIOS — solo admin/sistema ═══════════════════════
@@ -199,9 +203,9 @@ Route::prefix('v1/admin')
         });
 
         // ══ SISTEMA (módulo financiero/comisiones) ══════════════
-
-        // Ver el dashboard: admin/sistema/contador (accounting necesita verlo)
-        Route::middleware(['role:admin,sistema,contador', 'permission:sistema'])->group(function () {
+        // Ajustes es 100% exclusivo del rol sistema — antes admin y
+        // contador también podían entrar a ver el dashboard.
+        Route::middleware(['role:sistema', 'permission:sistema'])->group(function () {
             Route::get('sistema/dashboard', [SistemaController::class, 'dashboard']);
         });
 
@@ -228,9 +232,9 @@ Route::prefix('v1/admin')
                 ->where('id', '[0-9]+');
         });
 
-        // Marca/atributos/campos de pedido: el admin del negocio SÍ debe
-        // poder editar esto — es su propia configuración de catálogo.
-        Route::middleware('role:admin,sistema')->group(function () {
+        // Antes admin también podía editar branding/catálogo desde
+        // aquí — ahora Ajustes completo es exclusivo de sistema.
+        Route::middleware('role:sistema')->group(function () {
             Route::post('sistema/branding', [SistemaController::class, 'updateBranding']);
             Route::post('sistema/pedido-config', [SistemaController::class, 'updatePedidoConfig']);
         });
@@ -242,9 +246,9 @@ Route::prefix('v1/admin')
             );
         });
 
-        // ══ ZONAS DE DELIVERY — solo admin/sistema ═════════════
+        // ══ ZONAS DE DELIVERY — solo sistema ════════════════════
 
-        Route::middleware(['role:admin,sistema', 'permission:catalog'])->group(function () {
+        Route::middleware(['role:sistema', 'permission:catalog'])->group(function () {
             Route::get('delivery-zones', [DeliveryZoneController::class, 'adminIndex']);
             Route::post('delivery-zones', [DeliveryZoneController::class, 'store']);
             Route::post('delivery-zones/reorder', [DeliveryZoneController::class, 'reorder']);

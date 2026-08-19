@@ -542,7 +542,7 @@ const ROLE_FILTERS = [
     { value: 'contador', label: 'Contador' },
     { value: 'atencion', label: 'Atención' },
     { value: 'salon', label: 'Salón' },
-    { value: 'sistema', label: 'Sistema' },
+    // { value: 'sistema', label: 'Sistema' },
 ]
 
 // ── Vistas disponibles en el sistema ──────────────────────

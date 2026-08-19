@@ -547,7 +547,7 @@ const META: Record<string, { title: string; sub: string }> = {
   '/admin/catalogo': { title: 'Catálogo', sub: 'Gestión de productos' },
   '/admin/caja': { title: 'Caja', sub: 'Control de efectivo del día' },
   '/admin/clientes': { title: 'Clientes', sub: 'Base de datos de clientes' },
-  '/admin/reportes': { title: 'Reportes', sub: 'Análisis e inteligencia' },
+  '/admin/reportes': { title: 'Reportes', sub: 'Ventas históricas y personalización' },
   '/admin/usuarios': { title: 'Usuarios', sub: 'Gestión de accesos y roles' },
   '/admin/sistema': { title: 'Ajustes', sub: 'Comisiones y configuración' },
   '/admin/delivery-zones': { title: 'Zonas delivery', sub: 'Gestión de zonas delivery' },

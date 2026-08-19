@@ -43,7 +43,15 @@ export default {
         },
         // ── Rojo de marca (POS / catálogo) — configurable desde el panel ──
         "brand-red": {
-          DEFAULT: "var(--color-brand-primary, #C41E1E)",
+          // Como función: cuando Tailwind pide una versión con opacidad
+          // (bg-brand-red/20, etc.), arma el rgba() usando la misma
+          // variable --color-brand-primary-rgb que ya usa el resto de la
+          // app — antes esto usaba var() directo, que Tailwind no puede
+          // combinarle una opacidad, dejando esas clases sin pintar nada.
+          DEFAULT: ({ opacityValue }) =>
+            opacityValue === undefined
+              ? "var(--color-brand-primary, #C41E1E)"
+              : `rgba(var(--color-brand-primary-rgb, 196, 30, 30), ${opacityValue})`,
           dark: "var(--color-brand-primary-dark, #9B1717)",
           light: "#FDEDED",
         },

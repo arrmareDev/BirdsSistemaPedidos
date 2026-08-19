@@ -77,6 +77,20 @@
     <!-- ══ CAJA ABIERTA / CERRADA ══ -->
     <template v-if="!loadingPage && estado !== 'sin_abrir' && caja">
 
+      <!-- Aviso: esta caja es de un día anterior, no de hoy -->
+      <div v-if="esDiaAnterior" class="flex items-start gap-3 px-4 py-3.5 rounded-2xl
+               bg-amber-50 border border-amber-200">
+        <ExclamationTriangleIcon class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+        <div>
+          <p class="text-[13.5px] font-bold text-amber-800 m-0">
+            Esta caja quedó abierta del {{ formatFecha(caja.fecha) }}
+          </p>
+          <p class="text-[12.5px] text-amber-700 m-0 mt-0.5">
+            Ciérrala para poder abrir la caja de hoy — no se puede abrir una nueva mientras esta siga pendiente.
+          </p>
+        </div>
+      </div>
+
       <!-- ── KPIs ── -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
@@ -321,13 +335,13 @@
             </button>
 
             <!-- Reabrir caja -->
-            <button v-if="caja.estado === 'cerrada'" @click="abrirCaja" :disabled="apertura.loading" class="w-full py-3 rounded-2xl font-semibold text-[13px]
+            <button v-if="caja.estado === 'cerrada'" @click="showReabrir = true" class="w-full py-3 rounded-2xl font-semibold text-[13px]
                      text-amber-700 bg-amber-50 border-2 border-amber-200
                      cursor-pointer hover:bg-amber-100 hover:border-amber-300
                      transition-all duration-150
                      flex items-center justify-center gap-2">
               <LockOpenIcon class="w-4 h-4" />
-              {{ apertura.loading ? 'Reabriendo...' : 'Reabrir caja' }}
+              Reabrir caja
             </button>
           </div>
         </div>
@@ -363,7 +377,7 @@
             <TransitionGroup v-else tag="div" name="mov-item">
               <div v-for="m in movimientosOrdenados" :key="m.id" class="flex items-center gap-3.5 px-5 py-3.5
                        border-b border-gray-50 last:border-0
-                       hover:bg-gray-50/60 transition-colors duration-100">
+                       hover:bg-gray-50/60 transition-colors duration-100" :class="m.anulado ? 'opacity-50' : ''">
 
                 <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                   :class="tipoConfig(m.type).bgIcon">
@@ -373,13 +387,17 @@
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2">
                     <p class="font-semibold text-[13px] text-gray-900 m-0
-                               leading-snug truncate">
+                               leading-snug truncate" :class="m.anulado ? 'line-through' : ''">
                       {{ m.description }}
                     </p>
                     <span v-if="m.order_id" class="shrink-0 text-[9px] font-black px-1.5 py-0.5
                              rounded-full bg-purple-50 text-purple-600
                              border border-purple-200 leading-none">
                       AUTO
+                    </span>
+                    <span v-if="m.anulado" class="shrink-0 text-[9px] font-black px-1.5 py-0.5
+                             rounded-full bg-gray-200 text-gray-500 leading-none">
+                      ANULADO
                     </span>
                   </div>
                   <div class="flex items-center gap-2 mt-0.5">
@@ -391,13 +409,22 @@
                       {{ m.created_at }}
                     </span>
                   </div>
+                  <p v-if="m.anulado && m.motivo_anulacion" class="text-[11px] text-gray-400 m-0 mt-1 italic">
+                    Motivo: {{ m.motivo_anulacion }}
+                  </p>
                 </div>
 
-                <p class="font-black text-[15px] leading-none m-0 shrink-0"
-                  :class="m.type === 'gasto' ? 'text-red-500' : 'text-green-600'"
-                  style="font-family:'Plus Jakarta Sans',sans-serif;">
-                  {{ m.type === 'gasto' ? '−' : '+' }}S/ {{ formatMonto(m.amount) }}
-                </p>
+                <div class="flex flex-col items-end gap-1 shrink-0">
+                  <p class="font-black text-[15px] leading-none m-0"
+                    :class="m.anulado ? 'text-gray-400' : (m.type === 'gasto' ? 'text-red-500' : 'text-green-600')"
+                    style="font-family:'Plus Jakarta Sans',sans-serif;">
+                    {{ m.type === 'gasto' ? '−' : '+' }}S/ {{ formatMonto(m.amount) }}
+                  </p>
+                  <button v-if="!m.anulado && caja.estado === 'abierta'" @click="askAnular(m)" class="text-[10.5px] font-semibold text-gray-400 bg-transparent border-none
+                           cursor-pointer hover:text-red-500 transition-colors">
+                    Anular
+                  </button>
+                </div>
               </div>
             </TransitionGroup>
           </div>
@@ -453,11 +480,10 @@
                 ¿Cerrar la caja?
               </h3>
               <p class="text-gray-400 text-[13.5px] m-0 mb-5 leading-relaxed">
-                Se registrará el cierre con el saldo actual.
-                Esta acción no se puede deshacer.
+                Cuenta el efectivo físico y compáralo contra lo que el sistema espera.
               </p>
 
-              <div class="bg-gray-50 rounded-2xl p-4 mb-6 text-left
+              <div class="bg-gray-50 rounded-2xl p-4 mb-4 text-left
                           flex flex-col gap-2.5 border border-gray-100">
                 <div class="flex justify-between items-center text-[13px]">
                   <span class="text-gray-500 flex items-center gap-1.5">
@@ -471,7 +497,7 @@
                 <div class="flex justify-between items-center text-[13px]">
                   <span class="text-gray-500 flex items-center gap-1.5">
                     <ShoppingBagIcon class="w-3.5 h-3.5" />
-                    Ventas
+                    Ventas en efectivo
                   </span>
                   <span class="font-bold text-green-600">
                     +S/ {{ formatMonto(caja.total_ventas) }}
@@ -497,11 +523,58 @@
                 </div>
                 <div class="flex justify-between items-center pt-2.5
                             border-t border-gray-200 text-[14px]">
-                  <span class="font-bold text-gray-900">Saldo final</span>
+                  <span class="font-bold text-gray-900">Esperado en caja</span>
                   <span class="font-black text-gray-900" style="font-family:'Plus Jakarta Sans',sans-serif;">
                     S/ {{ formatMonto(caja.saldo) }}
                   </span>
                 </div>
+              </div>
+
+              <!-- Conteo físico -->
+              <div class="flex flex-col gap-1.5 mb-4 text-left">
+                <label class="text-[11px] font-black uppercase tracking-widest text-gray-500">
+                  ¿Cuánto contaste de verdad? (S/)
+                </label>
+                <div class="relative">
+                  <span class="absolute left-4 top-1/2 -translate-y-1/2
+                               text-[14px] font-bold text-gray-400">S/</span>
+                  <input v-model.number="cerrar.montoContado" type="number" min="0" step="0.50" placeholder="0.00"
+                    class="w-full pl-10 pr-4 py-3 rounded-2xl border-2 text-[15px]
+                           font-bold text-gray-900 outline-none bg-gray-50
+                           placeholder:text-gray-300 placeholder:font-normal
+                           border-gray-100 focus:border-brand-red focus:bg-white
+                           transition-all duration-200" />
+                </div>
+              </div>
+
+              <!-- Diferencia en vivo -->
+              <div v-if="cerrar.montoContado !== null"
+                class="mb-4 px-4 py-3 rounded-2xl text-left flex items-center justify-between" :class="diferenciaCalculada === 0
+                  ? 'bg-green-50 border border-green-200'
+                  : 'bg-amber-50 border border-amber-200'">
+                <span class="text-[12.5px] font-semibold"
+                  :class="diferenciaCalculada === 0 ? 'text-green-700' : 'text-amber-700'">
+                  {{ diferenciaCalculada === 0 ? 'Cuadra perfecto' : (diferenciaCalculada > 0 ? 'Sobrante' : 'Faltante')
+                  }}
+                </span>
+                <span class="font-black text-[15px]"
+                  :class="diferenciaCalculada === 0 ? 'text-green-700' : 'text-amber-700'">
+                  {{ diferenciaCalculada === 0 ? '✓' : (diferenciaCalculada > 0 ? '+' : '') }}
+                  {{ diferenciaCalculada !== 0 ? `S/ ${formatMonto(Math.abs(diferenciaCalculada))}` : '' }}
+                </span>
+              </div>
+
+              <!-- Motivo, solo si hay diferencia -->
+              <div v-if="diferenciaCalculada !== 0" class="flex flex-col gap-1.5 mb-4 text-left">
+                <label class="text-[11px] font-black uppercase tracking-widest text-gray-500">
+                  Motivo de la diferencia
+                </label>
+                <input v-model="cerrar.motivoDiferencia" type="text"
+                  placeholder="Ej: Vuelto mal dado, no se cobró un delivery..." maxlength="255" class="w-full px-4 py-3 rounded-2xl border-2 text-[13.5px]
+                         text-gray-900 outline-none bg-gray-50
+                         placeholder:text-gray-300
+                         border-gray-100 focus:border-brand-red focus:bg-white
+                         transition-all duration-200" />
               </div>
 
               <Transition enter-active-class="transition-all duration-150" enter-from-class="opacity-0 -translate-y-1"
@@ -520,7 +593,7 @@
                          transition-all duration-150">
                   Cancelar
                 </button>
-                <button @click="cerrarCaja" :disabled="cerrar.loading" class="flex-1 py-3 rounded-2xl bg-gray-900 text-white
+                <button @click="cerrarCaja" :disabled="cerrar.loading || cerrar.montoContado === null" class="flex-1 py-3 rounded-2xl bg-gray-900 text-white
                          font-bold text-[13.5px] cursor-pointer border-none
                          hover:bg-gray-800 transition-all duration-150
                          disabled:opacity-50
@@ -528,6 +601,141 @@
                   <span v-if="cerrar.loading" class="w-4 h-4 border-2 border-white/30 border-t-white
                            rounded-full animate-spin" />
                   {{ cerrar.loading ? 'Cerrando...' : 'Confirmar cierre' }}
+                </button>
+              </div>
+            </div>
+          </Transition>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- ══ MODAL REABRIR CAJA ══ -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition-opacity duration-200"
+        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
+        <div v-if="showReabrir" class="fixed inset-0 z-[300] bg-black/50 backdrop-blur-sm
+                 flex items-center justify-center p-4" @click.self="showReabrir = false">
+          <Transition enter-active-class="transition-all duration-250 ease-out" enter-from-class="opacity-0 scale-95"
+            leave-to-class="opacity-0 scale-95">
+            <div v-if="showReabrir" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-7 text-center">
+
+              <div class="w-16 h-16 rounded-2xl bg-amber-50 flex items-center
+                          justify-center mx-auto mb-5">
+                <LockOpenIcon class="w-8 h-8 text-amber-500" />
+              </div>
+
+              <h3 class="font-black text-[20px] text-gray-900 m-0 mb-2"
+                style="font-family:'Plus Jakarta Sans',sans-serif;">
+                ¿Reabrir la caja?
+              </h3>
+              <p class="text-gray-400 text-[13.5px] m-0 mb-5 leading-relaxed">
+                Queda registrado que esta caja se reabrió, y por qué.
+              </p>
+
+              <div class="flex flex-col gap-1.5 mb-4 text-left">
+                <label class="text-[11px] font-black uppercase tracking-widest text-gray-500">
+                  Motivo de la reapertura
+                </label>
+                <input v-model="reabrir.motivo" type="text" placeholder="Ej: Faltó registrar un pedido" maxlength="255"
+                  class="w-full px-4 py-3 rounded-2xl border-2 text-[13.5px]
+                         text-gray-900 outline-none bg-gray-50
+                         placeholder:text-gray-300
+                         border-gray-100 focus:border-brand-red focus:bg-white
+                         transition-all duration-200" />
+              </div>
+
+              <Transition enter-active-class="transition-all duration-150" enter-from-class="opacity-0 -translate-y-1"
+                leave-to-class="opacity-0">
+                <div v-if="reabrir.error" class="flex items-center gap-2 px-4 py-3 rounded-2xl
+                         bg-red-50 border border-red-200 mb-4 text-left">
+                  <ExclamationCircleIcon class="w-4 h-4 text-red-500 shrink-0" />
+                  <p class="text-[12.5px] text-red-700 m-0">{{ reabrir.error }}</p>
+                </div>
+              </Transition>
+
+              <div class="flex gap-3">
+                <button @click="showReabrir = false" class="flex-1 py-3 rounded-2xl border-2 border-gray-200
+                         text-gray-600 font-semibold text-[13.5px]
+                         cursor-pointer bg-white hover:border-gray-300
+                         transition-all duration-150">
+                  Cancelar
+                </button>
+                <button @click="reabrirCaja" :disabled="reabrir.loading" class="flex-1 py-3 rounded-2xl bg-amber-600 text-white
+                         font-bold text-[13.5px] cursor-pointer border-none
+                         hover:bg-amber-700 transition-all duration-150
+                         disabled:opacity-50
+                         flex items-center justify-center gap-2">
+                  <span v-if="reabrir.loading" class="w-4 h-4 border-2 border-white/30 border-t-white
+                           rounded-full animate-spin" />
+                  {{ reabrir.loading ? 'Reabriendo...' : 'Reabrir caja' }}
+                </button>
+              </div>
+            </div>
+          </Transition>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- ══ MODAL ANULAR MOVIMIENTO ══ -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition-opacity duration-200"
+        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
+        <div v-if="anular.target" class="fixed inset-0 z-[300] bg-black/50 backdrop-blur-sm
+                 flex items-center justify-center p-4" @click.self="anular.target = null">
+          <Transition enter-active-class="transition-all duration-250 ease-out" enter-from-class="opacity-0 scale-95"
+            leave-to-class="opacity-0 scale-95">
+            <div v-if="anular.target" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-7 text-center">
+
+              <div class="w-16 h-16 rounded-2xl bg-red-50 flex items-center
+                          justify-center mx-auto mb-5">
+                <ExclamationTriangleIcon class="w-8 h-8 text-red-400" />
+              </div>
+
+              <h3 class="font-black text-[19px] text-gray-900 m-0 mb-2"
+                style="font-family:'Plus Jakarta Sans',sans-serif;">
+                ¿Anular este movimiento?
+              </h3>
+              <p class="text-gray-400 text-[13px] m-0 mb-5 leading-relaxed">
+                "{{ anular.target?.description }}" — S/ {{ anular.target ? formatMonto(anular.target.amount) : '' }}.
+                Queda visible tachado, con el motivo, nunca se borra.
+              </p>
+
+              <div class="flex flex-col gap-1.5 mb-4 text-left">
+                <label class="text-[11px] font-black uppercase tracking-widest text-gray-500">
+                  Motivo
+                </label>
+                <input v-model="anular.motivo" type="text" placeholder="Ej: Se registró por error" maxlength="255"
+                  class="w-full px-4 py-3 rounded-2xl border-2 text-[13.5px]
+                         text-gray-900 outline-none bg-gray-50
+                         placeholder:text-gray-300
+                         border-gray-100 focus:border-brand-red focus:bg-white
+                         transition-all duration-200" />
+              </div>
+
+              <Transition enter-active-class="transition-all duration-150" enter-from-class="opacity-0 -translate-y-1"
+                leave-to-class="opacity-0">
+                <div v-if="anular.error" class="flex items-center gap-2 px-4 py-3 rounded-2xl
+                         bg-red-50 border border-red-200 mb-4 text-left">
+                  <ExclamationCircleIcon class="w-4 h-4 text-red-500 shrink-0" />
+                  <p class="text-[12.5px] text-red-700 m-0">{{ anular.error }}</p>
+                </div>
+              </Transition>
+
+              <div class="flex gap-3">
+                <button @click="anular.target = null" class="flex-1 py-3 rounded-2xl border-2 border-gray-200
+                         text-gray-600 font-semibold text-[13.5px]
+                         cursor-pointer bg-white hover:border-gray-300
+                         transition-all duration-150">
+                  Cancelar
+                </button>
+                <button @click="confirmarAnular" :disabled="anular.loading" class="flex-1 py-3 rounded-2xl bg-red-600 text-white
+                         font-bold text-[13.5px] cursor-pointer border-none
+                         hover:bg-red-700 transition-all duration-150
+                         disabled:opacity-50
+                         flex items-center justify-center gap-2">
+                  <span v-if="anular.loading" class="w-4 h-4 border-2 border-white/30 border-t-white
+                           rounded-full animate-spin" />
+                  {{ anular.loading ? 'Anulando...' : 'Sí, anular' }}
                 </button>
               </div>
             </div>
@@ -544,7 +752,7 @@ import api from '@/utils/api'
 import {
   BanknotesIcon, LockOpenIcon, LockClosedIcon,
   PlusIcon, PlusCircleIcon, CheckCircleIcon,
-  ExclamationCircleIcon, ClipboardDocumentListIcon,
+  ExclamationCircleIcon, ExclamationTriangleIcon, ClipboardDocumentListIcon,
   ClockIcon, ReceiptRefundIcon,
   ArrowTrendingUpIcon, ArrowTrendingDownIcon,
   ShoppingBagIcon, WrenchScrewdriverIcon,
@@ -558,10 +766,16 @@ interface CajaData {
   estado: 'abierta' | 'cerrada'
   monto_apertura: number
   monto_cierre: number | null
+  monto_contado: number | null
+  diferencia: number | null
+  motivo_diferencia: string | null
+  motivo_reapertura: string | null
   total_ventas: number
   total_gastos: number
   total_ingresos: number
   saldo: number
+  abierta_por: string | null
+  cerrada_por: string | null
 }
 
 interface Movimiento {
@@ -571,6 +785,8 @@ interface Movimiento {
   description: string
   order_id: number | null
   created_at: string
+  anulado: boolean
+  motivo_anulacion: string | null
 }
 
 type EstadoCaja = 'sin_abrir' | 'abierta' | 'cerrada'
@@ -580,6 +796,7 @@ const estado = ref<EstadoCaja>('sin_abrir')
 const caja = ref<CajaData | null>(null)
 const movimientos = ref<Movimiento[]>([])
 const showCerrar = ref(false)
+const esDiaAnterior = ref(false)
 const loadingPage = ref(true)  // ← true desde el inicio — evita el flash
 
 const comisionesPendientes = ref<any>(null)
@@ -605,7 +822,22 @@ const mov = reactive({
   success: false,
 })
 
-const cerrar = reactive({ loading: false, error: '' })
+const cerrar = reactive({
+  loading: false,
+  error: '',
+  montoContado: null as number | null,
+  motivoDiferencia: '',
+})
+
+const showReabrir = ref(false)
+const reabrir = reactive({ loading: false, error: '', motivo: '' })
+
+const anular = reactive({
+  target: null as Movimiento | null,
+  motivo: '',
+  loading: false,
+  error: '',
+})
 
 // ── Constantes ────────────────────────────────────────────
 const TIPOS = [
@@ -645,11 +877,22 @@ const movimientosOrdenados = computed(() =>
   [...movimientos.value].reverse()
 )
 
+const diferenciaCalculada = computed(() => {
+  if (cerrar.montoContado === null || !caja.value) return 0
+  return Math.round((cerrar.montoContado - caja.value.saldo) * 100) / 100
+})
+
 // ── Helpers ───────────────────────────────────────────────
 function formatMonto(n: number): string {
   return Number(n).toLocaleString('es-PE', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
+  })
+}
+
+function formatFecha(f: string): string {
+  return new Date(f + 'T00:00:00').toLocaleDateString('es-PE', {
+    weekday: 'long', day: 'numeric', month: 'long',
   })
 }
 
@@ -691,10 +934,12 @@ async function loadCaja() {
       estado.value = 'sin_abrir'
       caja.value = null
       movimientos.value = []
+      esDiaAnterior.value = false
     } else {
       caja.value = res.caja
       movimientos.value = res.movimientos ?? []
       estado.value = res.caja.estado
+      esDiaAnterior.value = res.es_dia_anterior ?? false
     }
   } catch (e) {
     console.error('Error cargando caja:', e)
@@ -761,16 +1006,74 @@ async function registrarMovimiento() {
 }
 
 async function cerrarCaja() {
+  if (cerrar.montoContado === null) {
+    cerrar.error = 'Indica cuánto contaste en efectivo'
+    return
+  }
   cerrar.loading = true
   cerrar.error = ''
   try {
-    await api.post('/admin/caja/cerrar')
+    await api.post('/admin/caja/cerrar', {
+      monto_contado: cerrar.montoContado,
+      motivo_diferencia: cerrar.motivoDiferencia.trim() || undefined,
+    })
     showCerrar.value = false
+    cerrar.montoContado = null
+    cerrar.motivoDiferencia = ''
     await loadCaja()
   } catch (e: any) {
     cerrar.error = e.response?.data?.message ?? 'Error al cerrar la caja'
   } finally {
     cerrar.loading = false
+  }
+}
+
+async function reabrirCaja() {
+  if (!reabrir.motivo.trim()) {
+    reabrir.error = 'Indica el motivo de la reapertura'
+    return
+  }
+  reabrir.loading = true
+  reabrir.error = ''
+  try {
+    await api.post('/admin/caja/abrir', {
+      monto_apertura: caja.value?.monto_apertura ?? 0,
+      motivo_reapertura: reabrir.motivo.trim(),
+    })
+    showReabrir.value = false
+    reabrir.motivo = ''
+    await loadCaja()
+  } catch (e: any) {
+    reabrir.error = e.response?.data?.message ?? 'Error al reabrir la caja'
+  } finally {
+    reabrir.loading = false
+  }
+}
+
+function askAnular(m: Movimiento) {
+  anular.target = m
+  anular.motivo = ''
+  anular.error = ''
+}
+
+async function confirmarAnular() {
+  if (!anular.target) return
+  if (!anular.motivo.trim()) {
+    anular.error = 'Indica el motivo de la anulación'
+    return
+  }
+  anular.loading = true
+  anular.error = ''
+  try {
+    await api.post(`/admin/caja/movimiento/${anular.target.id}/anular`, {
+      motivo: anular.motivo.trim(),
+    })
+    anular.target = null
+    await loadCaja()
+  } catch (e: any) {
+    anular.error = e.response?.data?.message ?? 'Error al anular el movimiento'
+  } finally {
+    anular.loading = false
   }
 }
 

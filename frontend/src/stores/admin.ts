@@ -53,13 +53,13 @@ export const useAdminStore = defineStore("admin", () => {
     clients: user.value?.permissions.clients ?? false,
     reports: user.value?.permissions.reports ?? false,
     users: user.value?.permissions.users ?? false,
-    sistema: user.value?.permissions.sistema ?? false,
+    sistema: isSistema.value,
     manageCatalog: user.value?.permissions.can_manage_catalog ?? false,
     manageUsers: user.value?.permissions.can_manage_users ?? false,
     cobrar: user.value?.permissions.can_cobrar ?? false,
     delete: user.value?.permissions.can_delete ?? false,
     writeOrders: user.value?.permissions.can_write_orders ?? false, // ← NUEVO
-    zones: isAdmin.value || isSistema.value,
+    zones: isSistema.value,
   }));
 
   // Ruta de inicio según rol
