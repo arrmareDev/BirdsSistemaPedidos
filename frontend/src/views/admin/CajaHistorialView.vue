@@ -77,11 +77,12 @@
                                 Diferencia</th>
                             <th class="text-[10.5px] font-black uppercase tracking-widest text-gray-400 px-5 py-3">Abrió
                                 / Cerró</th>
+                            <th class="text-[10.5px] font-black uppercase tracking-widest text-gray-400 px-5 py-3"></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="c in cajas" :key="c.id"
-                            class="border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors duration-100"
+                        <tr v-for="c in cajas" :key="c.id" @click="verMovimientos(c)"
+                            class="border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors duration-100 cursor-pointer"
                             :class="tieneDiferencia(c) ? 'bg-amber-50/40' : ''">
                             <td class="px-5 py-3.5">
                                 <p class="font-semibold text-[13px] text-gray-900 m-0 capitalize">{{
@@ -123,6 +124,9 @@
                                 <p class="text-[11px] text-gray-400 m-0">{{ c.cerrada_por ? `Cerró: ${c.cerrada_por}` :
                                     'Sin cerrar' }}</p>
                             </td>
+                            <td class="px-5 py-3.5">
+                                <span class="text-[12px] font-bold text-brand-red">Ver movimientos →</span>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -146,13 +150,77 @@
                 </div>
             </div>
         </div>
+
+        <!-- ══ MODAL MOVIMIENTOS DE UNA CAJA ══ -->
+        <Teleport to="body">
+            <div v-if="movimientosModal.caja"
+                class="fixed inset-0 z-[500] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+                @click.self="movimientosModal.caja = null">
+                <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl max-h-[80vh] flex flex-col overflow-hidden">
+                    <div class="p-6 pb-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+                        <div>
+                            <h3 class="font-black text-[16px] text-gray-900 m-0 capitalize"
+                                style="font-family:'Plus Jakarta Sans',sans-serif;">
+                                {{ formatFecha(movimientosModal.caja.fecha) }}
+                            </h3>
+                            <p class="text-[12px] text-gray-400 m-0 mt-0.5">
+                                {{ movimientosModal.movimientos.length }} movimiento{{
+                                    movimientosModal.movimientos.length !== 1 ? 's' : '' }}
+                            </p>
+                        </div>
+                        <button @click="movimientosModal.caja = null" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center
+                     cursor-pointer border-none hover:bg-gray-200 transition-colors shrink-0">
+                            <XMarkIcon class="w-4 h-4 text-gray-500" />
+                        </button>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto p-4">
+                        <div v-if="movimientosModal.loading" class="flex flex-col gap-2">
+                            <div v-for="n in 4" :key="n" class="h-14 rounded-xl bg-gray-100 animate-pulse" />
+                        </div>
+
+                        <div v-else-if="movimientosModal.movimientos.length === 0" class="py-10 text-center">
+                            <p class="text-[13px] text-gray-400 m-0">Esta caja no tuvo ningún movimiento</p>
+                        </div>
+
+                        <div v-else class="flex flex-col gap-1.5">
+                            <div v-for="m in movimientosModal.movimientos" :key="m.id"
+                                class="flex items-center gap-3 p-3 rounded-xl"
+                                :class="m.anulado ? 'opacity-50' : 'hover:bg-gray-50'">
+                                <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                                    :class="tipoMeta(m.type).bg">
+                                    <component :is="tipoMeta(m.type).icon" class="w-4 h-4"
+                                        :class="tipoMeta(m.type).color" />
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-[12.5px] font-semibold text-gray-800 m-0 truncate"
+                                        :class="m.anulado ? 'line-through' : ''">
+                                        {{ m.description }}
+                                    </p>
+                                    <p class="text-[11px] text-gray-400 m-0">{{ m.created_at }}</p>
+                                </div>
+                                <span class="font-black text-[14px] shrink-0"
+                                    :class="m.anulado ? 'text-gray-400' : (m.type === 'gasto' ? 'text-red-500' : 'text-green-600')"
+                                    style="font-family:'Plus Jakarta Sans',sans-serif;">
+                                    {{ m.type === 'gasto' ? '−' : '+' }}S/ {{ formatMonto(m.amount) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Teleport>
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted } from 'vue'
+import type { Component } from 'vue'
 import api from '@/utils/api'
-import { ArrowLeftIcon, ClipboardDocumentListIcon } from '@heroicons/vue/24/outline'
+import {
+    ArrowLeftIcon, ClipboardDocumentListIcon, XMarkIcon,
+    BanknotesIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon,
+} from '@heroicons/vue/24/outline'
 
 interface CajaHistorialItem {
     id: number
@@ -165,6 +233,17 @@ interface CajaHistorialItem {
     motivo_diferencia: string | null
     abierta_por: string | null
     cerrada_por: string | null
+}
+
+interface MovimientoCaja {
+    id: number
+    type: 'venta' | 'gasto' | 'ingreso'
+    amount: number
+    description: string
+    order_id: number | null
+    created_at: string
+    anulado: boolean
+    motivo_anulacion: string | null
 }
 
 interface Meta {
@@ -240,6 +319,42 @@ function formatFecha(f: string): string {
     return new Date(f + 'T00:00:00').toLocaleDateString('es-PE', {
         weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
     })
+}
+
+// ── Detalle de movimientos de una caja puntual ────────────
+const movimientosModal = reactive({
+    caja: null as CajaHistorialItem | null,
+    movimientos: [] as MovimientoCaja[],
+    loading: false,
+})
+
+async function verMovimientos(caja: CajaHistorialItem) {
+    movimientosModal.caja = caja
+    movimientosModal.movimientos = []
+    movimientosModal.loading = true
+    try {
+        const { data } = await api.get(`/admin/caja/${caja.id}/movimientos`)
+        movimientosModal.movimientos = data.data
+    } catch (e) {
+        console.error('Error cargando movimientos:', e)
+    } finally {
+        movimientosModal.loading = false
+    }
+}
+
+interface TipoMeta {
+    icon: Component
+    bg: string
+    color: string
+}
+
+function tipoMeta(tipo: MovimientoCaja['type']): TipoMeta {
+    const mapa: Record<MovimientoCaja['type'], TipoMeta> = {
+        venta: { icon: BanknotesIcon, bg: 'bg-green-50', color: 'text-green-600' },
+        ingreso: { icon: ArrowTrendingUpIcon, bg: 'bg-blue-50', color: 'text-blue-600' },
+        gasto: { icon: ArrowTrendingDownIcon, bg: 'bg-red-50', color: 'text-red-500' },
+    }
+    return mapa[tipo]
 }
 
 onMounted(cargar)

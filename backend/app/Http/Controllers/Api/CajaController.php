@@ -44,6 +44,21 @@ class CajaController extends Controller
         ]);
     }
 
+    // GET /admin/caja/{id}/movimientos — el detalle de una caja
+    // puntual del historial (cualquier fecha, no solo la de hoy).
+    public function movimientos(int $id): JsonResponse
+    {
+        $caja = Caja::with([
+            'movimientos' => fn($q) => $q->orderBy('created_at'),
+        ])->find($id);
+
+        if (!$caja) return $this->notFound('Caja no encontrada');
+
+        return $this->success(
+            $caja->movimientos->map(fn($m) => $this->formatMovimiento($m))->toArray()
+        );
+    }
+
     // GET /admin/caja/historial — cajas pasadas, paginado, para auditar
     public function historial(Request $request): JsonResponse
     {
@@ -299,9 +314,7 @@ class CajaController extends Controller
             'amount'            => (float) $m->amount,
             'description'       => $m->description,
             'order_id'          => $m->order_id,
-            'created_at'        => $m->created_at
-                ->timezone('America/Lima')
-                ->format('H:i'),
+            'created_at'        => $m->created_at->format('H:i'),
             'anulado'           => $m->anulado,
             'motivo_anulacion'  => $m->motivo_anulacion,
         ];

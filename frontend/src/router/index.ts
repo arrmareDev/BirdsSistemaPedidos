@@ -99,6 +99,11 @@ const router = createRouter({
           name: "admin-catalogo",
         },
         {
+          path: "inventario",
+          component: () => import("@/views/admin/InventarioView.vue"),
+          name: "admin-inventario",
+        },
+        {
           path: "caja",
           component: () => import("@/views/admin/CajaView.vue"),
           name: "admin-caja",

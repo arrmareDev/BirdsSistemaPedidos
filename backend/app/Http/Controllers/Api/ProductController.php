@@ -113,6 +113,7 @@ class ProductController extends Controller
             'icon'           => 'nullable|string|max:50',
             'price'          => 'required|numeric|min:0',
             'stock'          => 'nullable|integer|min:0',
+            'stock_minimo'   => 'nullable|integer|min:0',
             'controla_stock' => 'nullable',
             ...$this->descuentoRules($request),
         ]);
@@ -172,6 +173,7 @@ class ProductController extends Controller
             'icon'           => 'nullable|string|max:50',
             'price'          => 'sometimes|numeric|min:0',
             'stock'          => 'nullable|integer|min:0',
+            'stock_minimo'   => 'nullable|integer|min:0',
             'controla_stock' => 'nullable',
             ...$this->descuentoRules($request),
         ]);
@@ -373,6 +375,9 @@ class ProductController extends Controller
             'stock'          => $controlaStock
                 ? (int) $request->input('stock', 0)
                 : 0,
+            'stock_minimo'   => $controlaStock
+                ? $this->nullableString($request->input('stock_minimo'))
+                : null,
             'descuento_tipo'    => $tieneDescuento,
             'descuento_valor'   => $tieneDescuento ? $request->input('descuento_valor') : null,
             'descuento_desde'   => $tieneDescuento ? $this->nullableString($request->input('descuento_desde')) : null,

@@ -316,13 +316,23 @@
                     </button>
                     <Transition enter-active-class="transition-all duration-200"
                       enter-from-class="opacity-0 -translate-y-1" leave-to-class="opacity-0">
-                      <div v-if="form.controla_stock" class="flex flex-col gap-1.5 pt-1">
-                        <label class="field-label">Stock disponible</label>
-                        <input v-model.number="form.stock" type="number" min="0" step="1" placeholder="0"
-                          class="modal-input font-bold w-32" />
-                        <p class="text-[11px] text-gray-400 m-0">
-                          Cuando llegue a 0, el producto se mostrará como agotado.
-                        </p>
+                      <div v-if="form.controla_stock" class="flex flex-col gap-3 pt-1">
+                        <div class="flex flex-col gap-1.5">
+                          <label class="field-label">Stock disponible</label>
+                          <input v-model.number="form.stock" type="number" min="0" step="1" placeholder="0"
+                            class="modal-input font-bold w-32" />
+                          <p class="text-[11px] text-gray-400 m-0">
+                            Cuando llegue a 0, el producto se mostrará como agotado.
+                          </p>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                          <label class="field-label">Avisarme cuando quede (opcional)</label>
+                          <input v-model.number="form.stock_minimo" type="number" min="0" step="1" placeholder="Ej: 3"
+                            class="modal-input font-bold w-32" />
+                          <p class="text-[11px] text-gray-400 m-0">
+                            Aparece marcado como "stock bajo" en Inventario a partir de este número.
+                          </p>
+                        </div>
                       </div>
                     </Transition>
                   </div>
@@ -978,9 +988,12 @@
               <TagIcon class="w-2.5 h-2.5" /> -{{ product.descuento.porcentaje }}%
             </span>
             <span v-if="product.controla_stock" class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full w-fit"
-              :class="(product.stock ?? 0) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'">
-              {{ (product.stock ?? 0) > 0 ? `Stock ${product.stock}` : 'Sin stock' }}
-            </span>
+              :class="(product.stock ?? 0) <= 0
+                ? 'bg-gray-200 text-gray-600'
+                : product.stock_bajo
+                  ? 'bg-amber-100 text-amber-700'
+                  : 'bg-emerald-100 text-emerald-700'">
+              {{ (product.stock ?? 0) <= 0 ? 'Sin stock' : `Stock ${product.stock}` }} </span>
           </div>
 
           <button @click="toggleAvailable(product)" class="absolute top-2 right-2 px-2 py-1 rounded-lg text-[10px] font-bold
@@ -1331,7 +1344,7 @@ const form = reactive({
   name: '', description: '', icon: '',
   category_id: '' as number | '',
   price: 0,
-  stock: 0, controla_stock: false,
+  stock: 0, controla_stock: false, stock_minimo: null as number | null,
   available: true, popular: false,
   tieneDescuento: false,
   descuento_tipo: 'porcentaje' as 'porcentaje' | 'monto_fijo',
@@ -1606,7 +1619,7 @@ function openCreate() {
   Object.assign(form, {
     name: '', description: '', icon: '', category_id: '',
     price: 0,
-    stock: 0, controla_stock: false, available: true, popular: false,
+    stock: 0, controla_stock: false, stock_minimo: null, available: true, popular: false,
     tieneDescuento: false, descuento_tipo: 'porcentaje', descuento_valor: 0,
     descuento_desde: '', descuento_hasta: '',
     sections: [], extras: [], extra_ids: [],
@@ -1626,6 +1639,7 @@ function openEdit(p: Product) {
     name: p.name, description: p.description ?? '', icon: p.icon ?? '',
     category_id: p.category?.id ?? '', price: p.price,
     stock: p.stock ?? 0, controla_stock: p.controla_stock ?? false,
+    stock_minimo: p.stock_minimo ?? null,
     available: p.available, popular: p.popular,
     tieneDescuento: !!p.descuento_config?.tipo,
     descuento_tipo: (p.descuento_config?.tipo as 'porcentaje' | 'monto_fijo') ?? 'porcentaje',
@@ -1767,6 +1781,9 @@ async function saveProduct() {
     fd.append('popular', form.popular ? '1' : '0')
     fd.append('controla_stock', form.controla_stock ? '1' : '0')
     fd.append('stock', String(form.controla_stock ? form.stock : 0))
+    if (form.controla_stock && form.stock_minimo !== null) {
+      fd.append('stock_minimo', String(form.stock_minimo))
+    }
     if (form.tieneDescuento) {
       fd.append('descuento_tipo', form.descuento_tipo)
       fd.append('descuento_valor', String(form.descuento_valor))

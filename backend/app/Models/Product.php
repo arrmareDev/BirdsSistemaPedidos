@@ -17,6 +17,7 @@ class Product extends Model
         'description',
         'icon',
         'stock',
+        'stock_minimo',
         'controla_stock',
         'price',
         'image',
@@ -34,6 +35,7 @@ class Product extends Model
         'popular'         => 'boolean',
         'controla_stock'  => 'boolean',
         'stock'           => 'integer',
+        'stock_minimo'    => 'integer',
         'descuento_valor' => 'decimal:2',
         'descuento_desde' => 'date',
         'descuento_hasta' => 'date',
@@ -104,24 +106,62 @@ class Product extends Model
             ->orderBy('sort_order');
     }
 
-    public function reducirStock(int $cantidad): void
-    {
-        if ($this->controla_stock && $this->stock >= $cantidad) {
-            $this->decrement('stock', $cantidad);
-        }
+    public function reducirStock(
+        int $cantidad,
+        string $tipo = 'venta',
+        ?int $orderId = null,
+        ?string $motivo = null,
+    ): void {
+        if (!$this->controla_stock || $this->stock < $cantidad) return;
+
+        $this->decrement('stock', $cantidad);
+        $this->registrarMovimientoStock(-$cantidad, $tipo, $orderId, $motivo);
     }
 
-    public function restaurarStock(int $cantidad): void
+    public function restaurarStock(
+        int $cantidad,
+        string $tipo = 'ajuste',
+        ?int $orderId = null,
+        ?string $motivo = null,
+    ): void {
+        if (!$this->controla_stock) return;
+
+        $this->increment('stock', $cantidad);
+        $this->registrarMovimientoStock($cantidad, $tipo, $orderId, $motivo);
+    }
+
+    private function registrarMovimientoStock(
+        int $delta,
+        string $tipo,
+        ?int $orderId,
+        ?string $motivo,
+    ): void {
+        $this->movimientosStock()->create([
+            'tipo'             => $tipo,
+            'cantidad'         => $delta,
+            'stock_resultante' => $this->fresh()->stock,
+            'order_id'         => $orderId,
+            'motivo'           => $motivo,
+            'user_id'          => auth()->id(),
+        ]);
+    }
+
+    public function movimientosStock()
     {
-        if ($this->controla_stock) {
-            $this->increment('stock', $cantidad);
-        }
+        return $this->hasMany(MovimientoStock::class);
     }
 
     public function tieneStock(int $cantidad = 1): bool
     {
         if (!$this->controla_stock) return true;
         return $this->stock >= $cantidad;
+    }
+
+    public function getStockBajoAttribute(): bool
+    {
+        return $this->controla_stock
+            && $this->stock_minimo !== null
+            && $this->stock <= $this->stock_minimo;
     }
 
     public function getImageUrlAttribute(): string|null

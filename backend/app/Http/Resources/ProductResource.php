@@ -46,6 +46,10 @@ class ProductResource extends JsonResource
             ],
             'popular'     => $this->popular,
             'available'   => $this->available,
+            'controla_stock' => $this->controla_stock,
+            'stock'          => $this->controla_stock ? $this->stock : null,
+            'stock_minimo'   => $this->stock_minimo,
+            'stock_bajo'     => $this->stock_bajo,
             'category'    => $this->whenLoaded('category', fn() => [
                 'id'        => $this->category->id,
                 'name'      => $this->category->name,

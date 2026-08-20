@@ -24,14 +24,14 @@
 
                 <!-- Columna 2: Contacto (3 cols) -->
                 <div class="md:col-span-3 flex flex-col gap-4">
-                    <h4 class="text-xs font-semibold tracking-wider text-amber-400 uppercase">Contacto</h4>
+                    <h4 class="text-xs font-semibold tracking-wider text-emerald-500 uppercase">Contacto</h4>
 
                     <ul class="space-y-3.5">
                         <li v-if="brandingStore.branding.telefono">
                             <a :href="`tel:+51${brandingStore.branding.telefono}`"
                                 class="group flex items-center gap-3 text-sm text-zinc-300 hover:text-white transition-colors">
                                 <div
-                                    class="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700/60 flex items-center justify-center text-zinc-400 group-hover:border-amber-400/40 group-hover:text-amber-400 transition-all">
+                                    class="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700/60 flex items-center justify-center text-zinc-400 group-hover:border-emerald-400/40 group-hover:text-emerald-500 transition-all">
                                     <PhoneIcon class="w-4 h-4" />
                                 </div>
                                 <div>
@@ -63,7 +63,7 @@
                             </div>
                             <div>
                                 <p class="text-[11px] text-zinc-500 leading-none mb-1">Ubicación</p>
-                                <span class="font-medium line-clamp-1">{{ brandingStore.branding.direccion || 'Chiclayo Perú' }}</span>
+                                <span class="font-medium line-clamp-1">Torres Paz 261 | Chiclayo - Perú</span>
                             </div>
                         </li>
                     </ul>
@@ -71,7 +71,7 @@
 
                 <!-- Columna 3: Horarios y Estado (4 cols) -->
                 <div class="md:col-span-4 flex flex-col gap-4">
-                    <h4 class="text-xs font-semibold tracking-wider text-amber-400 uppercase">Atención</h4>
+                    <h4 class="text-xs font-semibold tracking-wider text-emerald-500 uppercase">Atención</h4>
 
                     <div class="bg-zinc-800/50 border border-zinc-700/60 rounded-2xl p-4">
 
@@ -103,7 +103,6 @@
                     <RouterLink to="/"
                         class="w-full py-3 px-4 rounded-xl font-medium text-sm text-center text-white bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 transition-all duration-200 shadow-sm active:scale-[0.99] flex items-center justify-center gap-2">
                         Ver el catálogo completo
-                        <span class="text-amber-400">→</span>
                     </RouterLink>
                 </div>
 

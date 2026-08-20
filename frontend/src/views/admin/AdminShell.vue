@@ -254,7 +254,7 @@ import {
   Bars3Icon, ClockIcon, BellAlertIcon, DevicePhoneMobileIcon,
   ArrowRightOnRectangleIcon, ArrowTopRightOnSquareIcon,
   HomeIcon, ClipboardDocumentListIcon,
-  TagIcon, BanknotesIcon, UsersIcon,
+  TagIcon, BanknotesIcon, UsersIcon, ArchiveBoxIcon,
   ChartBarIcon, StarIcon, CpuChipIcon, MapPinIcon, BuildingStorefrontIcon,
 } from '@heroicons/vue/24/outline'
 
@@ -493,6 +493,7 @@ const NAV_GROUPS = computed((): NavGroup[] => {
 
   if (admin.can.catalog) {
     gestion.push({ to: '/admin/catalogo', icon: TagIcon, label: 'Catálogo' })
+    gestion.push({ to: '/admin/inventario', icon: ArchiveBoxIcon, label: 'Inventario' })
   }
   if (admin.can.caja) {
     gestion.push({ to: '/admin/caja', icon: BanknotesIcon, label: 'Caja' })

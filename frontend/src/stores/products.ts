@@ -78,8 +78,10 @@ export interface Product {
 
   customization_sections: CustomizationSection[];
 
-  stock?: number;
+  stock?: number | null;
   controla_stock?: boolean;
+  stock_minimo?: number | null;
+  stock_bajo?: boolean;
 
   extras: ProductExtra[];
   extras_compartidos: ProductExtra[];
@@ -234,11 +236,21 @@ export const useProductsStore = defineStore("products", () => {
       stock:
         product?.stock !== undefined && product?.stock !== null
           ? normalizeNumber(product.stock)
-          : undefined,
+          : null,
 
       controla_stock:
         product?.controla_stock !== undefined
           ? Boolean(product.controla_stock)
+          : undefined,
+
+      stock_minimo:
+        product?.stock_minimo !== undefined && product?.stock_minimo !== null
+          ? normalizeNumber(product.stock_minimo)
+          : null,
+
+      stock_bajo:
+        product?.stock_bajo !== undefined
+          ? Boolean(product.stock_bajo)
           : undefined,
     };
   }

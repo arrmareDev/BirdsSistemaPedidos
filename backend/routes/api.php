@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\MovimientoStockController;
+use App\Http\Controllers\Api\InventarioReporteController;
 use App\Http\Controllers\Api\ExtraController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\CajaController;
@@ -75,6 +77,10 @@ Route::prefix('v1/admin')
         Route::middleware(['role:admin,sistema,contador,atencion', 'permission:catalog|orders'])->group(function () {
             Route::get('products',   [ProductController::class, 'adminIndex']);
             Route::get('categories', [CategoryController::class, 'adminIndex']);
+            Route::get('products/{id}/movimientos-stock', [MovimientoStockController::class, 'index'])
+                ->where('id', '[0-9]+');
+            Route::get('reportes/inventario/pdf',   [InventarioReporteController::class, 'pdf']);
+            Route::get('reportes/inventario/excel', [InventarioReporteController::class, 'excel']);
         });
 
         // Escritura: solo admin/sistema — contador NO gestiona catálogo
@@ -102,6 +108,11 @@ Route::prefix('v1/admin')
             Route::delete('products/{productId}/images/{imageId}', [ProductController::class, 'deleteImage'])
                 ->where(['productId' => '[0-9]+', 'imageId' => '[0-9]+']);
             Route::post('products/{id}/images/reorder', [ProductController::class, 'reorderImages'])
+                ->where('id', '[0-9]+');
+
+            Route::post('products/{id}/reponer-stock', [MovimientoStockController::class, 'reponer'])
+                ->where('id', '[0-9]+');
+            Route::post('products/{id}/ajustar-stock', [MovimientoStockController::class, 'ajustar'])
                 ->where('id', '[0-9]+');
 
             Route::get('extras',           [ExtraController::class, 'index']);
@@ -161,6 +172,8 @@ Route::prefix('v1/admin')
         Route::middleware(['role:admin,sistema,contador', 'permission:caja'])->group(function () {
             Route::get('caja/hoy', [CajaController::class, 'hoy']);
             Route::get('caja/historial', [CajaController::class, 'historial']);
+            Route::get('caja/{id}/movimientos', [CajaController::class, 'movimientos'])
+                ->where('id', '[0-9]+');
             Route::post('caja/abrir',      [CajaController::class, 'abrir']);
             Route::post('caja/movimiento', [CajaController::class, 'movimiento']);
             Route::post('caja/movimiento/{id}/anular', [CajaController::class, 'anular'])
