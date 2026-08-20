@@ -221,7 +221,7 @@
                     <div class="flex items-center justify-between gap-1.5 sm:gap-2 mt-auto pt-1 sm:pt-0">
                       <div v-if="product.descuento" class="flex flex-col">
                         <span
-                          class="text-[10px] sm:text-[11px] font-semibold text-gray-400 line-through leading-none mb-0.5">
+                          class="text-[12px] sm:text-[13px] font-semibold text-gray-400 line-through leading-none mb-0.5">
                           S/{{ product.price.toFixed(2) }}
                         </span>
                         <div class="flex items-baseline gap-0.5">
@@ -306,7 +306,7 @@
                   {{ product.name }}
                 </h3>
                 <p
-                  class="text-[10.5px] sm:text-[12.5px] leading-snug sm:leading-relaxed m-0 line-clamp-2 flex-1 min-h-0 mb-2 sm:mb-3 product-desc">
+                  class="text-[11px] sm:text-[13px] leading-snug sm:leading-relaxed m-0 line-clamp-2 flex-1 min-h-0 mb-2 sm:mb-3 product-desc">
                   {{ product.description }}
                 </p>
                 <div class="flex items-center justify-between gap-1.5 sm:gap-2 mt-auto pt-1 sm:pt-0">
@@ -798,9 +798,9 @@ button:hover .cat-icon {
 .descuento-badge-grid {
   background: var(--color-brand-primary, #C41E1E);
   color: #ffffff;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 900;
-  padding: 4px 9px;
+  padding: 5px 10px;
   border-radius: 999px;
   box-shadow: 0 2px 8px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .35);
   letter-spacing: .02em;
