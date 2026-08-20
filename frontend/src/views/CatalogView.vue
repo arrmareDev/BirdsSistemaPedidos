@@ -162,14 +162,15 @@
                   {{ group.name }}
                 </h3>
                 <div class="h-px flex-1 bg-gray-200"></div>
-                <span class="text-[12px] font-semibold text-gray-400 shrink-0">{{ group.total }} en total</span>
+                <span class="text-[12px] font-semibold text-gray-400 shrink-0">
+                  {{ group.products.length }} producto{{ group.products.length !== 1 ? 's' : '' }}
+                </span>
               </div>
 
-              <!-- Cuadrícula — misma cantidad de columnas siempre (2/3/4).
-                   Si ya se expandió esta categoría, se listan TODOS sus
-                   productos aquí mismo; si no, el preview de 8. -->
+              <!-- Cuadrícula — mismas columnas que la vista de categoría
+                   (2 / 3 / 4). Se listan TODOS los productos, sin recorte. -->
               <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
-                <div v-for="product in (expandedGroups[group.slug] ?? group.products)" :key="product.id"
+                <div v-for="product in group.products" :key="product.id"
                   @click="product.available && openProduct(product)"
                   class="product-card group rounded-2xl overflow-hidden flex flex-col transition-all duration-300 relative"
                   :class="product.available ? 'cursor-pointer product-card--available' : 'opacity-50 cursor-default'">
@@ -246,20 +247,6 @@
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <!-- "Ver más" — expande ESTA categoría en el mismo lugar,
-                   sin navegar ni ocultar las demás categorías de abajo -->
-              <div v-if="group.total > group.products.length && !expandedGroups[group.slug]"
-                class="flex justify-center mt-6">
-                <button @click="expandGroup(group)" :disabled="expandingSlug === group.slug" class="ver-mas-btn flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-[13.5px]
-                         cursor-pointer transition-all duration-200 border-2 disabled:opacity-60">
-                  <span v-if="expandingSlug === group.slug"
-                    class="w-4 h-4 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
-                  {{ expandingSlug === group.slug ? 'Cargando...' : `Ver los ${group.total} productos de ${group.name}`
-                  }}
-                  <ArrowRightIcon v-if="expandingSlug !== group.slug" class="w-4 h-4" />
-                </button>
               </div>
 
               <!--Separador Aves (Excepto en la última categoría)-->
@@ -419,12 +406,11 @@ import { ref, inject, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductsStore } from '@/stores/products'
 import { useCartStore } from '@/stores/cart'
-import api from '@/utils/api'
 import { useHead } from '@vueuse/head'
 import HeroCarousel from '@/components/layout/HeroCarousel.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import type { Product } from '@/stores/products'
-import { Star, Flame, PackageSearch, X, ArrowRight as ArrowRightIcon, LayoutGrid as Squares2X2Icon } from 'lucide-vue-next'
+import { Star, Flame, PackageSearch, X, LayoutGrid as Squares2X2Icon } from 'lucide-vue-next'
 
 useHead({
   title: 'Birds Perú - Florería',
@@ -478,31 +464,6 @@ function spawnParticles(event: MouseEvent) {
   }
 }
 
-// ── Expandir una categoría en el lugar (sin navegar) ──────
-// El store comparte un solo array `products` para toda la vista
-// "Todo" agrupada — pedirle a setCategory() cambiar a una sola
-// categoría BORRA ese array completo, y con él, las demás
-// categorías que se veían debajo. Por eso esto pide los productos
-// por su cuenta, con api.get() directo, y los guarda aparte.
-const expandedGroups = ref<Record<string, Product[]>>({})
-const expandingSlug = ref<string | null>(null)
-
-async function expandGroup(group: { slug: string; total: number }) {
-  if (expandedGroups.value[group.slug]) return
-  expandingSlug.value = group.slug
-  try {
-    const { data } = await api.get('/products', {
-      params: { category: group.slug, per_page: group.total },
-    })
-    const raw = data?.data?.data ?? []
-    expandedGroups.value[group.slug] = productsStore.normalizeProducts(raw)
-  } catch (e) {
-    console.error('Error expandiendo categoría:', e)
-  } finally {
-    expandingSlug.value = null
-  }
-}
-
 // ── Navegación ────────────────────────────────────────────
 function openProduct(product: Product) {
   router.push({ name: 'product-detail', params: { slug: product.slug } })
@@ -533,27 +494,21 @@ const groupedProducts = computed(() => {
   // Solo agrupamos si estamos viendo "Todo"
   if (productsStore.activeCategory !== 'all') return null
 
-  // Usamos un mapa para agrupar y contar los totales reales
-  const groupsMap = new Map<string, { name: string, slug: string, products: Product[], total: number }>()
+  // Usamos un mapa para agrupar — un catálogo real muestra todo,
+  // sin recortes ni "ver más" escondiendo productos.
+  const groupsMap = new Map<string, { name: string, slug: string, products: Product[] }>()
 
   productsStore.filtered.forEach(product => {
     const catSlug = product.category?.slug || 'otros'
     const catName = product.category?.name || 'Otros'
 
     if (!groupsMap.has(catSlug)) {
-      groupsMap.set(catSlug, { name: catName, slug: catSlug, products: [], total: 0 })
+      groupsMap.set(catSlug, { name: catName, slug: catSlug, products: [] })
     }
 
-    const group = groupsMap.get(catSlug)!
-    group.total++ // Contamos el total real de esta categoría
-
-    // Mostramos máximo 8 para no cansar la vista (2 filas de 4 en desktop)
-    if (group.products.length < 8) {
-      group.products.push(product)
-    }
+    groupsMap.get(catSlug)!.products.push(product)
   })
 
-  // Retornamos la lista de grupos
   return Array.from(groupsMap.values())
 })
 
@@ -936,25 +891,6 @@ button:hover .cat-icon {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .18),
     0 6px 18px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .38);
-}
-
-
-/* ══════════════════════════════════════════════════════════════
-   VER MÁS — ahora un único botón consistente, siempre debajo de
-   la cuadrícula, en cualquier tamaño de pantalla
-   ══════════════════════════════════════════════════════════════ */
-
-.ver-mas-btn {
-  background: #ffffff;
-  border-color: #ECECEC;
-  color: #4A3728;
-}
-
-.ver-mas-btn:hover {
-  border-color: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .35);
-  color: var(--color-brand-primary, #C41E1E);
-  background: rgba(var(--color-brand-primary-rgb, 196, 30, 30), .04);
-  transform: translateY(-2px);
 }
 
 

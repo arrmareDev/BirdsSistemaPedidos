@@ -112,7 +112,11 @@ interface PageMeta {
 // para que esa vista previa no quede vacía en categorías que caigan
 // "más atrás" en el orden, pedimos un lote más grande solo ahí (no es
 // "traer todo el catálogo", sigue acotado).
-const OVERVIEW_PER_PAGE = 100;
+// Tope de la carga de "todo el catálogo" (vista Todo) — se pide de
+// una sola vez, sin paginar, para poder mostrar TODOS los productos
+// de cada categoría sin ningún recorte. 300 da margen amplio para
+// que el catálogo crezca bastante antes de necesitar revisarse.
+const OVERVIEW_PER_PAGE = 300;
 const DEFAULT_PER_PAGE = 24;
 const ADMIN_PER_PAGE = 30;
 
