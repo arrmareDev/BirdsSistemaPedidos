@@ -129,7 +129,7 @@ class OrderService
                     'custom_summary' => $item['custom_summary'] ?? null,
                 ]);
 
-                $product->reducirStock($qty);
+                $product->reducirStock($qty, 'venta', $order->id);
             }
 
             // ── 7. Actualizar preferencias del cliente ────────────
@@ -152,7 +152,12 @@ class OrderService
 
     public function updateStatus(Order $order, string $status): Order
     {
+        $estadoAnterior = $order->status;
         $order->update(['status' => $status]);
+
+        if ($status === 'cancelado' && $estadoAnterior !== 'cancelado') {
+            $this->restaurarStockPorCancelacion($order);
+        }
 
         if ($status === 'entregado') {
             $this->registrarVentaEnCaja($order);
@@ -167,6 +172,18 @@ class OrderService
         return $order->fresh(['items.product']);
     }
 
+    // El stock se descontaba al crear el pedido (o al editarlo), pero
+    // cancelar nunca lo devolvía — quedaba como si el producto se
+    // hubiera vendido de verdad, aunque el pedido nunca se entregó.
+    private function restaurarStockPorCancelacion(Order $order): void
+    {
+        $order->load('items');
+        foreach ($order->items as $item) {
+            $product = Product::find($item->product_id);
+            $product?->restaurarStock($item->qty, 'cancelacion', $order->id, 'Pedido cancelado');
+        }
+    }
+
     public function updateItems(Order $order, array $items): Order
     {
         return DB::transaction(function () use ($order, $items) {
@@ -179,7 +196,7 @@ class OrderService
             $order->load('items');
             foreach ($order->items as $oldItem) {
                 $product = Product::find($oldItem->product_id);
-                $product?->restaurarStock($oldItem->qty);
+                $product?->restaurarStock($oldItem->qty, 'edicion_pedido', $order->id, 'Item removido al editar el pedido');
             }
 
             // ── 2. Validar stock de los items nuevos ──────────────
@@ -217,7 +234,7 @@ class OrderService
                     'custom_summary' => $item['custom_summary'] ?? null,
                 ]);
 
-                $product->reducirStock($qty);
+                $product->reducirStock($qty, 'edicion_pedido', $order->id, 'Item agregado al editar el pedido');
             }
 
             // ── 4. Recalcular totales (mantiene el delivery_fee actual) ──
@@ -252,10 +269,15 @@ class OrderService
 
     private function registrarVentaEnCaja(Order $order): void
     {
+        // Solo efectivo — Yape/tarjeta/anticipado nunca tocan el cajón
+        // físico, meterlos aquí rompería el cuadre de caja de raíz.
+        if ($order->metodo_pago !== 'efectivo') return;
+
         try {
-            $caja = Caja::where('fecha', today())
-                ->where('estado', 'abierta')
-                ->first();
+            // Igual que en CajaController: prioriza la caja que esté
+            // realmente abierta (aunque sea de un día anterior sin
+            // cerrar), no exige que sea exacto la de "hoy".
+            $caja = Caja::where('estado', 'abierta')->first();
 
             if (!$caja) return;
 
@@ -270,7 +292,7 @@ class OrderService
                 'order_id'    => $order->id,
                 'type'        => 'venta',
                 'amount'      => $order->total,
-                'description' => "Pedido #{$order->id} — {$order->client_name}",
+                'description' => "Pedido #{$order->codigo} — {$order->client_name}",
                 'user_id'     => auth()->id(),
             ]);
         } catch (\Throwable $e) {
@@ -311,7 +333,11 @@ class OrderService
         ?float  $deliveryFee,
         ?string $district,
     ): float {
-
+        // $zoneId en realidad referencia una DeliveryTariff (tarifa por
+        // distancia) — es lo que devuelve /delivery-zones/detectar, que es
+        // el flujo real de checkout. Antes esto buscaba en DeliveryZone
+        // (una tabla vieja con distritos de Chiclayo, nunca poblada desde
+        // el checkout real) y casi siempre fallaba silenciosamente.
         if ($zoneId) {
             $tarifa = DeliveryTariff::find($zoneId);
             if ($tarifa && $tarifa->activo) {
@@ -323,6 +349,8 @@ class OrderService
             return (float) $deliveryFee;
         }
 
+        // Última red de seguridad si no hay tarifa ni fee manual válido —
+        // configurable por negocio, sin asumir ninguna ciudad o distrito.
         return (float) ConfiguracionSistema::get('delivery_fee_fallback', '5.00');
     }
 }
