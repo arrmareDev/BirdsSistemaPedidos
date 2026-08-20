@@ -292,10 +292,11 @@ export const useProductsStore = defineStore("products", () => {
       append?: boolean;
     } = {},
   ) {
-    const isOverview =
-      (!opts.grupo || opts.grupo === "all") &&
-      (!opts.category || opts.category === "all") &&
-      !opts.q;
+    // La vista agrupada (por categoría, mostrando TODOS los productos)
+    // se activa según "category" (activeCategory === 'all'), no según
+    // "grupo" — filtrar por un grupo específico (Florería, Gourmet)
+    // igual necesita la carga completa, no solo la primera página.
+    const isOverview = (!opts.category || opts.category === "all") && !opts.q;
     const perPage =
       opts.perPage ?? (isOverview ? OVERVIEW_PER_PAGE : DEFAULT_PER_PAGE);
     const page = opts.append ? (meta.value?.current_page ?? 0) + 1 : 1;
