@@ -4,13 +4,10 @@
               !product.available
                 ? 'opacity: 0.55; cursor: not-allowed;'
                 : 'background: #EDE8E0; box-shadow: 8px 8px 16px #C8C3BB, -8px -8px 16px #F8F4EF;',
-            ]" :tabindex="product.available ? 0 : -1" role="button" 
-    @click="product.available && goToDetail()"
-    @keydown.enter="product.available && goToDetail()" 
-    @mousedown="isPressed = true"
-    @mouseup="isPressed = false" 
+            ]" :tabindex="product.available ? 0 : -1" role="button" @click="product.available && goToDetail()"
+    @keydown.enter="product.available && goToDetail()" @mousedown="isPressed = true" @mouseup="isPressed = false"
     @mouseleave="isPressed = false">
-    
+
     <!-- Imagen del producto -->
     <div class="relative overflow-hidden"
       :class="layout === 'grid' ? 'h-44 sm:h-48' : 'w-28 h-full min-h-[120px] shrink-0'">
@@ -44,6 +41,13 @@
         <Sparkles :size="11" :stroke-width="2.5" /> Nuevo
       </div>
 
+      <!-- Badge descuento -->
+      <div v-if="product.descuento" class="absolute bottom-3 left-3 flex items-center gap-1 px-2.5 py-1 rounded-full
+               text-[10px] font-black uppercase tracking-wide text-white" style="background: #C03E0D;
+               box-shadow: 2px 2px 8px rgba(192,62,13,0.4);">
+        -{{ product.descuento.porcentaje }}%
+      </div>
+
       <!-- Agotado overlay -->
       <div v-if="!product.available" class="absolute inset-0 flex items-center justify-center"
         style="background: rgba(237,232,224,0.75); backdrop-filter: blur(2px);">
@@ -75,11 +79,17 @@
         : 'flex flex-col items-end gap-2 shrink-0'">
 
         <!-- Precio -->
-        <div class="font-display font-black text-ink leading-none"
-          :class="layout === 'grid' ? 'text-[20px]' : 'text-[18px]'">
-          <sup class="font-body font-semibold text-ink-muted text-[11px] align-super mr-0.5">
-            S/
-          </sup>{{ product.price.toFixed(2) }}
+        <div :class="layout === 'grid' ? 'flex flex-col' : 'flex flex-col items-end'">
+          <span v-if="product.descuento"
+            class="font-body font-semibold text-ink-muted text-[11px] leading-none line-through mb-0.5">
+            S/{{ product.price.toFixed(2) }}
+          </span>
+          <div class="font-display font-black text-ink leading-none"
+            :class="layout === 'grid' ? 'text-[20px]' : 'text-[18px]'">
+            <sup class="font-body font-semibold text-ink-muted text-[11px] align-super mr-0.5">
+              S/
+            </sup>{{ (product.descuento ? product.precio_final : product.price).toFixed(2) }}
+          </div>
         </div>
 
         <!-- Botón agregar neumórfico -->
@@ -100,7 +110,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Star, Sparkles } from 'lucide-vue-next'
 import AppIcon from '@/components/AppIcon.vue'
-import type { Product } from '@/types'
+import type { Product } from '@/stores/products'
 
 const props = withDefaults(defineProps<{
   product: Product

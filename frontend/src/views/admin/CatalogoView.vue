@@ -34,10 +34,12 @@
                 <div class="flex flex-col gap-1.5">
                   <label class="field-label">Ícono</label>
                   <div class="flex items-center gap-2">
-                    <div class="w-11 h-11 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 text-gray-500">
+                    <div
+                      class="w-11 h-11 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 text-gray-500">
                       <AppIcon :name="catForm.icon" :size="20" />
                     </div>
-                    <input v-model="catForm.icon" placeholder="flower-2" class="modal-input w-24 text-center text-[12px]" />
+                    <input v-model="catForm.icon" placeholder="flower-2"
+                      class="modal-input w-24 text-center text-[12px]" />
                   </div>
                 </div>
               </div>
@@ -204,10 +206,12 @@
                     <div class="flex flex-col gap-1.5">
                       <label class="field-label">Ícono</label>
                       <div class="flex items-center gap-1.5">
-                        <div class="w-9 h-9 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 text-gray-500">
+                        <div
+                          class="w-9 h-9 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 text-gray-500">
                           <AppIcon :name="form.icon" :size="16" />
                         </div>
-                        <input v-model="form.icon" placeholder="flower-2" class="modal-input w-24 text-center text-[11px]" />
+                        <input v-model="form.icon" placeholder="flower-2"
+                          class="modal-input w-24 text-center text-[11px]" />
                       </div>
                     </div>
                   </div>
@@ -232,6 +236,68 @@
                     <label class="field-label">Precio (S/) *</label>
                     <input v-model.number="form.price" type="number" step="0.50" min="0" placeholder="0.00"
                       class="modal-input w-full font-bold" />
+                  </div>
+
+                  <div class="flex flex-col gap-2 p-4 rounded-2xl bg-gray-50 border border-gray-200">
+                    <button type="button" @click="form.tieneDescuento = !form.tieneDescuento"
+                      class="flex items-center justify-between cursor-pointer border-none bg-transparent p-0 w-full text-left">
+                      <div class="flex items-center gap-2">
+                        <TagIcon class="w-4 h-4 text-gray-500" />
+                        <span class="text-[13px] font-semibold text-gray-700">Producto en promoción</span>
+                      </div>
+                      <div class="w-10 h-6 rounded-full transition-colors duration-200 relative shrink-0"
+                        :class="form.tieneDescuento ? 'bg-brand-red' : 'bg-gray-300'">
+                        <div
+                          class="w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform duration-200 shadow-sm"
+                          :class="form.tieneDescuento ? 'translate-x-[18px]' : 'translate-x-0.5'" />
+                      </div>
+                    </button>
+                    <Transition enter-active-class="transition-all duration-200"
+                      enter-from-class="opacity-0 -translate-y-1" leave-to-class="opacity-0">
+                      <div v-if="form.tieneDescuento" class="flex flex-col gap-3 pt-1">
+
+                        <div class="flex gap-2">
+                          <button type="button" @click="form.descuento_tipo = 'porcentaje'"
+                            class="flex-1 py-2 rounded-xl text-[12.5px] font-bold border-2 cursor-pointer transition-all duration-150"
+                            :class="form.descuento_tipo === 'porcentaje'
+                              ? 'border-brand-red bg-red-50 text-brand-red'
+                              : 'border-gray-200 bg-white text-gray-500'">
+                            % Porcentaje
+                          </button>
+                          <button type="button" @click="form.descuento_tipo = 'monto_fijo'"
+                            class="flex-1 py-2 rounded-xl text-[12.5px] font-bold border-2 cursor-pointer transition-all duration-150"
+                            :class="form.descuento_tipo === 'monto_fijo'
+                              ? 'border-brand-red bg-red-50 text-brand-red'
+                              : 'border-gray-200 bg-white text-gray-500'">
+                            S/ Monto fijo
+                          </button>
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                          <label class="field-label">
+                            {{ form.descuento_tipo === 'monto_fijo' ? 'Descuento (S/)' : 'Descuento (%)' }}
+                          </label>
+                          <input v-model.number="form.descuento_valor" type="number" min="0"
+                            :max="form.descuento_tipo === 'porcentaje' ? 100 : undefined" step="0.50" placeholder="0"
+                            class="modal-input font-bold w-32" />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                          <div class="flex flex-col gap-1.5">
+                            <label class="field-label">Desde (opcional)</label>
+                            <input v-model="form.descuento_desde" type="date" class="modal-input" />
+                          </div>
+                          <div class="flex flex-col gap-1.5">
+                            <label class="field-label">Hasta (opcional)</label>
+                            <input v-model="form.descuento_hasta" type="date" class="modal-input" />
+                          </div>
+                        </div>
+                        <p class="text-[11px] text-gray-400 m-0">
+                          Sin fechas, la promoción queda activa hasta que la apagues a mano.
+                          {{ previewPrecioFinal }}
+                        </p>
+                      </div>
+                    </Transition>
                   </div>
 
                   <div class="flex flex-col gap-2 p-4 rounded-2xl bg-gray-50 border border-gray-200">
@@ -295,7 +361,8 @@
                       <label class="w-16 h-16 rounded-xl border-2 border-dashed border-gray-300 shrink-0
                                flex items-center justify-center cursor-pointer
                                hover:border-brand-red/40 transition-all duration-150 relative">
-                        <span v-if="uploadingGallery" class="w-4 h-4 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
+                        <span v-if="uploadingGallery"
+                          class="w-4 h-4 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
                         <PlusIcon v-else class="w-5 h-5 text-gray-400" />
                         <input type="file" accept="image/*" multiple class="hidden" @change="onGalleryFilesSelected" />
                       </label>
@@ -344,15 +411,17 @@
                       class="grid grid-cols-2 gap-2 p-4 rounded-2xl bg-gray-50 border border-gray-200">
                       <button v-for="tipo in seccionTiposActivos" :key="tipo.id" @click="addSection(tipo)"
                         :disabled="form.sections.some(s => s.seccion === tipo.nombre)" class="flex items-center gap-2.5 px-3.5 py-3 rounded-xl border-2 cursor-pointer
-                               text-[13px] font-semibold transition-all duration-150" :class="form.sections.some(s => s.seccion === tipo.nombre)
-                                ? 'border-gray-100 bg-gray-100 text-gray-400 cursor-not-allowed'
-                                : 'border-gray-200 bg-white text-gray-700 hover:border-brand-red hover:text-brand-red'">
+                               text-[13px] font-semibold transition-all duration-150"
+                        :class="form.sections.some(s => s.seccion === tipo.nombre)
+                          ? 'border-gray-100 bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-brand-red hover:text-brand-red'">
                         <AppIcon :name="tipo.icono" :size="18" />
                         {{ tipo.nombre }}
                         <CheckIcon v-if="form.sections.some(s => s.seccion === tipo.nombre)"
                           class="w-3.5 h-3.5 ml-auto text-gray-400" />
                       </button>
-                      <p v-if="seccionTiposActivos.length === 0" class="col-span-2 text-[12.5px] text-gray-400 text-center py-2 m-0">
+                      <p v-if="seccionTiposActivos.length === 0"
+                        class="col-span-2 text-[12.5px] text-gray-400 text-center py-2 m-0">
                         No hay tipos de sección activos — créalos en el panel de arriba
                       </p>
                     </div>
@@ -367,7 +436,8 @@
                     class="bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
                     <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
                       <div class="flex items-center gap-2">
-                        <AppIcon :name="seccionTipos.find(t => t.nombre === section.seccion)?.icono ?? 'sparkles'" :size="18" />
+                        <AppIcon :name="seccionTipos.find(t => t.nombre === section.seccion)?.icono ?? 'sparkles'"
+                          :size="18" />
                         <div>
                           <input v-model="section.label"
                             class="font-bold text-[14px] text-gray-900 bg-transparent border-none outline-none p-0 w-full" />
@@ -393,17 +463,18 @@
                       <div v-for="(opt, oi) in section.options" :key="oi" class="flex items-center gap-2">
                         <button v-if="opt.id" @click="openOptionImagePicker(opt)" type="button"
                           class="w-9 h-9 rounded-lg overflow-hidden border border-gray-200 shrink-0 cursor-pointer
-                                 bg-white flex items-center justify-center text-gray-300 hover:border-brand-red/40 relative group"
-                          title="Subir/cambiar foto">
+                                 bg-white flex items-center justify-center text-gray-300 hover:border-brand-red/40 relative group" title="Subir/cambiar foto">
                           <img v-if="opt.image_url" :src="opt.image_url" class="w-full h-full object-cover" />
                           <PhotoIcon v-else class="w-4 h-4" />
                           <span v-if="uploadingOptionId === opt.id"
                             class="absolute inset-0 bg-white/70 flex items-center justify-center">
-                            <span class="w-3.5 h-3.5 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
+                            <span
+                              class="w-3.5 h-3.5 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
                           </span>
                         </button>
                         <div v-else class="w-9 h-9 rounded-lg border border-dashed border-gray-200 shrink-0
-                                 flex items-center justify-center text-gray-300" title="Guarda el producto primero para poder subirle foto">
+                                 flex items-center justify-center text-gray-300"
+                          title="Guarda el producto primero para poder subirle foto">
                           <PhotoIcon class="w-4 h-4" />
                         </div>
                         <input v-model="opt.name" placeholder="Ej: Grande" class="modal-input flex-1 py-2" />
@@ -425,7 +496,8 @@
                   </div>
                 </div>
 
-                <input ref="optionImageInputRef" type="file" accept="image/*" class="hidden" @change="onOptionImageSelected" />
+                <input ref="optionImageInputRef" type="file" accept="image/*" class="hidden"
+                  @change="onOptionImageSelected" />
 
                 <!-- ── Tab Extras ── -->
                 <div v-show="modalTab === 'extras'" class="flex flex-col gap-4">
@@ -608,21 +680,20 @@
                 <span class="text-[10.5px] font-bold text-gray-400">
                   {{ group.categories.length }} subcategoría{{ group.categories.length !== 1 ? 's' : '' }}
                   <template v-if="(group.root.products_count ?? 0) > 0">
-                    · {{ group.root.products_count }} producto{{ group.root.products_count !== 1 ? 's' : '' }} propio{{ group.root.products_count !== 1 ? 's' : '' }}
+                    · {{ group.root.products_count }} producto{{ group.root.products_count !== 1 ? 's' : '' }} propio{{
+                      group.root.products_count !== 1 ? 's' : '' }}
                   </template>
                 </span>
-                <span @click.stop="openEditCat(group.root)" title="Editar esta categoría principal"
-                  class="ml-auto w-6 h-6 rounded-lg flex items-center justify-center text-gray-400
+                <span @click.stop="openEditCat(group.root)" title="Editar esta categoría principal" class="ml-auto w-6 h-6 rounded-lg flex items-center justify-center text-gray-400
                          cursor-pointer hover:bg-white hover:text-brand-red transition-all">
                   <PencilIcon class="w-3 h-3" />
                 </span>
                 <span @click.stop="askDeleteCat(group.root)" :title="group.categories.length > 0
-                    ? 'Tiene subcategorías — no se puede eliminar'
-                    : (group.root.products_count ?? 0) > 0
-                      ? 'Tiene productos — no se puede eliminar'
-                      : 'Eliminar categoría principal'"
-                  class="w-6 h-6 rounded-lg flex items-center justify-center transition-all"
-                  :class="group.categories.length > 0 || (group.root.products_count ?? 0) > 0
+                  ? 'Tiene subcategorías — no se puede eliminar'
+                  : (group.root.products_count ?? 0) > 0
+                    ? 'Tiene productos — no se puede eliminar'
+                    : 'Eliminar categoría principal'"
+                  class="w-6 h-6 rounded-lg flex items-center justify-center transition-all" :class="group.categories.length > 0 || (group.root.products_count ?? 0) > 0
                     ? 'text-gray-200 cursor-not-allowed'
                     : 'text-gray-400 cursor-pointer hover:bg-white hover:text-red-500'">
                   <TrashIcon class="w-3 h-3" />
@@ -698,7 +769,8 @@
           </div>
           <div class="text-left">
             <p class="font-black text-[14px] text-gray-900 m-0">Tipos de sección de personalización</p>
-            <p class="text-[11px] text-gray-400 m-0">{{ seccionTipos.length }} registrados — aparecen al armar "Personalización" en un producto</p>
+            <p class="text-[11px] text-gray-400 m-0">{{ seccionTipos.length }} registrados — aparecen al armar
+              "Personalización" en un producto</p>
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -716,7 +788,8 @@
       <Transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 -translate-y-2"
         leave-to-class="opacity-0">
         <div v-if="showSeccionTiposPanel" class="border-t border-gray-100">
-          <div v-if="seccionTipos.length === 0" class="flex items-center justify-center py-10 text-gray-400 text-[13px]">
+          <div v-if="seccionTipos.length === 0"
+            class="flex items-center justify-center py-10 text-gray-400 text-[13px]">
             Sin tipos de sección — crea el primero
           </div>
           <div v-else class="divide-y divide-gray-50">
@@ -789,7 +862,8 @@
               <div class="grid grid-cols-[1fr_auto] gap-3">
                 <div class="flex flex-col gap-1.5">
                   <label class="field-label">Nombre *</label>
-                  <input v-model="seccionTipoForm.nombre" placeholder="Ej: Término de cocción" class="modal-input w-full" />
+                  <input v-model="seccionTipoForm.nombre" placeholder="Ej: Término de cocción"
+                    class="modal-input w-full" />
                 </div>
                 <div class="flex flex-col gap-1.5">
                   <label class="field-label">Ícono</label>
@@ -899,6 +973,10 @@
               class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-yellow-400 text-yellow-900 w-fit inline-flex items-center gap-1">
               <Star :size="9" fill="currentColor" /> Popular
             </span>
+            <span v-if="product.descuento"
+              class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-brand-red text-white w-fit inline-flex items-center gap-1">
+              <TagIcon class="w-2.5 h-2.5" /> -{{ product.descuento.porcentaje }}%
+            </span>
             <span v-if="product.controla_stock" class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full w-fit"
               :class="(product.stock ?? 0) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'">
               {{ (product.stock ?? 0) > 0 ? `Stock ${product.stock}` : 'Sin stock' }}
@@ -940,7 +1018,17 @@
             </span>
           </div>
 
-          <div class="flex items-baseline gap-0.5 mt-2">
+          <div v-if="product.descuento" class="flex items-center gap-2 mt-2">
+            <span class="text-[11px] font-semibold text-gray-400 line-through">S/{{ product.price.toFixed(2) }}</span>
+            <div class="flex items-baseline gap-0.5">
+              <span class="text-[10px] font-bold text-brand-red">S/</span>
+              <span class="font-black text-[20px] text-brand-red leading-none"
+                style="font-family:'Plus Jakarta Sans',sans-serif;">
+                {{ product.precio_final.toFixed(2) }}
+              </span>
+            </div>
+          </div>
+          <div v-else class="flex items-baseline gap-0.5 mt-2">
             <span class="text-[10px] font-bold text-gray-400">S/</span>
             <span class="font-black text-[20px] text-brand-red leading-none"
               style="font-family:'Plus Jakarta Sans',sans-serif;">
@@ -986,8 +1074,10 @@
                bg-white text-[13px] font-bold text-gray-600 cursor-pointer
                hover:border-brand-red/40 hover:text-brand-red transition-all duration-150
                disabled:opacity-50 disabled:cursor-wait">
-        <span v-if="productsStore.loadingMore" class="w-4 h-4 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
-        {{ productsStore.loadingMore ? 'Cargando...' : `Cargar más (${productsStore.products.length} de ${productsStore.meta?.total ?? 0})` }}
+        <span v-if="productsStore.loadingMore"
+          class="w-4 h-4 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
+        {{ productsStore.loadingMore ? 'Cargando...' : `Cargar más (${productsStore.products.length} de
+        ${productsStore.meta?.total ?? 0})` }}
       </button>
     </div>
 
@@ -1243,6 +1333,11 @@ const form = reactive({
   price: 0,
   stock: 0, controla_stock: false,
   available: true, popular: false,
+  tieneDescuento: false,
+  descuento_tipo: 'porcentaje' as 'porcentaje' | 'monto_fijo',
+  descuento_valor: 0,
+  descuento_desde: '',
+  descuento_hasta: '',
   sections: [] as FormSection[],
   extras: [] as FormExtra[],
   extra_ids: [] as number[], // ← extras compartidos seleccionados
@@ -1251,6 +1346,16 @@ const form = reactive({
 const availableExtras = ref<AvailableExtra[]>([])
 
 // ── Computed ──────────────────────────────────────────────
+// Vista previa en vivo mientras se configura el descuento —
+// ayuda a confirmar que el número tiene sentido antes de guardar.
+const previewPrecioFinal = computed(() => {
+  if (!form.tieneDescuento || !form.descuento_valor || form.price <= 0) return ''
+  const final = form.descuento_tipo === 'porcentaje'
+    ? form.price - (form.price * form.descuento_valor / 100)
+    : form.price - form.descuento_valor
+  return `Precio final: S/ ${Math.max(0, final).toFixed(2)}`
+})
+
 const categoriesSorted = computed(() =>
   [...categories.value].sort((a, b) => a.sort_order - b.sort_order)
 )
@@ -1502,6 +1607,8 @@ function openCreate() {
     name: '', description: '', icon: '', category_id: '',
     price: 0,
     stock: 0, controla_stock: false, available: true, popular: false,
+    tieneDescuento: false, descuento_tipo: 'porcentaje', descuento_valor: 0,
+    descuento_desde: '', descuento_hasta: '',
     sections: [], extras: [], extra_ids: [],
   })
   showProductModal.value = true
@@ -1520,6 +1627,11 @@ function openEdit(p: Product) {
     category_id: p.category?.id ?? '', price: p.price,
     stock: p.stock ?? 0, controla_stock: p.controla_stock ?? false,
     available: p.available, popular: p.popular,
+    tieneDescuento: !!p.descuento_config?.tipo,
+    descuento_tipo: (p.descuento_config?.tipo as 'porcentaje' | 'monto_fijo') ?? 'porcentaje',
+    descuento_valor: p.descuento_config?.valor ?? 0,
+    descuento_desde: p.descuento_config?.desde ?? '',
+    descuento_hasta: p.descuento_config?.hasta ?? '',
     sections: (p.customization_sections ?? []).map(s => ({
       id: s.id, seccion: s.seccion, label: s.label, required: s.required,
       multiple: s.multiple, sort_order: 0,
@@ -1589,7 +1701,7 @@ async function onGalleryFilesSelected(e: Event) {
     formError.value = 'No se pudieron subir las fotos'
   } finally {
     uploadingGallery.value = false
-    ;(e.target as HTMLInputElement).value = ''
+      ; (e.target as HTMLInputElement).value = ''
   }
 }
 
@@ -1655,6 +1767,16 @@ async function saveProduct() {
     fd.append('popular', form.popular ? '1' : '0')
     fd.append('controla_stock', form.controla_stock ? '1' : '0')
     fd.append('stock', String(form.controla_stock ? form.stock : 0))
+    if (form.tieneDescuento) {
+      fd.append('descuento_tipo', form.descuento_tipo)
+      fd.append('descuento_valor', String(form.descuento_valor))
+      if (form.descuento_desde) fd.append('descuento_desde', form.descuento_desde)
+      if (form.descuento_hasta) fd.append('descuento_hasta', form.descuento_hasta)
+    }
+    // Si tieneDescuento es false, simplemente no se manda el campo —
+    // catalogAttributes() en el backend interpreta su ausencia como
+    // "apagar el descuento", sin depender de cómo Laravel trate un
+    // string vacío contra la regla in:porcentaje,monto_fijo.
 
     if (form.sections.length > 0) {
       fd.append('sections', JSON.stringify(

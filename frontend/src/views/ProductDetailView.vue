@@ -95,20 +95,23 @@
                         </div>
                     </div>
 
-                    <div v-if="product.image_url || product.images?.length || optionImages.length > 0" class="flex gap-2.5 flex-wrap">
+                    <div v-if="product.image_url || product.images?.length || optionImages.length > 0"
+                        class="flex gap-2.5 flex-wrap">
                         <button v-if="product.image_url" @click="selectImage(product.image_url!)" class="w-16 h-16 rounded-2xl overflow-hidden border-2 cursor-pointer
                                    transition-all duration-150 shrink-0" :class="selectedImage === product.image_url
                                     ? 'border-brand-terracotta shadow-md shadow-orange-100'
                                     : 'border-gray-200 hover:border-gray-300'">
                             <img :src="product.image_url" :alt="product.name" class="w-full h-full object-cover" />
                         </button>
-                        <button v-for="img in product.images" :key="`gallery-${img.id}`" @click="selectImage(img.image_url)" class="w-16 h-16 rounded-2xl overflow-hidden border-2 cursor-pointer
+                        <button v-for="img in product.images" :key="`gallery-${img.id}`"
+                            @click="selectImage(img.image_url)" class="w-16 h-16 rounded-2xl overflow-hidden border-2 cursor-pointer
                                    transition-all duration-150 shrink-0" :class="selectedImage === img.image_url
                                     ? 'border-brand-terracotta shadow-md shadow-orange-100'
                                     : 'border-gray-200 hover:border-gray-300'">
                             <img :src="img.image_url" :alt="product.name" class="w-full h-full object-cover" />
                         </button>
-                        <button v-for="oi in optionImages" :key="oi.id" @click="selectSingle(oi.sectionId, oi.opt)" :title="oi.name" class="w-16 h-16 rounded-2xl overflow-hidden border-2 cursor-pointer
+                        <button v-for="oi in optionImages" :key="oi.id" @click="selectSingle(oi.sectionId, oi.opt)"
+                            :title="oi.name" class="w-16 h-16 rounded-2xl overflow-hidden border-2 cursor-pointer
                                    transition-all duration-150 shrink-0" :class="selectedImage === oi.image_url
                                     ? 'border-brand-terracotta shadow-md shadow-orange-100'
                                     : 'border-gray-200 hover:border-gray-300'">
@@ -143,14 +146,21 @@
                 <div class="flex flex-col gap-7">
 
                     <div class="flex items-center gap-2 flex-wrap">
-                        <span v-if="product.category" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-bold"
+                        <span v-if="product.category"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-bold"
                             style="background: #F8F5F0; color: #9A6B56; border: 1.5px solid rgba(154,107,86,0.2);">
                             {{ product.category.name }}
+                        </span>
+                        <span v-if="product.descuento"
+                            class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11.5px] font-black text-white"
+                            style="background: var(--color-brand-primary, #C41E1E);">
+                            -{{ product.descuento.porcentaje }}% OFF
                         </span>
                     </div>
 
                     <div class="flex flex-col gap-3">
-                        <h1 class="font-display font-black text-[32px] sm:text-[40px] text-brand-green m-0 leading-tight tracking-tight">
+                        <h1
+                            class="font-display font-black text-[32px] sm:text-[40px] text-brand-green m-0 leading-tight tracking-tight">
                             {{ product.name }}
                         </h1>
                         <p v-if="product.description" class="text-[15px] text-gray-600 m-0 leading-relaxed">
@@ -158,14 +168,19 @@
                         </p>
                     </div>
 
-                    <div class="flex items-baseline gap-2">
-                        <span class="text-[16px] font-bold text-gray-400">S/</span>
-                        <span class="font-display font-black text-[46px] text-brand-green leading-none">
-                            {{ totalPrice.toFixed(2) }}
+                    <div class="flex flex-col gap-1">
+                        <span v-if="product.descuento" class="text-[14px] font-semibold text-gray-400 line-through">
+                            S/ {{ product.price.toFixed(2) }}
                         </span>
-                        <span v-if="extrasTotal > 0" class="text-[13px] text-brand-terracotta font-semibold">
-                            +S/ {{ extrasTotal.toFixed(2) }} extras
-                        </span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-[16px] font-bold text-gray-400">S/</span>
+                            <span class="font-display font-black text-[46px] text-brand-green leading-none">
+                                {{ totalPrice.toFixed(2) }}
+                            </span>
+                            <span v-if="extrasTotal > 0" class="text-[13px] text-brand-terracotta font-semibold">
+                                +S/ {{ extrasTotal.toFixed(2) }} extras
+                            </span>
+                        </div>
                     </div>
 
                     <div class="h-px bg-gray-100" />
@@ -179,9 +194,12 @@
                             class="flex flex-col gap-3">
 
                             <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-gray-400"><Dot :size="16" :stroke-width="3" /></span>
+                                <span class="text-gray-400">
+                                    <Dot :size="16" :stroke-width="3" />
+                                </span>
                                 <span class="font-bold text-[14px] text-gray-900">{{ section.label }}</span>
-                                <span v-if="section.required" class="text-[9.5px] font-black uppercase px-2 py-0.5 rounded-full
+                                <span v-if="section.required"
+                                    class="text-[9.5px] font-black uppercase px-2 py-0.5 rounded-full
                                            bg-brand-bg text-brand-terracotta border border-brand-terracotta/30 tracking-wide">
                                     Requerido
                                 </span>
@@ -204,7 +222,8 @@
                                         <CheckIcon v-if="isSelected(section.id, opt.id)"
                                             class="w-2.5 h-2.5 text-white" />
                                     </div>
-                                    <img v-if="opt.image_url" :src="opt.image_url" class="w-5 h-5 rounded-md object-cover shrink-0" />
+                                    <img v-if="opt.image_url" :src="opt.image_url"
+                                        class="w-5 h-5 rounded-md object-cover shrink-0" />
                                     {{ opt.name }}
                                 </button>
                             </div>
@@ -222,7 +241,8 @@
                                         <div v-if="isSelected(section.id, opt.id)"
                                             class="w-2 h-2 rounded-full bg-white" />
                                     </div>
-                                    <img v-if="opt.image_url" :src="opt.image_url" class="w-6 h-6 rounded-lg object-cover shrink-0" />
+                                    <img v-if="opt.image_url" :src="opt.image_url"
+                                        class="w-6 h-6 rounded-lg object-cover shrink-0" />
                                     {{ opt.name }}
                                 </button>
                             </div>
@@ -368,12 +388,12 @@
                                        transition-all duration-200 hover:-translate-y-0.5
                                        active:scale-[0.98] disabled:opacity-50
                                        disabled:cursor-not-allowed disabled:hover:translate-y-0
-                                       hidden lg:flex items-center justify-center gap-2.5" 
-                                       :class="agotado
-                                        ? 'bg-gray-400'
-                                        : added
-                                            ? 'bg-green-600 shadow-[0_6px_20px_rgba(22,163,74,0.3)]'
-                                            : 'bg-brand-green hover:bg-brand-green2 shadow-[0_8px_24px_rgba(12,84,44,0.3)]'">
+                                       hidden lg:flex items-center justify-center gap-2.5"
+                                :class="agotado
+                                    ? 'bg-gray-400'
+                                    : added
+                                        ? 'bg-green-600 shadow-[0_6px_20px_rgba(22,163,74,0.3)]'
+                                        : 'bg-brand-green hover:bg-brand-green2 shadow-[0_8px_24px_rgba(12,84,44,0.3)]'">
                                 <Transition mode="out-in" enter-active-class="transition-all duration-200"
                                     enter-from-class="opacity-0 scale-50"
                                     leave-active-class="transition-all duration-150"
@@ -388,11 +408,12 @@
                                 </span>
                             </button>
                         </div>
-                        
+
                         <div class="hidden lg:grid grid-cols-2 gap-4 mt-2">
                             <div class="flex items-center gap-2.5 text-gray-500">
                                 <SparklesIcon class="w-5 h-5 text-brand-terracotta" />
-                                <span class="text-[12px] font-medium leading-tight">Calidad premium<br>garantizada</span>
+                                <span class="text-[12px] font-medium leading-tight">Calidad
+                                    premium<br>garantizada</span>
                             </div>
                             <div class="flex items-center gap-2.5 text-gray-500">
                                 <TruckIcon class="w-5 h-5 text-brand-terracotta" />
@@ -431,16 +452,16 @@
             </div>
             <div v-if="relatedProducts.length > 0" class="mt-20 pt-12 border-t border-gray-100">
                 <div class="flex items-center justify-between mb-8">
-                    <h2 class="font-black text-[22px] sm:text-[28px] text-gray-900 m-0" 
+                    <h2 class="font-black text-[22px] sm:text-[28px] text-gray-900 m-0"
                         style="font-family:'Plus Jakarta Sans',sans-serif;">
                         También te puede interesar
                     </h2>
                 </div>
-                
+
                 <div class="flex sm:grid sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 
                             overflow-x-auto snap-x snap-mandatory pb-4 hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-                    <div v-for="item in relatedProducts" :key="item.id" 
-                         class="w-[70vw] sm:w-auto shrink-0 snap-center sm:snap-align-none">
+                    <div v-for="item in relatedProducts" :key="item.id"
+                        class="w-[70vw] sm:w-auto shrink-0 snap-center sm:snap-align-none">
                         <ProductCard :product="item" />
                     </div>
                 </div>
@@ -473,16 +494,13 @@
                 <span>{{ agotado ? 'Agotado' : added ? '¡Agregado!' : 'Agregar al carrito' }}</span>
             </button>
         </div>
-            <!-- ── NOTIFICACIÓN FLOTANTE (TOAST) ── -->
+        <!-- ── NOTIFICACIÓN FLOTANTE (TOAST) ── -->
         <Teleport to="body">
-            <Transition 
-                enter-active-class="transition-all duration-300 ease-out"
+            <Transition enter-active-class="transition-all duration-300 ease-out"
                 enter-from-class="opacity-0 -translate-y-8 scale-90"
                 leave-active-class="transition-all duration-200 ease-in"
-                leave-to-class="opacity-0 -translate-y-8 scale-90"
-            >
-                <div v-if="added" 
-                     class="fixed top-6 left-1/2 -translate-x-1/2 z-[100] 
+                leave-to-class="opacity-0 -translate-y-8 scale-90">
+                <div v-if="added" class="fixed top-6 left-1/2 -translate-x-1/2 z-[100] 
                             bg-brand-green text-white px-5 py-3.5 rounded-2xl shadow-[0_8px_30px_rgba(12,84,44,0.4)]
                             flex items-center gap-3 font-bold text-[14px] w-auto max-w-sm border border-brand-green2">
                     <div class="w-7 h-7 rounded-full bg-white flex items-center justify-center shrink-0">
@@ -492,7 +510,7 @@
                 </div>
             </Transition>
         </Teleport>
-    </div>  
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -573,7 +591,7 @@ async function loadProduct(slug: string) {
     selections.value.clear()
     extrasMap.value.clear()
     sharedExtrasMap.value.clear()
-    
+
     // Subir el scroll de la página al inicio suavemente
     window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -619,7 +637,7 @@ const extrasTotal = computed(() => {
     return sum
 })
 const totalPrice = computed(() =>
-    ((product.value?.price ?? 0) + modifiersTotal.value + extrasTotal.value) * qty.value
+    ((product.value?.precio_final ?? product.value?.price ?? 0) + modifiersTotal.value + extrasTotal.value) * qty.value
 )
 const summaryText = computed(() => {
     const parts: string[] = []
@@ -773,16 +791,16 @@ function addToCart() {
 // ── Productos Relacionados ────────────────────────────────
 const relatedProducts = computed(() => {
     if (!productsStore.products.length || !product.value) return []
-    
+
     // Filtramos todos los productos quitando el que estamos viendo actualmente
     const otherProducts = productsStore.products.filter(p => p.id !== product.value?.id)
-    
+
     // Intentamos buscar productos de la misma categoría
-    const sameCategory = otherProducts.filter(p => p.category?.id === product.value?.category?.id)    
+    const sameCategory = otherProducts.filter(p => p.category?.id === product.value?.category?.id)
     // Si hay suficientes de la misma categoría, mostramos esos (máximo 4)
     // Si no, simplemente devolvemos 4 productos aleatorios/recientes
-    return sameCategory.length >= 4 
-        ? sameCategory.slice(0, 4) 
+    return sameCategory.length >= 4
+        ? sameCategory.slice(0, 4)
         : otherProducts.slice(0, 4)
 })
 
@@ -793,10 +811,14 @@ const relatedProducts = computed(() => {
 .hide-scrollbar::-webkit-scrollbar {
     display: none;
 }
+
 .hide-scrollbar {
-    -ms-overflow-style: none; /* IE y Edge */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;
+    /* IE y Edge */
+    scrollbar-width: none;
+    /* Firefox */
 }
+
 @keyframes float {
 
     0%,

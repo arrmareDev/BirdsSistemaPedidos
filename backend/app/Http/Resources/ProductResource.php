@@ -25,13 +25,27 @@ class ProductResource extends JsonResource
                 ])
             ),
             'price'       => (float) $this->price,
+            'descuento'   => $this->tieneDescuentoActivo() ? [
+                'tipo'       => $this->descuento_tipo,
+                'valor'      => (float) $this->descuento_valor,
+                'desde'      => $this->descuento_desde?->format('Y-m-d'),
+                'hasta'      => $this->descuento_hasta?->format('Y-m-d'),
+                'porcentaje' => $this->descuento_porcentaje,
+            ] : null,
+            'precio_final' => $this->precio_final,
+            // Config cruda del descuento (tenga o no vigencia hoy) —
+            // el admin la necesita para poder editarla aunque esté
+            // vencida o programada a futuro; el catálogo público
+            // usa 'descuento' (arriba), que ya viene apagado si no
+            // corresponde mostrarlo hoy.
+            'descuento_config' => [
+                'tipo'  => $this->descuento_tipo,
+                'valor' => $this->descuento_valor !== null ? (float) $this->descuento_valor : null,
+                'desde' => $this->descuento_desde?->format('Y-m-d'),
+                'hasta' => $this->descuento_hasta?->format('Y-m-d'),
+            ],
             'popular'     => $this->popular,
             'available'   => $this->available,
-            // Atributos configurables (etiqueta editable desde el panel:
-            // "Ocasión"/"Color"/"Tamaño" para Birds, lo que sea para otro rubro)
-            'atributo_1'  => $this->atributo_1,
-            'atributo_2'  => $this->atributo_2,
-            'atributo_3'  => $this->atributo_3,
             'category'    => $this->whenLoaded('category', fn() => [
                 'id'        => $this->category->id,
                 'name'      => $this->category->name,

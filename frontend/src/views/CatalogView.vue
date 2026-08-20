@@ -86,6 +86,9 @@
                 <div v-if="product.popular" class="absolute top-2 right-2 popular-badge">
                   <Star :size="12" fill="currentColor" />
                 </div>
+                <div v-if="product.descuento" class="absolute top-2 left-2 descuento-badge">
+                  -{{ product.descuento.porcentaje }}%
+                </div>
               </div>
 
               <div class="p-2.5 sm:p-3 popular-info">
@@ -93,7 +96,20 @@
                   {{ product.name }}
                 </p>
                 <div class="flex items-center justify-between">
-                  <div class="flex items-baseline gap-0.5">
+                  <div v-if="product.descuento" class="flex flex-col">
+                    <span
+                      class="text-[9px] sm:text-[10px] font-semibold text-gray-400 line-through leading-none mb-0.5">
+                      S/{{ product.price.toFixed(2) }}
+                    </span>
+                    <div class="flex items-baseline gap-0.5">
+                      <span class="text-[9px] sm:text-[10px] font-bold opacity-60">S/</span>
+                      <span class="font-black text-[17px] sm:text-[19px] leading-none price-text"
+                        style="font-family:'Plus Jakarta Sans',sans-serif;">
+                        {{ product.precio_final.toFixed(2) }}
+                      </span>
+                    </div>
+                  </div>
+                  <div v-else class="flex items-baseline gap-0.5">
                     <span class="text-[9px] sm:text-[10px] font-bold opacity-60">S/</span>
                     <span class="font-black text-[17px] sm:text-[19px] leading-none price-text"
                       style="font-family:'Plus Jakarta Sans',sans-serif;">
@@ -168,10 +184,14 @@
                     </div>
                     <div
                       class="absolute inset-0 product-img-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <span v-if="product.popular"
-                      class="badge-popular absolute top-2 left-2 sm:top-3 sm:left-3 inline-flex items-center gap-1">
-                      <Star :size="10" fill="currentColor" /> Popular
-                    </span>
+                    <div class="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col items-start gap-1">
+                      <span v-if="product.descuento" class="descuento-badge-grid">
+                        -{{ product.descuento.porcentaje }}%
+                      </span>
+                      <span v-if="product.popular" class="badge-popular inline-flex items-center gap-1">
+                        <Star :size="10" fill="currentColor" /> Popular
+                      </span>
+                    </div>
                     <div v-if="!product.available"
                       class="absolute inset-0 flex items-center justify-center backdrop-blur-[1px] bg-white/70">
                       <span class="sold-out-badge">Agotado</span>
@@ -198,7 +218,20 @@
                       {{ product.description }}
                     </p>
                     <div class="flex items-center justify-between gap-1.5 sm:gap-2 mt-auto pt-1 sm:pt-0">
-                      <div class="flex items-baseline gap-0.5">
+                      <div v-if="product.descuento" class="flex flex-col">
+                        <span
+                          class="text-[10px] sm:text-[11px] font-semibold text-gray-400 line-through leading-none mb-0.5">
+                          S/{{ product.price.toFixed(2) }}
+                        </span>
+                        <div class="flex items-baseline gap-0.5">
+                          <span class="text-[10px] sm:text-[11px] font-bold product-currency">S/</span>
+                          <span class="font-black text-[17px] sm:text-[20px] md:text-[22px] leading-none product-price"
+                            style="font-family:'Plus Jakarta Sans',sans-serif;">
+                            {{ product.precio_final.toFixed(2) }}
+                          </span>
+                        </div>
+                      </div>
+                      <div v-else class="flex items-baseline gap-0.5">
                         <span class="text-[10px] sm:text-[11px] font-bold product-currency">S/</span>
                         <span class="font-black text-[17px] sm:text-[20px] md:text-[22px] leading-none product-price"
                           style="font-family:'Plus Jakarta Sans',sans-serif;">
@@ -257,10 +290,14 @@
                 </div>
                 <div
                   class="absolute inset-0 product-img-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <span v-if="product.popular"
-                  class="badge-popular absolute top-2 left-2 sm:top-3 sm:left-3 inline-flex items-center gap-1">
-                  <Star :size="10" fill="currentColor" /> Popular
-                </span>
+                <div class="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col items-start gap-1">
+                  <span v-if="product.descuento" class="descuento-badge-grid">
+                    -{{ product.descuento.porcentaje }}%
+                  </span>
+                  <span v-if="product.popular" class="badge-popular inline-flex items-center gap-1">
+                    <Star :size="10" fill="currentColor" /> Popular
+                  </span>
+                </div>
                 <div v-if="!product.available"
                   class="absolute inset-0 flex items-center justify-center backdrop-blur-[1px] bg-white/70">
                   <span class="sold-out-badge">Agotado</span>
@@ -286,7 +323,20 @@
                   {{ product.description }}
                 </p>
                 <div class="flex items-center justify-between gap-1.5 sm:gap-2 mt-auto pt-1 sm:pt-0">
-                  <div class="flex items-baseline gap-0.5">
+                  <div v-if="product.descuento" class="flex flex-col">
+                    <span
+                      class="text-[10px] sm:text-[11px] font-semibold text-gray-400 line-through leading-none mb-0.5">
+                      S/{{ product.price.toFixed(2) }}
+                    </span>
+                    <div class="flex items-baseline gap-0.5">
+                      <span class="text-[10px] sm:text-[11px] font-bold product-currency">S/</span>
+                      <span class="font-black text-[17px] sm:text-[20px] md:text-[22px] leading-none product-price"
+                        style="font-family:'Plus Jakarta Sans',sans-serif;">
+                        {{ product.precio_final.toFixed(2) }}
+                      </span>
+                    </div>
+                  </div>
+                  <div v-else class="flex items-baseline gap-0.5">
                     <span class="text-[10px] sm:text-[11px] font-bold product-currency">S/</span>
                     <span class="font-black text-[17px] sm:text-[20px] md:text-[22px] leading-none product-price"
                       style="font-family:'Plus Jakarta Sans',sans-serif;">
@@ -781,6 +831,36 @@ button:hover .cat-icon {
   border-radius: 999px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
   letter-spacing: .05em;
+  line-height: 1;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   BADGE DESCUENTO — mismo lenguaje visual que Popular, pero en
+   rojo de marca para distinguirse de un vistazo
+   ══════════════════════════════════════════════════════════════ */
+
+.descuento-badge-grid {
+  background: var(--color-brand-primary, #C41E1E);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 4px 9px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .35);
+  letter-spacing: .02em;
+  line-height: 1;
+}
+
+.descuento-badge {
+  background: var(--color-brand-primary, #C41E1E);
+  color: #ffffff;
+  font-size: 8.5px;
+  font-weight: 900;
+  padding: 3px 7px;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(var(--color-brand-primary-rgb, 196, 30, 30), .3);
+  letter-spacing: .02em;
   line-height: 1;
 }
 

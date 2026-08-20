@@ -16,23 +16,27 @@ class Product extends Model
         'slug',
         'description',
         'icon',
-        'atributo_1',
-        'atributo_2',
-        'atributo_3',
         'stock',
         'controla_stock',
         'price',
         'image',
         'available',
         'popular',
+        'descuento_tipo',
+        'descuento_valor',
+        'descuento_desde',
+        'descuento_hasta',
     ];
 
     protected $casts = [
-        'price'          => 'decimal:2',
-        'available'      => 'boolean',
-        'popular'        => 'boolean',
-        'controla_stock' => 'boolean',
-        'stock'          => 'integer',
+        'price'           => 'decimal:2',
+        'available'       => 'boolean',
+        'popular'         => 'boolean',
+        'controla_stock'  => 'boolean',
+        'stock'           => 'integer',
+        'descuento_valor' => 'decimal:2',
+        'descuento_desde' => 'date',
+        'descuento_hasta' => 'date',
     ];
 
     protected $appends = ['image_url'];
@@ -125,5 +129,63 @@ class Product extends Model
         return $this->image
             ? asset('storage/' . $this->image)
             : null;
+    }
+
+    // ── Promociones/descuentos ───────────────────────────────
+    // El precio final NUNCA se guarda en la base — se calcula acá,
+    // así nunca queda desincronizado si el precio base cambia.
+
+    public function tieneDescuentoActivo(): bool
+    {
+        if (!$this->descuento_tipo || $this->descuento_valor === null) {
+            return false;
+        }
+
+        $hoy = now()->startOfDay();
+
+        if ($this->descuento_desde && $hoy->lt($this->descuento_desde)) {
+            return false;
+        }
+
+        if ($this->descuento_hasta && $hoy->gt($this->descuento_hasta)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function getPrecioFinalAttribute(): float
+    {
+        if (!$this->tieneDescuentoActivo()) {
+            return (float) $this->price;
+        }
+
+        $precio = (float) $this->price;
+        $valor  = (float) $this->descuento_valor;
+
+        $final = $this->descuento_tipo === 'porcentaje'
+            ? $precio - ($precio * $valor / 100)
+            : $precio - $valor;
+
+        // Nunca queda en negativo, aunque alguien ponga un monto fijo
+        // más grande que el precio por error.
+        return max(0, round($final, 2));
+    }
+
+    // Porcentaje para el badge "-X%" — se calcula también cuando el
+    // descuento es de monto fijo, para poder mostrar el mismo tipo
+    // de badge sin importar cómo se configuró.
+    public function getDescuentoPorcentajeAttribute(): ?int
+    {
+        if (!$this->tieneDescuentoActivo() || (float) $this->price <= 0) {
+            return null;
+        }
+
+        if ($this->descuento_tipo === 'porcentaje') {
+            return (int) round((float) $this->descuento_valor);
+        }
+
+        $ahorro = (float) $this->price - $this->precio_final;
+        return (int) round(($ahorro / (float) $this->price) * 100);
     }
 }

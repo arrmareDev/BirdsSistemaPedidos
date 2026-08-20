@@ -63,7 +63,7 @@
                             </div>
                             <div>
                                 <p class="text-[11px] text-zinc-500 leading-none mb-1">Ubicación</p>
-                                <span class="font-medium line-clamp-1">{{ brandingStore.branding.direccion || 'Chiclayo, Perú' }}</span>
+                                <span class="font-medium line-clamp-1">{{ brandingStore.branding.direccion || 'Chiclayo Perú' }}</span>
                             </div>
                         </li>
                     </ul>
@@ -139,10 +139,19 @@ const brandingStore = useBrandingStore()
 const year = new Date().getFullYear()
 
 const waLink = computed(() => {
-    const phone = (brandingStore.branding.whatsapp ?? import.meta.env.VITE_WA_PHONE ?? '51984199340').replace(/\D/g, '')
+    let phone = (brandingStore.branding.whatsapp
+        ?? import.meta.env.VITE_WA_PHONE
+        ?? '51984199340').replace(/\D/g, '')
+
+    // Si no empieza con 51, lo agregamos
+    if (!phone.startsWith('51')) {
+        phone = '51' + phone
+    }
+
     const msg = `Hola ${brandingStore.branding.nombre_negocio}, quisiera hacer un pedido`
     return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
 })
+
 
 const HORARIOS = [
     { dias: 'Lunes – Sábado', horas: '9:00 am – 9:00 pm' },

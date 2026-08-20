@@ -1,3 +1,8 @@
+import type {
+  ProductDescuento,
+  ProductDescuentoConfig,
+} from "@/stores/products";
+
 // ── Productos ─────────────────────────────────────────────
 export interface CustomizationOption {
   id: number;
@@ -38,6 +43,9 @@ export interface Product {
   icon: string | null;
   image_url: string | null;
   price: number;
+  descuento: ProductDescuento | null;
+  precio_final: number;
+  descuento_config: ProductDescuentoConfig;
   popular: boolean;
   available: boolean;
   stock?: number;

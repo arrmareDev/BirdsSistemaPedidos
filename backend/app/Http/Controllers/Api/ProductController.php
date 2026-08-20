@@ -114,6 +114,7 @@ class ProductController extends Controller
             'price'          => 'required|numeric|min:0',
             'stock'          => 'nullable|integer|min:0',
             'controla_stock' => 'nullable',
+            ...$this->descuentoRules($request),
         ]);
 
         $available = $this->parseBool($request->input('available', '1'));
@@ -172,6 +173,7 @@ class ProductController extends Controller
             'price'          => 'sometimes|numeric|min:0',
             'stock'          => 'nullable|integer|min:0',
             'controla_stock' => 'nullable',
+            ...$this->descuentoRules($request),
         ]);
 
         $available = $this->parseBool(
@@ -311,7 +313,9 @@ class ProductController extends Controller
 
         return $this->success(
             $product->images()->get()->map(fn($img) => [
-                'id' => $img->id, 'image_url' => $img->image_url, 'sort_order' => $img->sort_order,
+                'id' => $img->id,
+                'image_url' => $img->image_url,
+                'sort_order' => $img->sort_order,
             ]),
             'Fotos agregadas'
         );
@@ -360,11 +364,43 @@ class ProductController extends Controller
     {
         $controlaStock = $this->parseBool($request->input('controla_stock', '0'));
 
+        // Si mandan descuento_tipo vacío/null, se apaga el descuento
+        // por completo (los otros 3 campos quedan en null con él).
+        $tieneDescuento = $this->nullableString($request->input('descuento_tipo'));
+
         return [
             'controla_stock' => $controlaStock,
             'stock'          => $controlaStock
                 ? (int) $request->input('stock', 0)
                 : 0,
+            'descuento_tipo'    => $tieneDescuento,
+            'descuento_valor'   => $tieneDescuento ? $request->input('descuento_valor') : null,
+            'descuento_desde'   => $tieneDescuento ? $this->nullableString($request->input('descuento_desde')) : null,
+            'descuento_hasta'   => $tieneDescuento ? $this->nullableString($request->input('descuento_hasta')) : null,
+        ];
+    }
+
+    // Reglas de validación del descuento — compartidas entre store()
+    // y update() para no repetirlas. La comprobación de que el
+    // porcentaje no pase de 100 va en un closure porque solo aplica
+    // cuando descuento_tipo es 'porcentaje', no en monto_fijo.
+    private function descuentoRules(Request $request): array
+    {
+        return [
+            'descuento_tipo'  => 'nullable|in:porcentaje,monto_fijo',
+            'descuento_valor' => [
+                'nullable',
+                'numeric',
+                'min:0.01',
+                'required_with:descuento_tipo',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->input('descuento_tipo') === 'porcentaje' && $value > 100) {
+                        $fail('El descuento en porcentaje no puede ser mayor a 100.');
+                    }
+                },
+            ],
+            'descuento_desde' => 'nullable|date',
+            'descuento_hasta' => 'nullable|date|after_or_equal:descuento_desde',
         ];
     }
 

@@ -24,6 +24,21 @@ export interface ProductExtra {
   price: number;
 }
 
+export interface ProductDescuento {
+  tipo: string;
+  valor: number;
+  desde: string | null;
+  hasta: string | null;
+  porcentaje: number | null;
+}
+
+export interface ProductDescuentoConfig {
+  tipo: string | null;
+  valor: number | null;
+  desde: string | null;
+  hasta: string | null;
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -39,7 +54,18 @@ export interface Product {
   }[];
 
   price: number;
+  // Solo viene poblado si el descuento está vigente HOY — así el
+  // catálogo público no necesita repetir el cálculo de fechas.
+  descuento: ProductDescuento | null;
+  precio_final: number;
+  // La config cruda (vigente o no) — el admin la usa para poder
+  // editar un descuento vencido o programado a futuro.
+  descuento_config: ProductDescuentoConfig;
   popular: boolean;
+  // Referenciado en ProductCard.vue pero nunca provisto por la API —
+  // queda opcional para que ese v-if simplemente nunca se cumpla,
+  // en vez de que TypeScript marque una propiedad inexistente.
+  isNew?: boolean;
   available: boolean;
 
   category: {
@@ -118,6 +144,33 @@ export const useProductsStore = defineStore("products", () => {
       ...product,
 
       price: normalizeNumber(product?.price),
+      descuento: product?.descuento
+        ? {
+            tipo: product.descuento.tipo ?? "",
+            valor: normalizeNumber(product.descuento.valor),
+            desde: product.descuento.desde ?? null,
+            hasta: product.descuento.hasta ?? null,
+            porcentaje:
+              product.descuento.porcentaje !== null &&
+              product.descuento.porcentaje !== undefined
+                ? normalizeNumber(product.descuento.porcentaje)
+                : null,
+          }
+        : null,
+      precio_final: normalizeNumber(
+        product?.precio_final,
+        normalizeNumber(product?.price),
+      ),
+      descuento_config: {
+        tipo: product?.descuento_config?.tipo ?? null,
+        valor:
+          product?.descuento_config?.valor !== null &&
+          product?.descuento_config?.valor !== undefined
+            ? normalizeNumber(product.descuento_config.valor)
+            : null,
+        desde: product?.descuento_config?.desde ?? null,
+        hasta: product?.descuento_config?.hasta ?? null,
+      },
       popular: Boolean(product?.popular),
       available: product?.available !== false,
 
@@ -419,6 +472,10 @@ export const useProductsStore = defineStore("products", () => {
 
     setCategory,
     setGroup,
+
+    // Expuesto para cuando un componente necesita traer productos por
+    // su cuenta (sin pisar el listado compartido del store) y aun así
+    // normalizarlos igual que el resto de la app.
     normalizeProducts,
   };
 });
