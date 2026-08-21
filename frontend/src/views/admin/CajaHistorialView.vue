@@ -197,7 +197,14 @@
                                         :class="m.anulado ? 'line-through' : ''">
                                         {{ m.description }}
                                     </p>
-                                    <p class="text-[11px] text-gray-400 m-0">{{ m.created_at }}</p>
+                                    <div class="flex items-center gap-1.5 mt-0.5">
+                                        <span class="text-[11px] text-gray-400">{{ m.created_at }}</span>
+                                        <span v-if="m.type === 'venta' && m.metodo_pago"
+                                            class="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full"
+                                            :class="m.metodo_pago === 'efectivo' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'">
+                                            {{ metodoPagoLabel(m.metodo_pago) }}
+                                        </span>
+                                    </div>
                                 </div>
                                 <span class="font-black text-[14px] shrink-0"
                                     :class="m.anulado ? 'text-gray-400' : (m.type === 'gasto' ? 'text-red-500' : 'text-green-600')"
@@ -241,6 +248,7 @@ interface MovimientoCaja {
     amount: number
     description: string
     order_id: number | null
+    metodo_pago: 'efectivo' | 'yape' | 'tarjeta' | 'anticipado' | null
     created_at: string
     anulado: boolean
     motivo_anulacion: string | null
@@ -355,6 +363,16 @@ function tipoMeta(tipo: MovimientoCaja['type']): TipoMeta {
         gasto: { icon: ArrowTrendingDownIcon, bg: 'bg-red-50', color: 'text-red-500' },
     }
     return mapa[tipo]
+}
+
+function metodoPagoLabel(metodo: 'efectivo' | 'yape' | 'tarjeta' | 'anticipado'): string {
+    const labels: Record<'efectivo' | 'yape' | 'tarjeta' | 'anticipado', string> = {
+        efectivo: 'Efectivo',
+        yape: 'Yape',
+        tarjeta: 'Tarjeta',
+        anticipado: 'Anticipado',
+    }
+    return labels[metodo] ?? metodo
 }
 
 onMounted(cargar)

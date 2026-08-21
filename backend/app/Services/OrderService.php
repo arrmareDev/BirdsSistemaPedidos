@@ -269,10 +269,11 @@ class OrderService
 
     private function registrarVentaEnCaja(Order $order): void
     {
-        // Solo efectivo — Yape/tarjeta/anticipado nunca tocan el cajón
-        // físico, meterlos aquí rompería el cuadre de caja de raíz.
-        if ($order->metodo_pago !== 'efectivo') return;
-
+        // Ya no se filtra por efectivo — TODAS las ventas entran a
+        // caja para ver el panorama completo. El cuadre físico (lo que
+        // debe haber en el cajón) sigue contando solo efectivo, pero
+        // eso lo decide getTotalVentasAttribute() en el modelo Caja,
+        // no este método.
         try {
             // Igual que en CajaController: prioriza la caja que esté
             // realmente abierta (aunque sea de un día anterior sin
@@ -290,6 +291,7 @@ class OrderService
             CajaMovimiento::create([
                 'caja_id'     => $caja->id,
                 'order_id'    => $order->id,
+                'metodo_pago' => $order->metodo_pago,
                 'type'        => 'venta',
                 'amount'      => $order->total,
                 'description' => "Pedido #{$order->codigo} — {$order->client_name}",

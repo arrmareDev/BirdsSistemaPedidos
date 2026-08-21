@@ -46,18 +46,27 @@ class OrderController extends Controller
 
             // Notificar por push a todo el staff con acceso a pedidos —
             // solo pedidos de clientes reales, no los que arma el propio
-            // staff manualmente desde el panel (adminStore). Si esto
-            // falla por lo que sea, el pedido ya quedó creado — no debe
-            // romperle la confirmación al cliente.
-            try {
-                $staff = \App\Models\User::all()->filter(fn($u) => $u->hasViewAccess('orders'));
-                \Illuminate\Support\Facades\Notification::send(
-                    $staff,
-                    new \App\Notifications\NewOrderNotification($order)
-                );
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('No se pudo enviar notificación push: ' . $e->getMessage());
-            }
+            // staff manualmente desde el panel (adminStore).
+            //
+            // Esto va DESPUÉS de responderle al cliente (dispatch()->afterResponse()),
+            // no antes — el envío push hace peticiones HTTP reales a cada
+            // navegador suscrito, y si una suscripción quedó vieja/rota,
+            // esa llamada puede quedarse esperando en vez de fallar rápido.
+            // Antes esto corría ANTES de responder, así que un pedido nuevo
+            // podía tardar 15+ segundos en confirmarse — y en el servidor
+            // de desarrollo (de un solo proceso), bloqueaba también
+            // cualquier otra pestaña que estuviera esperando otra respuesta.
+            dispatch(function () use ($order) {
+                try {
+                    $staff = \App\Models\User::all()->filter(fn($u) => $u->hasViewAccess('orders'));
+                    \Illuminate\Support\Facades\Notification::send(
+                        $staff,
+                        new \App\Notifications\NewOrderNotification($order)
+                    );
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('No se pudo enviar notificación push: ' . $e->getMessage());
+                }
+            })->afterResponse();
 
             return $this->created(new OrderResource($order));
         } catch (\Exception $e) {

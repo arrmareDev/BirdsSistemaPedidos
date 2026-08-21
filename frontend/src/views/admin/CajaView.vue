@@ -74,6 +74,15 @@
       </div>
     </Transition>
 
+    <!-- ══ Enlace a historial ══ -->
+    <div v-if="!loadingPage" class="flex justify-end">
+      <RouterLink to="/admin/caja/historial" class="flex items-center gap-1.5 text-[12.5px] font-semibold text-gray-500
+               no-underline hover:text-brand-red transition-colors">
+        <ClockIcon class="w-3.5 h-3.5" />
+        Ver historial de cajas →
+      </RouterLink>
+    </div>
+
     <!-- ══ CAJA ABIERTA / CERRADA ══ -->
     <template v-if="!loadingPage && estado !== 'sin_abrir' && caja">
 
@@ -143,6 +152,9 @@
           </div>
           <p class="text-[11.5px] text-gray-400 m-0">
             {{ ventasCount }} pedidos entregados
+          </p>
+          <p v-if="caja.total_ventas_todas > caja.total_ventas" class="text-[11px] text-gray-400 m-0 mt-0.5">
+            S/ {{ formatMonto(caja.total_ventas_todas) }} en total (todos los métodos)
           </p>
         </div>
 
@@ -403,6 +415,12 @@
                   <div class="flex items-center gap-2 mt-0.5">
                     <span class="text-[10.5px] font-bold px-2 py-0.5 rounded-full" :class="tipoConfig(m.type).badge">
                       {{ tipoConfig(m.type).label }}
+                    </span>
+                    <span v-if="m.type === 'venta' && m.metodo_pago"
+                      class="text-[10.5px] font-bold px-2 py-0.5 rounded-full"
+                      :class="m.metodo_pago === 'efectivo' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'"
+                      :title="m.metodo_pago === 'efectivo' ? 'Cuenta para el cuadre físico' : 'No cuenta para el cuadre — solo informativo'">
+                      {{ metodoPagoLabel(m.metodo_pago) }}
                     </span>
                     <span class="text-[11px] text-gray-400 flex items-center gap-1">
                       <ClockIcon class="w-3 h-3" />
@@ -771,6 +789,7 @@ interface CajaData {
   motivo_diferencia: string | null
   motivo_reapertura: string | null
   total_ventas: number
+  total_ventas_todas: number
   total_gastos: number
   total_ingresos: number
   saldo: number
@@ -784,6 +803,7 @@ interface Movimiento {
   amount: number
   description: string
   order_id: number | null
+  metodo_pago: 'efectivo' | 'yape' | 'tarjeta' | 'anticipado' | null
   created_at: string
   anulado: boolean
   motivo_anulacion: string | null
@@ -921,6 +941,16 @@ function tipoConfig(type: string) {
     },
   }
   return map[type] ?? map.venta
+}
+
+function metodoPagoLabel(metodo: 'efectivo' | 'yape' | 'tarjeta' | 'anticipado'): string {
+  const labels: Record<'efectivo' | 'yape' | 'tarjeta' | 'anticipado', string> = {
+    efectivo: 'Efectivo',
+    yape: 'Yape',
+    tarjeta: 'Tarjeta',
+    anticipado: 'Anticipado',
+  }
+  return labels[metodo] ?? metodo
 }
 
 // ── API ───────────────────────────────────────────────────

@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Events\DespachoActualizado;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class DespachoWebhookController extends Controller
 {
+    public function __construct(private OrderService $orderService) {}
+
     // POST /v1/webhooks/despacho — llamado por Delivery Central
     public function handle(Request $request): JsonResponse
     {
@@ -64,7 +67,12 @@ class DespachoWebhookController extends Controller
 
         if (isset($estadoMap[$data['estado']])) {
             $nuevoStatus = $estadoMap[$data['estado']];
-            $order->update(['status' => $nuevoStatus]);
+            // Antes hacía $order->update() directo — eso se saltaba por
+            // completo el registro en caja, el registro de comisión, y
+            // la restauración de stock al cancelar. Todo pedido que
+            // llegaba por delivery (o sea, prácticamente todos los
+            // públicos) nunca disparaba ninguno de esos efectos.
+            $this->orderService->updateStatus($order, $nuevoStatus);
 
             Log::info('Webhook aplicado — estado actualizado', [
                 'order_id'      => $order->id,

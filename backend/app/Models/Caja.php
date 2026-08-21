@@ -50,7 +50,25 @@ class Caja extends Model
 
     // Los movimientos anulados no cuentan para ningún total — quedan
     // en el registro (nunca se borran), pero no afectan el saldo.
+    // Este es el que cuenta para el cuadre físico (el saldo esperado
+    // al cerrar) — solo efectivo. Los movimientos manuales (sin pedido
+    // asociado, metodo_pago = null) se asumen efectivo, porque es lo
+    // único que tiene sentido cuando alguien anota una venta a mano.
     public function getTotalVentasAttribute(): float
+    {
+        return $this->movimientos()
+            ->where('type', 'venta')
+            ->where('anulado', false)
+            ->where(function ($q) {
+                $q->whereNull('metodo_pago')->orWhere('metodo_pago', 'efectivo');
+            })
+            ->sum('amount');
+    }
+
+    // Todas las ventas, sin importar el método de pago — solo para
+    // mostrar el panorama completo, nunca se usa en el cálculo del
+    // saldo/cuadre.
+    public function getTotalVentasTodasAttribute(): float
     {
         return $this->movimientos()->where('type', 'venta')->where('anulado', false)->sum('amount');
     }

@@ -20,6 +20,7 @@ class CajaController extends Controller
 
         $caja?->load([
             'movimientos' => fn($q) => $q->orderBy('created_at'),
+            'movimientos.order:id,type',
             'abiertaPor:id,name',
             'cerradaPor:id,name',
         ]);
@@ -262,8 +263,12 @@ class CajaController extends Controller
     // contra un total que incluye dinero que nunca estuvo en la caja).
     private function importarPedidosPendientes(Caja $caja): void
     {
+        // Ya no se filtra por efectivo — TODAS las ventas se ven en
+        // Caja para tener el panorama completo. El método de pago
+        // real queda guardado en cada movimiento, y es getTotalVentasAttribute()
+        // en el modelo Caja el que decide qué cuenta para el cuadre
+        // físico (solo efectivo) y qué es solo informativo.
         $pedidos = Order::where('status', 'entregado')
-            ->where('metodo_pago', 'efectivo')
             ->whereDate('updated_at', today())
             ->get();
 
@@ -277,6 +282,7 @@ class CajaController extends Controller
             CajaMovimiento::create([
                 'caja_id'     => $caja->id,
                 'order_id'    => $pedido->id,
+                'metodo_pago' => $pedido->metodo_pago,
                 'type'        => 'venta',
                 'amount'      => $pedido->total,
                 'description' => "Pedido #{$pedido->codigo} — {$pedido->client_name}",
@@ -298,6 +304,7 @@ class CajaController extends Controller
             'motivo_diferencia'  => $caja->motivo_diferencia,
             'motivo_reapertura'  => $caja->motivo_reapertura,
             'total_ventas'       => (float) $caja->total_ventas,
+            'total_ventas_todas' => (float) $caja->total_ventas_todas,
             'total_gastos'       => (float) $caja->total_gastos,
             'total_ingresos'     => (float) $caja->total_ingresos,
             'saldo'              => (float) $caja->saldo,
@@ -314,6 +321,7 @@ class CajaController extends Controller
             'amount'            => (float) $m->amount,
             'description'       => $m->description,
             'order_id'          => $m->order_id,
+            'metodo_pago'       => $m->metodo_pago,
             'created_at'        => $m->created_at->format('H:i'),
             'anulado'           => $m->anulado,
             'motivo_anulacion'  => $m->motivo_anulacion,

@@ -12,6 +12,7 @@ class CajaMovimiento extends Model
     protected $fillable = [
         'caja_id',
         'order_id',
+        'metodo_pago',
         'type',
         'amount',
         'description',
@@ -31,6 +32,11 @@ class CajaMovimiento extends Model
     public function caja(): BelongsTo
     {
         return $this->belongsTo(Caja::class);
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 
     public function registradoPor(): BelongsTo
