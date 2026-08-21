@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\Caja;
 use App\Models\CajaMovimiento;
 use App\Models\Order;
+use App\Enums\SaleChannel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -20,7 +21,7 @@ class CajaController extends Controller
 
         $caja?->load([
             'movimientos' => fn($q) => $q->orderBy('created_at'),
-            'movimientos.order:id,type',
+            'movimientos.order:id,type,delivery_fee',
             'abiertaPor:id,name',
             'cerradaPor:id,name',
         ]);
@@ -51,6 +52,7 @@ class CajaController extends Controller
     {
         $caja = Caja::with([
             'movimientos' => fn($q) => $q->orderBy('created_at'),
+            'movimientos.order:id,type,delivery_fee',
         ])->find($id);
 
         if (!$caja) return $this->notFound('Caja no encontrada');
@@ -228,6 +230,9 @@ class CajaController extends Controller
             return $this->error('No hay caja abierta', 400);
         }
 
+        // Todos los métodos de pago cuentan para el cuadre — el cajero
+        // ya verificó Yape/tarjeta/anticipado por su cuenta (app de
+        // Yape, reporte del POS, etc.) antes de contar el efectivo.
         $saldoEsperado = $caja->saldo;
         $diferencia    = round($data['monto_contado'] - $saldoEsperado, 2);
 
@@ -291,6 +296,44 @@ class CajaController extends Controller
         }
     }
 
+    // GET /admin/caja/delivery-total?desde=Y-m-d&hasta=Y-m-d (desde/hasta
+    // opcionales — sin ellos solo trae hoy/semana/mes/total).
+    //
+    // Cuenta solo pedidos type=delivery con status=entregado, fechados por
+    // updated_at — el mismo criterio que usa importarPedidosPendientes()
+    // para decidir qué pedidos son "de hoy" en Caja.
+    public function deliveryTotal(Request $request): JsonResponse
+    {
+        $base = fn() => Order::where('type', 'delivery')->where('status', 'entregado');
+
+        $data = [
+            'hoy'    => (float) $base()->whereDate('updated_at', today())->sum('delivery_fee'),
+            'semana' => (float) $base()->where('updated_at', '>=', now()->startOfWeek())->sum('delivery_fee'),
+            'mes'    => (float) $base()->where('updated_at', '>=', now()->startOfMonth())->sum('delivery_fee'),
+            'total'  => (float) $base()->sum('delivery_fee'),
+        ];
+
+        if ($request->filled('desde') || $request->filled('hasta')) {
+            $rango = $base();
+
+            if ($request->filled('desde')) {
+                $rango->where('updated_at', '>=', \Carbon\Carbon::parse($request->query('desde'))->startOfDay());
+            }
+            if ($request->filled('hasta')) {
+                $rango->where('updated_at', '<=', \Carbon\Carbon::parse($request->query('hasta'))->endOfDay());
+            }
+
+            $data['rango'] = [
+                'desde'   => $request->query('desde'),
+                'hasta'   => $request->query('hasta'),
+                'total'   => (float) (clone $rango)->sum('delivery_fee'),
+                'pedidos' => (int) (clone $rango)->count(),
+            ];
+        }
+
+        return $this->success($data);
+    }
+
     private function formatCaja(Caja $caja): array
     {
         return [
@@ -308,6 +351,7 @@ class CajaController extends Controller
             'total_gastos'       => (float) $caja->total_gastos,
             'total_ingresos'     => (float) $caja->total_ingresos,
             'saldo'              => (float) $caja->saldo,
+            'ventas_por_metodo'  => $caja->ventas_por_metodo,
             'abierta_por'        => $caja->relationLoaded('abiertaPor') ? $caja->abiertaPor?->name : null,
             'cerrada_por'        => $caja->relationLoaded('cerradaPor') ? $caja->cerradaPor?->name : null,
         ];
@@ -321,6 +365,16 @@ class CajaController extends Controller
             'amount'            => (float) $m->amount,
             'description'       => $m->description,
             'order_id'          => $m->order_id,
+            'order_type'        => $m->order?->type?->value,
+            // Solo tiene sentido mostrarlo para pedidos de tipo delivery —
+            // en los demás (local/recoger) delivery_fee siempre es 0.
+            // OJO: Order::type está casteado al enum SaleChannel, no a un
+            // string plano — comparar con === 'delivery' nunca es cierto
+            // (compara un objeto enum contra un string), así que esto
+            // devolvía null siempre, para cualquier pedido.
+            'delivery_fee'      => $m->order && $m->order->type === SaleChannel::Delivery
+                ? (float) $m->order->delivery_fee
+                : null,
             'metodo_pago'       => $m->metodo_pago,
             'created_at'        => $m->created_at->format('H:i'),
             'anulado'           => $m->anulado,

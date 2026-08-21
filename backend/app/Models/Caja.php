@@ -50,10 +50,11 @@ class Caja extends Model
 
     // Los movimientos anulados no cuentan para ningún total — quedan
     // en el registro (nunca se borran), pero no afectan el saldo.
-    // Este es el que cuenta para el cuadre físico (el saldo esperado
-    // al cerrar) — solo efectivo. Los movimientos manuales (sin pedido
-    // asociado, metodo_pago = null) se asumen efectivo, porque es lo
-    // único que tiene sentido cuando alguien anota una venta a mano.
+    // Solo ventas en efectivo (o sin método registrado — los movimientos
+    // manuales sin pedido asociado se asumen efectivo). Ya no se usa
+    // para el cuadre de caja (ver getSaldoAttribute), pero se mantiene
+    // para mostrar el desglose informativo "Ventas en efectivo" en el
+    // resumen.
     public function getTotalVentasAttribute(): float
     {
         return $this->movimientos()
@@ -65,9 +66,7 @@ class Caja extends Model
             ->sum('amount');
     }
 
-    // Todas las ventas, sin importar el método de pago — solo para
-    // mostrar el panorama completo, nunca se usa en el cálculo del
-    // saldo/cuadre.
+    // Todas las ventas, sin importar el método de pago.
     public function getTotalVentasTodasAttribute(): float
     {
         return $this->movimientos()->where('type', 'venta')->where('anulado', false)->sum('amount');
@@ -83,11 +82,46 @@ class Caja extends Model
         return $this->movimientos()->where('type', 'ingreso')->where('anulado', false)->sum('amount');
     }
 
+    // El cajero registra TODO en caja sin importar el método de pago —
+    // Yape, tarjeta y anticipado se verifican aparte (app de Yape, POS,
+    // etc.) para que la caja cuadre contra el total real del día, no
+    // solo contra el efectivo físico.
     public function getSaldoAttribute(): float
     {
         return $this->monto_apertura
-            + $this->total_ventas
+            + $this->total_ventas_todas
             + $this->total_ingresos
             - $this->total_gastos;
+    }
+
+    // Desglose de ventas por método de pago — para que al cerrar caja el
+    // cajero sepa exactamente cuánto debe encontrar en cada canal
+    // (efectivo en el cajón, saldo en la cuenta de Yape, lo cobrado por
+    // POS, etc.), en vez de un solo número "todos los métodos" sin
+    // detalle. Agrupa variantes históricas del campo bajo la misma
+    // etiqueta que ya usa la UI (metodoPagoLabel en el frontend).
+    public function getVentasPorMetodoAttribute(): array
+    {
+        $porMetodo = $this->movimientos()
+            ->where('type', 'venta')
+            ->where('anulado', false)
+            ->selectRaw('metodo_pago, SUM(amount) as total')
+            ->groupBy('metodo_pago')
+            ->pluck('total', 'metodo_pago');
+
+        $grupos = ['efectivo' => 0.0, 'yape' => 0.0, 'tarjeta' => 0.0, 'anticipado' => 0.0];
+
+        foreach ($porMetodo as $metodo => $total) {
+            $grupo = match ($metodo) {
+                null, 'efectivo', 'contraentrega_efectivo' => 'efectivo',
+                'yape', 'contraentrega_yape' => 'yape',
+                'tarjeta' => 'tarjeta',
+                'anticipado' => 'anticipado',
+                default => 'efectivo',
+            };
+            $grupos[$grupo] += (float) $total;
+        }
+
+        return $grupos;
     }
 }

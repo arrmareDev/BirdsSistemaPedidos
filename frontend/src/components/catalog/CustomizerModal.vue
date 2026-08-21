@@ -271,7 +271,7 @@ import { useCartStore } from '@/stores/cart'
 import type {
   Product, CustomizationOption, ProductExtra,
 } from '@/stores/products'
-import type { CartCustomization, CartExtra } from '@/stores/cart'
+import type { CartCustomization, CartExtra, CartItem } from '@/stores/cart'
 
 const cartStore = useCartStore()
 
@@ -339,7 +339,7 @@ defineExpose({
   },
 
   // Abrir para editar item existente del carrito
-  openEdit(p: Product, item: ReturnType<typeof cartStore.items>[number]) {
+  openEdit(p: Product, item: CartItem) {
     product.value = p
     editingUid.value = item._uid
     errors.value = {}
@@ -396,7 +396,7 @@ const extrasTotal = computed(() => {
 })
 
 const totalPrice = computed(() =>
-  ((product.value?.price ?? 0) + extrasTotal.value) * qty.value
+  ((product.value?.precio_final ?? product.value?.price ?? 0) + extrasTotal.value) * qty.value
 )
 
 const summaryText = computed(() => {
@@ -430,14 +430,14 @@ function toggleMultiple(sectionId: number, opt: CustomizationOption) {
       current.selections.splice(idx, 1)
       if (current.selections.length === 0) selections.value.delete(sectionId)
     } else {
-      current.selections.push({ option_id: opt.id, name: opt.name })
+      current.selections.push({ option_id: opt.id, name: opt.name, price_modifier: opt.price_modifier ?? 0 })
     }
   } else {
     selections.value.set(sectionId, {
       section_id: sectionId,
       seccion: section.seccion,
       label: section.label,
-      selections: [{ option_id: opt.id, name: opt.name }],
+      selections: [{ option_id: opt.id, name: opt.name, price_modifier: opt.price_modifier ?? 0 }],
     })
   }
   selections.value = new Map(selections.value)
@@ -456,7 +456,7 @@ function selectSingle(sectionId: number, opt: CustomizationOption) {
       section_id: sectionId,
       seccion: section.seccion,
       label: section.label,
-      selections: [{ option_id: opt.id, name: opt.name }],
+      selections: [{ option_id: opt.id, name: opt.name, price_modifier: opt.price_modifier ?? 0 }],
     })
     manualImage.value = null
   }
@@ -480,6 +480,7 @@ function incrementExtra(extra: ProductExtra) {
   } else {
     extrasMap.value.set(extra.id, {
       extra_id: extra.id,
+      type: 'own',
       name: extra.name,
       price: extra.price,
       qty: 1,

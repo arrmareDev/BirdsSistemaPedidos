@@ -162,13 +162,13 @@
 
               <!-- Preferencias -->
               <td class="px-5 py-4">
-                <div v-if="c.preferences?.salsas?.length" class="flex gap-1 flex-wrap max-w-[160px]">
-                  <span v-for="s in c.preferences.salsas.slice(0, 3)" :key="s" class="text-[10.5px] font-medium px-2 py-0.5 rounded-full
+                <div v-if="preferenciasTop(c).length" class="flex gap-1 flex-wrap max-w-[160px]">
+                  <span v-for="s in preferenciasTop(c).slice(0, 3)" :key="s" class="text-[10.5px] font-medium px-2 py-0.5 rounded-full
                            bg-orange-50 text-orange-700 border border-orange-100">
                     {{ s }}
                   </span>
-                  <span v-if="(c.preferences.salsas.length ?? 0) > 3" class="text-[10.5px] font-bold text-gray-400">
-                    +{{ c.preferences.salsas.length - 3 }}
+                  <span v-if="preferenciasTop(c).length > 3" class="text-[10.5px] font-bold text-gray-400">
+                    +{{ preferenciasTop(c).length - 3 }}
                   </span>
                 </div>
                 <span v-else class="text-[12px] text-gray-300">Sin datos</span>
@@ -660,6 +660,16 @@ function diasDesde(d: string): number {
   return Math.floor(
     (Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24)
   )
+}
+
+// Antes esto leía c.preferences.salsas, un campo que nunca existió en el
+// shape real (quedó de una versión anterior atada a un rubro específico).
+// Las preferencias son genéricas por sección — esto junta el "top" (la
+// opción más elegida) de cada sección que el cliente realmente tiene.
+function preferenciasTop(c: Client): string[] {
+  return Object.values(c.preferences?.secciones ?? {})
+    .map(s => s.top)
+    .filter((top): top is string => !!top)
 }
 
 function segmentoBadgeClass(c: Client) {

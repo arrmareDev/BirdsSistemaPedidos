@@ -37,16 +37,27 @@ class OrderService
                 throw new \Exception('Debes indicar la dirección para pedidos delivery.');
             }
 
-            // ── 1. Calcular subtotal ──────────────────────────────
+            // ── 1. Recalcular precios desde la BD (nunca confiar en lo que
+            // manda el cliente) y validar stock en la misma pasada ───────
+            // $pricing/$products quedan indexados por posición del array
+            // $items, para reusar el cálculo y la MISMA instancia (ya
+            // bloqueada) al crear los OrderItem más abajo.
+            //
+            // lockForUpdate() bloquea la fila del producto hasta que la
+            // transacción termine — sin esto, dos pedidos simultáneos por
+            // el último producto en stock podían pasar ambos la
+            // validación de tieneStock() antes de que cualquiera de los
+            // dos alcanzara a descontar, vendiendo más de lo que había.
             $items    = $data['items'] ?? [];
-            $subtotal = collect($items)->sum(
-                fn($item) => ($item['unit_price'] ?? 0) * ($item['qty'] ?? 1)
-            );
+            $pricing  = [];
+            $products = [];
+            $subtotal = 0.0;
 
-            // ── 2. Validar stock antes de crear ──────────────────
-            foreach ($items as $item) {
-                $product = Product::findOrFail($item['product_id']);
-                $qty     = (int) ($item['qty'] ?? 1);
+            foreach ($items as $i => $item) {
+                $product = Product::with(['customizationSections.options', 'extras', 'extrasCompartidos'])
+                    ->lockForUpdate()
+                    ->findOrFail($item['product_id']);
+                $qty = (int) ($item['qty'] ?? 1);
 
                 if ($product->controla_stock && !$product->tieneStock($qty)) {
                     throw new \Exception(
@@ -54,6 +65,10 @@ class OrderService
                             "Disponible: {$product->stock}, solicitado: {$qty}"
                     );
                 }
+
+                $products[$i] = $product;
+                $pricing[$i]  = $this->calcularPrecioItem($product, $item);
+                $subtotal    += $pricing[$i]['unit_price'] * $qty;
             }
 
             // ── 3. Resolver delivery fee (solo si el canal lo requiere) ──
@@ -113,19 +128,25 @@ class OrderService
             ]);
 
             // ── 6. Crear items y descontar stock ──────────────────
-            foreach ($items as $item) {
-                $product = Product::find($item['product_id']);
-                $qty     = (int)   ($item['qty']        ?? 1);
-                $price   = (float) ($item['unit_price']  ?? 0);
+            // unit_price/customization/extras salen de $pricing (calculado
+            // en el paso 1 desde la BD), NUNCA de $item directamente —
+            // eso es lo que evita que un unit_price manipulado en el
+            // request termine cobrándose. $products[$i] es la MISMA
+            // instancia bloqueada del paso 1 — no se vuelve a pedir sin
+            // lock, que rompería la protección contra la carrera.
+            foreach ($items as $i => $item) {
+                $product = $products[$i];
+                $qty     = (int) ($item['qty'] ?? 1);
+                $calc    = $pricing[$i];
 
                 OrderItem::create([
                     'order_id'       => $order->id,
                     'product_id'     => $product->id,
                     'qty'            => $qty,
-                    'unit_price'     => $price,
-                    'subtotal'       => $price * $qty,
-                    'customization'  => $item['customization']  ?? null,
-                    'extras'         => $item['extras']         ?? null,
+                    'unit_price'     => $calc['unit_price'],
+                    'subtotal'       => $calc['unit_price'] * $qty,
+                    'customization'  => $calc['customization'],
+                    'extras'         => $calc['extras'],
                     'custom_summary' => $item['custom_summary'] ?? null,
                 ]);
 
@@ -199,10 +220,18 @@ class OrderService
                 $product?->restaurarStock($oldItem->qty, 'edicion_pedido', $order->id, 'Item removido al editar el pedido');
             }
 
-            // ── 2. Validar stock de los items nuevos ──────────────
-            foreach ($items as $item) {
-                $product = Product::findOrFail($item['product_id']);
-                $qty     = (int) ($item['qty'] ?? 1);
+            // ── 2. Recalcular precios desde la BD y validar stock ──
+            // lockForUpdate() por la misma razón que en create(): evita
+            // que dos ediciones/pedidos simultáneos sobre el mismo
+            // producto pasen ambos la validación antes de que cualquiera
+            // descuente stock.
+            $pricing  = [];
+            $products = [];
+            foreach ($items as $i => $item) {
+                $product = Product::with(['customizationSections.options', 'extras', 'extrasCompartidos'])
+                    ->lockForUpdate()
+                    ->findOrFail($item['product_id']);
+                $qty = (int) ($item['qty'] ?? 1);
 
                 if ($product->controla_stock && !$product->tieneStock($qty)) {
                     throw new \Exception(
@@ -210,27 +239,30 @@ class OrderService
                             "Disponible: {$product->stock}, solicitado: {$qty}"
                     );
                 }
+
+                $products[$i] = $product;
+                $pricing[$i]  = $this->calcularPrecioItem($product, $item);
             }
 
             // ── 3. Reemplazar items ────────────────────────────────
             $order->items()->delete();
 
             $subtotal = 0;
-            foreach ($items as $item) {
-                $product      = Product::find($item['product_id']);
-                $qty          = (int)   ($item['qty']       ?? 1);
-                $price        = (float) ($item['unit_price'] ?? 0);
-                $itemSubtotal = $price * $qty;
+            foreach ($items as $i => $item) {
+                $product      = $products[$i];
+                $qty          = (int) ($item['qty'] ?? 1);
+                $calc         = $pricing[$i];
+                $itemSubtotal = $calc['unit_price'] * $qty;
                 $subtotal    += $itemSubtotal;
 
                 OrderItem::create([
                     'order_id'       => $order->id,
                     'product_id'     => $product->id,
                     'qty'            => $qty,
-                    'unit_price'     => $price,
+                    'unit_price'     => $calc['unit_price'],
                     'subtotal'       => $itemSubtotal,
-                    'customization'  => $item['customization']  ?? null,
-                    'extras'         => $item['extras']         ?? null,
+                    'customization'  => $calc['customization'],
+                    'extras'         => $calc['extras'],
                     'custom_summary' => $item['custom_summary'] ?? null,
                 ]);
 
@@ -328,6 +360,88 @@ class OrderService
         } catch (\Throwable $e) {
             Log::warning('No se pudo registrar comisión: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Recalcula el precio real de un item de pedido desde la base de
+     * datos — nunca desde $item['unit_price'], $item['customization'][...]
+     * ['price_modifier'] ni $item['extras'][...]['price'], que son valores
+     * que el cliente puede manipular libremente antes de enviarlos.
+     *
+     * $product debe venir con customizationSections.options, extras y
+     * extrasCompartidos ya cargados (evita N+1 en el foreach del caller).
+     *
+     * Devuelve unit_price + las versiones "limpias" de customization/extras
+     * (solo con los ids que sí pertenecen al producto), listas para
+     * guardarse tal cual en el OrderItem.
+     */
+    private function calcularPrecioItem(Product $product, array $item): array
+    {
+        $unitPrice = (float) $product->precio_final;
+
+        // ── Personalización: cada selección debe pertenecer a una
+        // sección real de ESTE producto. Un section_id/option_id que no
+        // exista o que sea de otro producto simplemente se ignora.
+        $customizationOut = [];
+        foreach ($item['customization'] ?? [] as $sec) {
+            $section = $product->customizationSections
+                ->firstWhere('id', $sec['section_id'] ?? null);
+            if (!$section) continue;
+
+            $selectionsOut = [];
+            foreach ($sec['selections'] ?? [] as $sel) {
+                $option = $section->options->firstWhere('id', $sel['option_id'] ?? null);
+                if (!$option) continue;
+
+                $unitPrice += (float) $option->price_modifier;
+                $selectionsOut[] = [
+                    'option_id'      => $option->id,
+                    'name'           => $option->name,
+                    'price_modifier' => (float) $option->price_modifier,
+                ];
+            }
+
+            if ($selectionsOut) {
+                $customizationOut[] = [
+                    'section_id' => $section->id,
+                    'seccion'    => $section->seccion,
+                    'label'      => $section->label,
+                    'selections' => $selectionsOut,
+                ];
+            }
+        }
+
+        // ── Extras: 'own' busca en los extras propios del producto
+        // (product_extras), 'shared' busca en los extras compartidos
+        // vinculados a este producto (tabla Extra vía extra_product).
+        // Ambas tablas tienen su propio id autoincremental — el 'type'
+        // es lo que evita ambigüedad entre ellas.
+        $extrasOut = [];
+        foreach ($item['extras'] ?? [] as $ex) {
+            $type  = ($ex['type'] ?? 'own') === 'shared' ? 'shared' : 'own';
+            $qtyEx = max(1, (int) ($ex['qty'] ?? 1));
+
+            $extra = $type === 'shared'
+                ? $product->extrasCompartidos->firstWhere('id', $ex['extra_id'] ?? null)
+                : $product->extras->firstWhere('id', $ex['extra_id'] ?? null);
+
+            if (!$extra) continue;
+
+            $unitPrice += (float) $extra->price * $qtyEx;
+            $extrasOut[] = [
+                'extra_id' => $extra->id,
+                'type'     => $type,
+                'name'     => $extra->name,
+                'price'    => (float) $extra->price,
+                'qty'      => $qtyEx,
+            ];
+        }
+
+        return [
+            'unit_price'    => round($unitPrice, 2),
+            'customization' => $customizationOut ?: null,
+            'extras'        => $extrasOut ?: null,
+        ];
     }
 
     private function resolveDeliveryFee(

@@ -130,6 +130,9 @@
             </span>
           </div>
           <p class="text-[11.5px] text-gray-400 m-0">{{ fechaHoy }}</p>
+          <p v-if="caja.saldo !== caja.saldo_efectivo" class="text-[11px] text-gray-400 m-0 -mt-2">
+            S/ {{ formatMonto(caja.saldo_efectivo) }} en efectivo (lo que debería haber en el cajón)
+          </p>
         </div>
 
         <!-- Ventas -->
@@ -147,11 +150,14 @@
             <span class="text-[12px] font-semibold text-gray-400">S/</span>
             <span class="font-black text-[26px] text-green-600 leading-none"
               style="font-family:'Plus Jakarta Sans',sans-serif;">
-              {{ formatMonto(caja.total_ventas_todas) }}
+              {{ formatMonto(caja.total_ventas) }}
             </span>
           </div>
           <p class="text-[11.5px] text-gray-400 m-0">
-            {{ ventasCount }} pedidos web entregados
+            {{ ventasCount }} pedidos entregados
+          </p>
+          <p v-if="caja.total_ventas_todas > caja.total_ventas" class="text-[11px] text-gray-400 m-0 mt-0.5">
+            S/ {{ formatMonto(caja.total_ventas_todas) }} en total (todos los métodos)
           </p>
         </div>
 
@@ -278,7 +284,8 @@
             <span class="text-gray-400 text-[12px]">al</span>
             <input v-model="deliveryRango.hasta" type="date" class="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-[13px] outline-none
                      focus:border-brand-red transition-all duration-200 text-gray-600" />
-            <button @click="consultarRangoDelivery" :disabled="deliveryRango.loading" class="px-3.5 py-1.5 rounded-xl bg-blue-600 text-white text-[12.5px] font-bold
+            <button @click="consultarRangoDelivery" :disabled="deliveryRango.loading"
+              class="px-3.5 py-1.5 rounded-xl bg-blue-600 text-white text-[12.5px] font-bold
                      border-none cursor-pointer hover:bg-blue-700 disabled:opacity-50 transition-all duration-150">
               {{ deliveryRango.loading ? 'Consultando...' : 'Ver total' }}
             </button>
@@ -485,10 +492,10 @@
                       <ClockIcon class="w-3 h-3" />
                       {{ m.created_at }}
                     </span>
+                    <span v-if="m.delivery_fee" class="text-[11px] text-gray-400">
+                      · Delivery S/ {{ formatMonto(m.delivery_fee) }}
+                    </span>
                   </div>
-                  <p v-if="m.delivery_fee" class="text-[11px] text-gray-400 m-0 mt-1">
-                    Delivery: S/ {{ formatMonto(m.delivery_fee) }}
-                  </p>
                   <p v-if="m.anulado && m.motivo_anulacion" class="text-[11px] text-gray-400 m-0 mt-1 italic">
                     Motivo: {{ m.motivo_anulacion }}
                   </p>
@@ -507,7 +514,6 @@
                 </div>
               </div>
             </TransitionGroup>
-
           </div>
 
           <!-- Footer resumen -->
@@ -561,8 +567,7 @@
                 ¿Cerrar la caja?
               </h3>
               <p class="text-gray-400 text-[13.5px] m-0 mb-5 leading-relaxed">
-                Verifica cada canal (efectivo, Yape, tarjeta, lo que corresponda) y compara el total contra lo que el
-                sistema espera.
+                Cuenta el efectivo físico y compáralo contra lo que el sistema espera.
               </p>
 
               <div class="bg-gray-50 rounded-2xl p-4 mb-4 text-left
@@ -576,18 +581,15 @@
                     S/ {{ formatMonto(caja.monto_apertura) }}
                   </span>
                 </div>
-
-                <!-- Ventas por método — solo los que tuvieron movimiento hoy -->
-                <div v-for="mp in metodosConVentas" :key="mp.key" class="flex justify-between items-center text-[13px]">
+                <div class="flex justify-between items-center text-[13px]">
                   <span class="text-gray-500 flex items-center gap-1.5">
                     <ShoppingBagIcon class="w-3.5 h-3.5" />
-                    Ventas {{ mp.label }}
+                    Ventas en efectivo
                   </span>
                   <span class="font-bold text-green-600">
-                    +S/ {{ formatMonto(mp.monto) }}
+                    +S/ {{ formatMonto(caja.total_ventas) }}
                   </span>
                 </div>
-
                 <div class="flex justify-between items-center text-[13px]">
                   <span class="text-gray-500 flex items-center gap-1.5">
                     <ArrowTrendingUpIcon class="w-3.5 h-3.5" />
@@ -608,9 +610,9 @@
                 </div>
                 <div class="flex justify-between items-center pt-2.5
                             border-t border-gray-200 text-[14px]">
-                  <span class="font-bold text-gray-900">Esperado en caja (todos los métodos)</span>
+                  <span class="font-bold text-gray-900">Esperado en caja</span>
                   <span class="font-black text-gray-900" style="font-family:'Plus Jakarta Sans',sans-serif;">
-                    S/ {{ formatMonto(caja.saldo) }}
+                    S/ {{ formatMonto(caja.saldo_efectivo) }}
                   </span>
                 </div>
               </div>
@@ -618,11 +620,8 @@
               <!-- Conteo físico -->
               <div class="flex flex-col gap-1.5 mb-4 text-left">
                 <label class="text-[11px] font-black uppercase tracking-widest text-gray-500">
-                  ¿Cuánto verificaste en total? (S/)
+                  ¿Cuánto contaste de verdad? (S/)
                 </label>
-                <p class="text-[11.5px] text-gray-400 m-0 -mt-1">
-                  Efectivo contado + lo que confirmes en Yape, tarjeta, etc.
-                </p>
                 <div class="relative">
                   <span class="absolute left-4 top-1/2 -translate-y-1/2
                                text-[14px] font-bold text-gray-400">S/</span>
@@ -863,12 +862,7 @@ interface CajaData {
   total_gastos: number
   total_ingresos: number
   saldo: number
-  ventas_por_metodo: {
-    efectivo: number
-    yape: number
-    tarjeta: number
-    anticipado: number
-  }
+  saldo_efectivo: number
   abierta_por: string | null
   cerrada_por: string | null
 }
@@ -1049,17 +1043,6 @@ function metodoPagoLabel(metodo: 'efectivo' | 'yape' | 'tarjeta' | 'anticipado')
   }
   return labels[metodo] ?? metodo
 }
-
-// Desglose de ventas por método para el modal de cierre — solo los
-// canales que de verdad tuvieron ventas hoy, para no mostrar líneas en
-// S/ 0.00 cuando no se usó ese método.
-const metodosConVentas = computed(() => {
-  if (!caja.value) return []
-  const v = caja.value.ventas_por_metodo
-  return (['efectivo', 'yape', 'tarjeta', 'anticipado'] as const)
-    .filter(key => v[key] > 0)
-    .map(key => ({ key, label: metodoPagoLabel(key), monto: v[key] }))
-})
 
 // ── API ───────────────────────────────────────────────────
 async function loadCaja() {

@@ -52,9 +52,25 @@ class StoreOrderRequest extends FormRequest
             'items'                  => 'required|array|min:1',
             'items.*.product_id'     => 'required|exists:products,id',
             'items.*.qty'            => 'required|integer|min:1',
+            // unit_price ya no se usa para calcular el total (el precio
+            // real se recalcula en el servidor desde el producto), pero
+            // se mantiene el campo por compatibilidad con el payload que
+            // ya arma el frontend.
             'items.*.unit_price'     => 'required|numeric|min:0',
-            'items.*.customization'  => 'nullable|array',
-            'items.*.extras'         => 'nullable|array',
+
+            'items.*.customization'                    => 'nullable|array',
+            'items.*.customization.*.section_id'       => 'required_with:items.*.customization|integer',
+            'items.*.customization.*.selections'       => 'nullable|array',
+            'items.*.customization.*.selections.*.option_id' => 'required|integer',
+
+            'items.*.extras'              => 'nullable|array',
+            'items.*.extras.*.extra_id'   => 'required|integer',
+            // nullable: pedidos creados antes de este cambio no tienen
+            // 'type' guardado en su extras[]; calcularPrecioItem() lo
+            // asume 'own' cuando falta.
+            'items.*.extras.*.type'       => 'nullable|in:own,shared',
+            'items.*.extras.*.qty'        => 'nullable|integer|min:1',
+
             'items.*.custom_summary' => 'nullable|string|max:500',
         ];
     }

@@ -15,6 +15,11 @@ export interface CartCustomization {
 
 export interface CartExtra {
   extra_id: number;
+  // "own" = product_extras (propio del producto), "shared" = Extra (tabla
+  // compartida). Ambas tablas tienen su propio autoincremental, así que un
+  // extra_id por sí solo es ambiguo — el backend lo necesita para saber en
+  // qué tabla buscar el precio real al recalcular.
+  type: "own" | "shared";
   name: string;
   price: number;
   qty: number;
@@ -71,6 +76,11 @@ export const useCartStore = defineStore("cart", () => {
       (i) => i.productId === product.id && i.customSummary === summary,
     );
 
+    // Precio base real: si el producto tiene descuento activo, precio_final
+    // ya viene con ese descuento aplicado. Usar product.price aquí ignoraría
+    // el descuento que el cliente vio en la ficha del producto.
+    const basePrice = product.precio_final ?? product.price;
+
     if (existingItem) {
       // Si ya existe, solo le sumamos la cantidad solicitada
       existingItem.qty += qtyToAdd;
@@ -83,10 +93,10 @@ export const useCartStore = defineStore("cart", () => {
         icon: product.icon,
         imageUrl: product.image_url,
         rootCategorySlug: product.category?.root_slug ?? null,
-        basePrice: product.price,
+        basePrice,
         modifiersPrice,
         extrasPrice,
-        price: product.price + modifiersPrice + extrasPrice,
+        price: basePrice + modifiersPrice + extrasPrice,
         qty: qtyToAdd, // ← Usamos la cantidad inicial aquí
         customization,
         extras,

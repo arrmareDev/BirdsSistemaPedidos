@@ -712,7 +712,7 @@ function incrementExtra(extra: ProductExtra) {
     if (current) { current.qty++ }
     else {
         extrasMap.value.set(extra.id, {
-            extra_id: extra.id, name: extra.name, price: extra.price, qty: 1,
+            extra_id: extra.id, type: 'own', name: extra.name, price: extra.price, qty: 1,
         })
     }
     extrasMap.value = new Map(extrasMap.value)
@@ -736,7 +736,7 @@ function incrementSharedExtra(extra: ProductExtra) {
     if (current) { current.qty++ }
     else {
         sharedExtrasMap.value.set(extra.id, {
-            extra_id: extra.id, name: extra.name, price: extra.price, qty: 1,
+            extra_id: extra.id, type: 'shared', name: extra.name, price: extra.price, qty: 1,
         })
     }
     sharedExtrasMap.value = new Map(sharedExtrasMap.value)

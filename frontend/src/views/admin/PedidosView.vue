@@ -389,7 +389,7 @@
                               class="absolute top-2 right-0 bg-pink-400 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-l-md">
                               Popular
                             </div>
-                            <div v-if="p.controla_stock && p.stock > 0 && p.stock <= 5"
+                            <div v-if="p.controla_stock && p.stock != null && p.stock > 0 && p.stock <= 5"
                               class="absolute bottom-1 left-1 bg-amber-400 text-amber-900 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md">
                               Últimos {{ p.stock }}
                             </div>
@@ -510,287 +510,53 @@
     </Teleport>
 
     <!-- ══ MODAL CONFIRMAR CANCELAR/ELIMINAR/FORZAR ══ -->
-    <Teleport to="body">
-      <Transition enter-active-class="transition-opacity duration-200"
-        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
-        <div v-if="confirmModal.show" class="fixed inset-0 z-[400] bg-black/50 backdrop-blur-sm
-                 flex items-center justify-center p-4" @click.self="confirmModal.show = false">
-          <Transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 scale-95"
-            leave-to-class="opacity-0 scale-95">
-            <div v-if="confirmModal.show" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-7 text-center">
-              <div class="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-                :class="confirmModal.type === 'cancelar' ? 'bg-amber-50' : 'bg-red-50'">
-                <component :is="confirmModal.type === 'cancelar' ? XCircleIcon : TrashIcon" class="w-7 h-7"
-                  :class="confirmModal.type === 'cancelar' ? 'text-amber-500' : 'text-red-500'" />
-              </div>
-              <h3 class="font-black text-[19px] text-gray-900 m-0 mb-2"
-                style="font-family:'Plus Jakarta Sans',sans-serif;">
-                {{ confirmModal.type === 'cancelar' ? '¿Cancelar pedido?'
-                  : confirmModal.type === 'forzar' ? '¿Eliminar definitivamente?'
-                  : '¿Eliminar pedido?' }}
-              </h3>
-              <p class="text-[13.5px] text-gray-400 m-0 mb-6 leading-relaxed">
-                <template v-if="confirmModal.type === 'cancelar'">
-                  El pedido <strong class="text-gray-700">#{{ confirmModal.order?.codigo }}</strong>
-                  de <strong class="text-gray-700">{{ confirmModal.order?.client_name }}</strong>
-                  será marcado como cancelado.
-                </template>
-                <template v-else-if="confirmModal.type === 'forzar'">
-                  El pedido <strong class="text-gray-700">#{{ confirmModal.order?.codigo }}</strong>
-                  se borrará <strong class="text-red-600">para siempre</strong> de la base de datos, junto con sus productos.
-                  Esta acción <strong class="text-red-600">no se puede deshacer</strong>.
-                </template>
-                <template v-else>
-                  El pedido <strong class="text-gray-700">#{{ confirmModal.order?.codigo }}</strong>
-                  se moverá a la papelera. Podrás restaurarlo después desde "Eliminados".
-                </template>
-              </p>
-              <div class="flex gap-3">
-                <button @click="confirmModal.show = false"
-                  class="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600
-                         font-semibold text-[13.5px] cursor-pointer bg-white hover:border-gray-300 transition-all duration-150">
-                  No, volver
-                </button>
-                <button @click="executeConfirm" :disabled="confirmModal.loading"
-                  class="flex-1 py-3 rounded-2xl text-white font-bold text-[13.5px] cursor-pointer
-                         border-none transition-all duration-150 disabled:opacity-50 flex items-center justify-center gap-2"
-                  :class="confirmModal.type === 'cancelar' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-red-600 hover:bg-red-700'">
-                  <span v-if="confirmModal.loading"
-                    class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  {{ confirmModal.type === 'cancelar' ? 'Sí, cancelar'
-                    : confirmModal.type === 'forzar' ? 'Sí, eliminar para siempre'
-                    : 'Sí, eliminar' }}
-                </button>
-              </div>
-            </div>
-          </Transition>
-        </div>
-      </Transition>
-    </Teleport>
+    <OrderConfirmModal
+      :show="confirmModal.show"
+      :type="confirmModal.type"
+      :order="confirmModal.order"
+      :loading="confirmModal.loading"
+      @close="confirmModal.show = false"
+      @confirm="executeConfirm"
+    />
 
     <!-- ══ MODAL SOLICITAR REPARTIDOR ══ -->
-    <Teleport to="body">
-      <Transition enter-active-class="transition-opacity duration-200"
-        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
-        <div v-if="despachoModal.show" class="fixed inset-0 z-[400] bg-black/50 backdrop-blur-sm
-                 flex items-center justify-center p-4" @click.self="despachoModal.show = false">
-          <Transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 scale-95"
-            leave-to-class="opacity-0 scale-95">
-            <div v-if="despachoModal.show" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-7 text-center">
-              <div class="w-14 h-14 rounded-2xl bg-blue-50 mx-auto mb-5 flex items-center justify-center">
-                <TruckIcon class="w-7 h-7 text-blue-500" />
-              </div>
-              <h3 class="font-black text-[19px] text-gray-900 m-0 mb-2"
-                style="font-family:'Plus Jakarta Sans',sans-serif;">
-                Solicitar repartidor
-              </h3>
-              <p class="text-[13.5px] text-gray-400 m-0 mb-5 leading-relaxed">
-                Se notificará a los repartidores disponibles. El primero en aceptar tomará el pedido.
-              </p>
-              <div class="bg-gray-50 rounded-2xl p-4 mb-6 text-left border border-gray-100 flex flex-col gap-2">
-                <div class="flex justify-between text-[13px]">
-                  <span class="text-gray-500">Pedido</span>
-                  <span class="font-bold text-gray-700">#{{ despachoModal.order?.codigo }}</span>
-                </div>
-                <div class="flex justify-between text-[13px]">
-                  <span class="text-gray-500">Cliente</span>
-                  <span class="font-bold text-gray-700">{{ despachoModal.order?.client_name }}</span>
-                </div>
-                <div v-if="despachoModal.order?.address" class="flex justify-between text-[13px]">
-                  <span class="text-gray-500">Dirección</span>
-                  <span class="font-bold text-gray-700 text-right max-w-[160px]">
-                    {{ despachoModal.order.address }}
-                  </span>
-                </div>
-                <div v-if="despachoModal.order?.entrega_programada && despachoModal.order?.fecha_entrega"
-                  class="flex justify-between text-[13px]">
-                  <span class="text-gray-500">Entrega</span>
-                  <span class="font-bold text-pink-700 inline-flex items-center gap-1">
-                    <Calendar :size="12" /> {{ formatDate(despachoModal.order.fecha_entrega) }}
-                  </span>
-                </div>
-                <div v-if="despachoModal.order?.metodo_pago" class="flex justify-between text-[13px]">
-                  <span class="text-gray-500">Pago</span>
-                  <span :class="metodoPagoCls(despachoModal.order.metodo_pago)"
-                    class="font-bold px-2 py-0.5 rounded-full text-[11px] border">
-                    {{ metodoPagoLabel(despachoModal.order.metodo_pago) }}
-                  </span>
-                </div>
-                <div class="flex justify-between text-[13px] pt-2 border-t border-gray-200">
-                  <span class="text-gray-500 font-semibold">Total</span>
-                  <span class="font-black text-brand-red">
-                    S/ {{ parseFloat(despachoModal.order?.total ?? 0).toFixed(2) }}
-                  </span>
-                </div>
-              </div>
-              <div class="flex gap-3">
-                <button @click="despachoModal.show = false"
-                  class="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600
-                         font-semibold text-[13.5px] cursor-pointer bg-white hover:border-gray-300 transition-all duration-150">
-                  Cancelar
-                </button>
-                <button @click="confirmarDespacho" :disabled="despachoModal.loading" class="flex-1 py-3 rounded-2xl text-white font-bold text-[13.5px] cursor-pointer border-none
-                         bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-all duration-150
-                         flex items-center justify-center gap-2">
-                  <span v-if="despachoModal.loading"
-                    class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  {{ despachoModal.loading ? 'Solicitando...' : 'Solicitar' }}
-                </button>
-              </div>
-            </div>
-          </Transition>
-        </div>
-      </Transition>
-    </Teleport>
+    <SolicitarDespachoModal
+      :show="despachoModal.show"
+      :order="despachoModal.order"
+      :loading="despachoModal.loading"
+      @close="despachoModal.show = false"
+      @confirm="confirmarDespacho"
+    />
 
     <!-- ══ MODAL "YA TENGO REPARTIDOR" ══ -->
-    <Teleport to="body">
-      <Transition enter-active-class="transition-opacity duration-200"
-        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
-        <div v-if="yaTengoModal.show" class="fixed inset-0 z-[400] bg-black/50 backdrop-blur-sm
-             flex items-center justify-center p-4" @click.self="yaTengoModal.show = false">
-          <Transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 scale-95"
-            leave-to-class="opacity-0 scale-95">
-            <div v-if="yaTengoModal.show" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-7 text-center">
-              <div class="w-14 h-14 rounded-2xl bg-green-50 mx-auto mb-5 flex items-center justify-center">
-                <CheckCircleIcon class="w-7 h-7 text-green-500" />
-              </div>
-              <h3 class="font-black text-[19px] text-gray-900 m-0 mb-2"
-                style="font-family:'Plus Jakarta Sans',sans-serif;">
-                ¿Confirmar con tu propio repartidor?
-              </h3>
-              <p class="text-[13.5px] text-gray-400 m-0 mb-6 leading-relaxed">
-                El pedido <strong class="text-gray-700">#{{ yaTengoModal.order?.codigo }}</strong>
-                de <strong class="text-gray-700">{{ yaTengoModal.order?.client_name }}</strong>
-                pasará directamente a <strong class="text-gray-700">En camino</strong>.
-              </p>
-              <div class="flex gap-3">
-                <button @click="yaTengoModal.show = false"
-                  class="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600
-                         font-semibold text-[13.5px] cursor-pointer bg-white hover:border-gray-300 transition-all duration-150">
-                  Cancelar
-                </button>
-                <button @click="confirmarYaTengo" :disabled="yaTengoModal.loading" class="flex-1 py-3 rounded-2xl text-white font-bold text-[13.5px] cursor-pointer border-none
-                         bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all duration-150
-                         flex items-center justify-center gap-2">
-                  <span v-if="yaTengoModal.loading"
-                    class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  {{ yaTengoModal.loading ? 'Confirmando...' : 'Sí, confirmar' }}
-                </button>
-              </div>
-            </div>
-          </Transition>
-        </div>
-      </Transition>
-    </Teleport>
+    <YaTengoRepartidorModal
+      :show="yaTengoModal.show"
+      :order="yaTengoModal.order"
+      :loading="yaTengoModal.loading"
+      @close="yaTengoModal.show = false"
+      @confirm="confirmarYaTengo"
+    />
 
     <!-- ══ MODAL COBRAR (solo Local) ══ -->
-    <Teleport to="body">
-      <Transition enter-active-class="transition-opacity duration-200"
-        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
-        <div v-if="cobroModal.show" class="fixed inset-0 z-[400] bg-black/50 backdrop-blur-sm
-             flex items-center justify-center p-4" @click.self="cobroModal.show = false">
-          <Transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 scale-95"
-            leave-to-class="opacity-0 scale-95">
-            <div v-if="cobroModal.show" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-7 text-center">
-              <div class="w-14 h-14 rounded-2xl bg-green-50 mx-auto mb-5 flex items-center justify-center text-green-500">
-                <Banknote :size="26" />
-              </div>
-              <h3 class="font-black text-[19px] text-gray-900 m-0 mb-2"
-                style="font-family:'Plus Jakarta Sans',sans-serif;">
-                Cobrar pedido #{{ cobroModal.order?.codigo }}
-              </h3>
-              <p class="text-[13.5px] text-gray-400 m-0 mb-5 leading-relaxed">
-                Selecciona el método de pago para completar el pedido de
-                <strong class="text-gray-700">{{ cobroModal.order?.client_name }}</strong>.
-              </p>
-
-              <div class="grid grid-cols-3 gap-2 mb-6">
-                <button v-for="mp in METODOS_PAGO_LOCAL" :key="mp.id" @click="cobroModal.metodoPago = mp.id" class="flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2
-                         text-[12px] font-bold cursor-pointer transition-all duration-150" :class="cobroModal.metodoPago === mp.id
-                          ? 'border-brand-red bg-red-50 text-brand-red shadow-sm'
-                          : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-red-200'">
-                  <AppIcon :name="mp.icon" :size="20" />
-                  {{ mp.label }}
-                </button>
-              </div>
-
-              <div class="flex justify-between items-center px-1 mb-6">
-                <span class="text-[13px] text-gray-500 font-medium">Total a cobrar</span>
-                <span class="font-black text-[20px] text-brand-red leading-none"
-                  style="font-family:'Plus Jakarta Sans',sans-serif;">
-                  S/ {{ parseFloat(cobroModal.order?.total ?? 0).toFixed(2) }}
-                </span>
-              </div>
-
-              <Transition enter-active-class="transition-all duration-150"
-                enter-from-class="opacity-0 -translate-y-1" leave-to-class="opacity-0">
-                <div v-if="cobroModal.error" class="px-3.5 py-3 rounded-2xl bg-red-50 border border-red-200
-                         text-[12px] text-red-600 mb-4 text-left">
-                  {{ cobroModal.error }}
-                </div>
-              </Transition>
-
-              <div class="flex gap-3">
-                <button @click="cobroModal.show = false"
-                  class="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600
-                         font-semibold text-[13.5px] cursor-pointer bg-white hover:border-gray-300 transition-all duration-150">
-                  Cancelar
-                </button>
-                <button @click="confirmarCobro" :disabled="!cobroModal.metodoPago || cobroModal.loading" class="flex-1 py-3 rounded-2xl text-white font-bold text-[13.5px] cursor-pointer border-none
-                         bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all duration-150
-                         flex items-center justify-center gap-2">
-                  <span v-if="cobroModal.loading"
-                    class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  {{ cobroModal.loading ? 'Cobrando...' : 'Confirmar cobro' }}
-                </button>
-              </div>
-            </div>
-          </Transition>
-        </div>
-      </Transition>
-    </Teleport>
+    <CobrarPedidoModal
+      :show="cobroModal.show"
+      :order="cobroModal.order"
+      :loading="cobroModal.loading"
+      :error="cobroModal.error"
+      :metodo-pago="cobroModal.metodoPago"
+      @update:metodo-pago="cobroModal.metodoPago = $event"
+      @close="cobroModal.show = false"
+      @confirm="confirmarCobro"
+    />
 
     <!-- Modal confirmar pago (paso a "Confirmado") -->
-    <Teleport to="body">
-      <Transition enter-active-class="transition-opacity duration-200"
-        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
-        <div v-if="confirmarPagoModal.show" class="fixed inset-0 z-[400] bg-black/50 backdrop-blur-sm
-             flex items-center justify-center p-4" @click.self="confirmarPagoModal.show = false">
-          <Transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 scale-95"
-            leave-to-class="opacity-0 scale-95">
-            <div v-if="confirmarPagoModal.show" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-7 text-center">
-              <div class="w-14 h-14 rounded-2xl bg-green-50 mx-auto mb-5 flex items-center justify-center text-green-500">
-                <CheckCircle :size="26" />
-              </div>
-              <h3 class="font-black text-[19px] text-gray-900 m-0 mb-2"
-                style="font-family:'Plus Jakarta Sans',sans-serif;">
-                Confirmar pedido #{{ confirmarPagoModal.order?.codigo }}
-              </h3>
-              <p class="text-[13.5px] text-gray-400 m-0 mb-6 leading-relaxed">
-                Al confirmar, se entiende que <strong class="text-gray-700">{{ confirmarPagoModal.order?.client_name }}</strong>
-                ya realizó el pago (Yape/transferencia coordinado por WhatsApp). El pedido pasará a preparación.
-              </p>
-
-              <div class="flex gap-3">
-                <button @click="confirmarPagoModal.show = false"
-                  class="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600
-                         font-semibold text-[13.5px] cursor-pointer bg-white hover:border-gray-300 transition-all duration-150">
-                  Cancelar
-                </button>
-                <button @click="confirmarPagoYAvanzar" :disabled="confirmarPagoModal.loading" class="flex-1 py-3 rounded-2xl text-white font-bold text-[13.5px] cursor-pointer border-none
-                         bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all duration-150
-                         flex items-center justify-center gap-2">
-                  <span v-if="confirmarPagoModal.loading"
-                    class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  {{ confirmarPagoModal.loading ? 'Confirmando...' : 'Ya pagó, confirmar' }}
-                </button>
-              </div>
-            </div>
-          </Transition>
-        </div>
-      </Transition>
-    </Teleport>
+    <ConfirmarPagoModal
+      :show="confirmarPagoModal.show"
+      :order="confirmarPagoModal.order"
+      :loading="confirmarPagoModal.loading"
+      @close="confirmarPagoModal.show = false"
+      @confirm="confirmarPagoYAvanzar"
+    />
 
     <!-- ══ LISTA PEDIDOS ══ -->
     <div class="flex-1 overflow-y-auto flex flex-col min-w-0">
@@ -896,6 +662,10 @@
                          bg-pink-50 text-pink-700 border border-pink-200 items-center gap-1">
                   <Calendar :size="10" class="inline -mt-0.5" /> {{ o.fecha_entrega }}
                 </span>
+                <span v-if="o.type === 'delivery' && o.delivery_fee > 0" class="hidden sm:inline text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0
+                         bg-blue-50 text-blue-700 border border-blue-200 items-center gap-1">
+                  <TruckIcon class="w-2.5 h-2.5 inline -mt-0.5" /> S/ {{ o.delivery_fee.toFixed(2) }}
+                </span>
               </div>
               <div class="flex items-center gap-2 shrink-0">
                 <span :class="statusCls(o.status)">{{ statusLabel(o.status) }}</span>
@@ -903,7 +673,7 @@
                   <span class="text-[11px] font-semibold text-gray-400">S/</span>
                   <span class="font-black text-[15px] text-brand-red leading-none"
                     style="font-family:'Plus Jakarta Sans',sans-serif;">
-                    {{ parseFloat(o.total).toFixed(2) }}
+                    {{ o.total.toFixed(2) }}
                   </span>
                 </div>
               </div>
@@ -1113,9 +883,26 @@
               <span class="text-[10px] text-gray-400 font-semibold">S/</span>
               <span class="font-black text-[14px] text-brand-red leading-none"
                 style="font-family:'Plus Jakarta Sans',sans-serif;">
-                {{ parseFloat(item.subtotal ?? 0).toFixed(2) }}
+                {{ item.subtotal.toFixed(2) }}
               </span>
             </div>
+          </div>
+        </div>
+
+        <div v-if="selected.type === 'delivery' && selected.delivery_fee > 0"
+          class="flex items-center gap-3 px-5 py-3 border-t border-blue-50 bg-blue-50/40">
+          <div class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+            <TruckIcon class="w-3.5 h-3.5 text-blue-600" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-[13px] text-blue-900 m-0">Delivery</p>
+          </div>
+          <div class="flex items-baseline gap-0.5 shrink-0">
+            <span class="text-[10px] text-blue-400 font-semibold">S/</span>
+            <span class="font-black text-[14px] text-blue-700 leading-none"
+              style="font-family:'Plus Jakarta Sans',sans-serif;">
+              {{ selected.delivery_fee.toFixed(2) }}
+            </span>
           </div>
         </div>
 
@@ -1132,7 +919,7 @@
               <span class="text-[12px] text-gray-400 font-semibold">S/</span>
               <span class="font-black text-[22px] text-brand-red leading-none"
                 style="font-family:'Plus Jakarta Sans',sans-serif;">
-                {{ parseFloat(selected.total).toFixed(2) }}
+                {{ selected.total.toFixed(2) }}
               </span>
             </div>
           </div>
@@ -1261,9 +1048,20 @@ import {
 } from '@heroicons/vue/24/outline'
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon.vue'
 import AppIcon from '@/components/AppIcon.vue'
-import { LayoutGrid, PackageSearch, Calendar, Banknote, StickyNote, Heart, CheckCircle } from 'lucide-vue-next'
+import { LayoutGrid, PackageSearch, Calendar, Banknote, StickyNote, Heart } from 'lucide-vue-next'
 import CustomizerModal from '@/components/catalog/CustomizerModal.vue'
+import OrderConfirmModal from '@/components/admin/OrderConfirmModal.vue'
+import SolicitarDespachoModal from '@/components/admin/SolicitarDespachoModal.vue'
+import YaTengoRepartidorModal from '@/components/admin/YaTengoRepartidorModal.vue'
+import CobrarPedidoModal from '@/components/admin/CobrarPedidoModal.vue'
+import ConfirmarPagoModal from '@/components/admin/ConfirmarPagoModal.vue'
+import {
+  flowFor, stepsFor, getStepIdx, nextStatusLabel,
+  formatDate, typeLabel, statusLabel, statusCls,
+  metodoPagoLabel, metodoPagoCls,
+} from '@/utils/orderFormatting'
 import { useOrdersStore } from '@/stores/orders'
+import type { AdminOrder } from '@/stores/orders'
 import { useProductsStore } from '@/stores/products'
 import { usePedidoConfigStore } from '@/stores/pedidoConfig'
 import { useCartStore } from '@/stores/cart'
@@ -1271,13 +1069,7 @@ import { useAdminStore } from '@/stores/admin'
 import { storeToRefs } from 'pinia'
 
 import api from '@/utils/api'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
-import markerIcon from 'leaflet/dist/images/marker-icon.png'
-import markerShadow from 'leaflet/dist/images/marker-shadow.png'
-delete (L.Icon.Default.prototype as any)._getIconUrl
-L.Icon.Default.mergeOptions({ iconUrl: markerIcon, iconRetinaUrl: markerIcon2x, shadowUrl: markerShadow })
+import { useDeliveryMap } from '@/composables/useDeliveryMap'
 
 // ── Stores ────────────────────────────────────────────────
 const ordersStore = useOrdersStore()
@@ -1296,7 +1088,7 @@ const search = ref('')
 const dateFrom = ref('')
 const dateTo = ref('')
 const currentPage = ref(1)
-const selected = ref<any>(null)
+const selected = ref<AdminOrder | null>(null)
 const showModal = ref(false)
 const submitting = ref(false)
 const modalError = ref('')
@@ -1315,23 +1107,23 @@ const fechaMinima = computed(() => new Date().toISOString().split('T')[0])
 
 // ── Modales ───────────────────────────────────────────────
 const confirmModal = reactive({
-  show: false, type: '' as 'cancelar' | 'eliminar' | 'forzar', order: null as any, loading: false,
+  show: false, type: '' as 'cancelar' | 'eliminar' | 'forzar', order: null as AdminOrder | null, loading: false,
 })
 
 const despachoModal = reactive({
-  show: false, order: null as any, loading: false, error: '',
+  show: false, order: null as AdminOrder | null, loading: false, error: '',
 })
 
 const yaTengoModal = reactive({
-  show: false, order: null as any, loading: false,
+  show: false, order: null as AdminOrder | null, loading: false,
 })
 
 const cobroModal = reactive({
-  show: false, order: null as any, metodoPago: '', loading: false, error: '',
+  show: false, order: null as AdminOrder | null, metodoPago: '', loading: false, error: '',
 })
 
 const confirmarPagoModal = reactive({
-  show: false, order: null as any, loading: false,
+  show: false, order: null as AdminOrder | null, loading: false,
 })
 
 // ── Form nuevo pedido ──────────────────────────────────────
@@ -1364,25 +1156,6 @@ const STATUSES = [
   { value: 'cancelado', label: 'Cancelado' },
 ]
 
-const STEPS = [
-  { value: 'nuevo', label: 'Nuevo' },
-  { value: 'confirmado', label: 'Confirm.' },
-  { value: 'preparando', label: 'Preparan.' },
-  { value: 'listo', label: 'Listo' },
-  { value: 'en_camino', label: 'Camino' },
-  { value: 'entregado', label: 'Entregado' },
-]
-
-const FLOW = ['nuevo', 'confirmado', 'preparando', 'listo', 'en_camino', 'entregado']
-
-function flowFor(type: string): string[] {
-  return type === 'delivery' ? FLOW : FLOW.filter(s => s !== 'en_camino')
-}
-
-function stepsFor(type: string) {
-  return type === 'delivery' ? STEPS : STEPS.filter(s => s.value !== 'en_camino')
-}
-
 const ORDER_TYPES = [
   { id: 'local', icon: BuildingStorefrontIcon, label: 'Local' },
   { id: 'recoger', icon: ShoppingBagIcon, label: 'Recoger' },
@@ -1390,30 +1163,20 @@ const ORDER_TYPES = [
 ]
 
 // ── Mapa / GPS / zona de delivery ──────────────────────────
-interface DeliveryZone { id: number; nombre: string; precio: number }
-const CHICLAYO_LAT = -6.7741
-const CHICLAYO_LNG = -79.8409
+// El mapa vive dentro del modal "Nuevo Pedido", que se muestra/oculta
+// (display toggled) en vez de montarse/desmontarse — por eso necesita
+// invalidateSizeDelayMs (Leaflet recalcula el tamaño del contenedor
+// recién cuando ya tiene dimensiones reales).
+const {
+  zones, loadingZones, detectedZone, detectingZone, zoneNotFound,
+  loadingGPS, gpsError, mapSearch, mapResults, mapSearching,
+  selectedZone,
+  onManualZoneChange, detectarZona, usarGPS,
+  initMap: initAdminMap, destroyMap: destroyAdminMap,
+  selectMapResult, debouncedMapSearch,
+  resetZoneAndGps, resetMapSearch,
+} = useDeliveryMap(form, { mapElementId: 'admin-delivery-map', invalidateSizeDelayMs: 150 })
 
-let adminMap: L.Map | null = null
-let adminMarker: L.Marker | null = null
-const mapSearch = ref('')
-const mapResults = ref<any[]>([])
-const mapSearching = ref(false)
-let mapSearchTimer: ReturnType<typeof setTimeout> | null = null
-
-const loadingGPS = ref(false)
-const gpsError = ref('')
-
-const zones = ref<DeliveryZone[]>([])
-const loadingZones = ref(false)
-const detectedZone = ref<DeliveryZone | null>(null)
-const detectingZone = ref(false)
-const zoneNotFound = ref(false)
-
-const selectedZone = computed<DeliveryZone | null>(() => {
-  if (detectedZone.value) return detectedZone.value
-  return zones.value.find(z => z.id === form.delivery_zone_id) ?? null
-})
 const deliveryFeeAmount = computed(() => selectedZone.value?.precio ?? 0)
 const totalConDelivery = computed(() => orderTotal.value + deliveryFeeAmount.value)
 
@@ -1426,12 +1189,6 @@ const HORARIOS = [
   { value: '15:00', label: '3:00 PM - 4:00 PM' },
   { value: '16:00', label: '4:00 PM - 5:00 PM' },
   { value: '17:00', label: '5:00 PM - 6:00 PM' },
-]
-
-const METODOS_PAGO_LOCAL = [
-  { id: 'efectivo', icon: 'banknote', label: 'Efectivo' },
-  { id: 'yape', icon: 'smartphone', label: 'Yape/Plin' },
-  { id: 'tarjeta', icon: 'credit-card', label: 'Tarjeta' },
 ]
 
 // ── Computed ──────────────────────────────────────────────
@@ -1482,7 +1239,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (refreshInterval) clearInterval(refreshInterval)
-  if (adminMap) { adminMap.remove(); adminMap = null }
+  destroyAdminMap()
 })
 
 // ── Refresh silencioso ────────────────────────────────────
@@ -1588,7 +1345,7 @@ function openModal() {
 function closeModal() {
   showModal.value = false; modalError.value = ''; cartStore.clear(); resetForm()
   editingOrderId.value = null
-  if (adminMap) { adminMap.remove(); adminMap = null }
+  destroyAdminMap()
 }
 
 function resetForm() {
@@ -1597,151 +1354,8 @@ function resetForm() {
     address: '', reference: '', delivery_zone_id: 0, lat: null, lng: null, note: '',
     mensaje_tarjeta: '', fecha_entrega: '', hora_entrega: '', entrega_programada: false,
   })
-  detectedZone.value = null
-  zoneNotFound.value = false
-  gpsError.value = ''
-  mapSearch.value = ''
-  mapResults.value = []
-}
-
-// ── Zonas de delivery ───────────────────────────────────────
-async function fetchZones() {
-  loadingZones.value = true
-  try {
-    const { data } = await api.get('/delivery-zones')
-    zones.value = data.data
-  } catch { }
-  finally { loadingZones.value = false }
-}
-
-function onManualZoneChange() { }
-
-async function detectarZona(lat: number, lng: number) {
-  detectingZone.value = true
-  zoneNotFound.value = false
-  detectedZone.value = null
-  form.delivery_zone_id = 0
-
-  try {
-    const { data } = await api.get('/delivery-zones/detectar', { params: { lat, lng } })
-    detectedZone.value = data.data
-    form.delivery_zone_id = data.data.id
-  } catch {
-    zoneNotFound.value = true
-    await fetchZones()
-  } finally {
-    detectingZone.value = false
-  }
-}
-
-// ── GPS ───────────────────────────────────────────────────
-function usarGPS() {
-  gpsError.value = ''
-  if (!navigator.geolocation) {
-    gpsError.value = 'Tu navegador no soporta geolocalización'
-    return
-  }
-  loadingGPS.value = true
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const lat = position.coords.latitude
-      const lng = position.coords.longitude
-      if (adminMap && adminMarker) { adminMap.setView([lat, lng], 17); adminMarker.setLatLng([lat, lng]) }
-      form.lat = lat
-      form.lng = lng
-      await Promise.all([reverseGeocode(lat, lng), detectarZona(lat, lng)])
-      loadingGPS.value = false
-    },
-    (error) => {
-      loadingGPS.value = false
-      const messages: Record<number, string> = {
-        1: 'Permiso de ubicación denegado.',
-        2: 'No se pudo obtener tu ubicación. Márcala en el mapa.',
-        3: 'Tiempo de espera agotado. Intenta de nuevo.',
-      }
-      gpsError.value = messages[error.code] ?? 'Error al obtener ubicación.'
-    },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-  )
-}
-
-// ── Mapa Leaflet ──────────────────────────────────────────
-function initAdminMap() {
-  if (adminMap) return
-  const el = document.getElementById('admin-delivery-map')
-  if (!el) return
-
-  adminMap = L.map('admin-delivery-map', { center: [CHICLAYO_LAT, CHICLAYO_LNG], zoom: 14 })
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap', maxZoom: 19,
-  }).addTo(adminMap)
-
-  const redIcon = L.divIcon({
-    className: '',
-    html: `<div style="width:28px;height:28px;background:var(--color-brand-primary,#C41E1E);border:3px solid white;
-      border-radius:50% 50% 50% 0;transform:rotate(-45deg);
-      box-shadow:0 2px 8px rgba(var(--color-brand-primary-rgb,196,30,30),0.4);"></div>`,
-    iconSize: [28, 28], iconAnchor: [14, 28],
-  })
-
-  adminMarker = L.marker([CHICLAYO_LAT, CHICLAYO_LNG], { draggable: true, icon: redIcon }).addTo(adminMap)
-  adminMarker.on('dragend', () => {
-    const pos = adminMarker!.getLatLng()
-    form.lat = pos.lat; form.lng = pos.lng
-    reverseGeocode(pos.lat, pos.lng); detectarZona(pos.lat, pos.lng)
-  })
-  adminMap.on('click', (e: L.LeafletMouseEvent) => {
-    adminMarker!.setLatLng(e.latlng)
-    form.lat = e.latlng.lat; form.lng = e.latlng.lng
-    reverseGeocode(e.latlng.lat, e.latlng.lng); detectarZona(e.latlng.lat, e.latlng.lng)
-  })
-  form.lat = CHICLAYO_LAT; form.lng = CHICLAYO_LNG
-
-  // El modal recién se hizo visible — Leaflet necesita recalcular el
-  // tamaño del contenedor una vez que ya tiene dimensiones reales.
-  setTimeout(() => adminMap?.invalidateSize(), 150)
-}
-
-async function reverseGeocode(lat: number, lng: number) {
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-      { headers: { 'Accept-Language': 'es' } }
-    )
-    const data = await res.json()
-    if (data.display_name) {
-      form.address = data.display_name.split(',').slice(0, 3).join(',').trim()
-    }
-  } catch { }
-}
-
-function debouncedMapSearch() {
-  clearTimeout(mapSearchTimer!)
-  if (mapSearch.value.length < 3) { mapResults.value = []; return }
-  mapSearchTimer = setTimeout(searchAddress, 500)
-}
-
-async function searchAddress() {
-  mapSearching.value = true
-  try {
-    const query = encodeURIComponent(`${mapSearch.value}, Chiclayo, Peru`)
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=5`,
-      { headers: { 'Accept-Language': 'es' } }
-    )
-    mapResults.value = await res.json()
-  } catch { mapResults.value = [] }
-  finally { mapSearching.value = false }
-}
-
-function selectMapResult(result: any) {
-  const lat = parseFloat(result.lat)
-  const lng = parseFloat(result.lon)
-  if (adminMap && adminMarker) { adminMap.setView([lat, lng], 17); adminMarker.setLatLng([lat, lng]) }
-  form.lat = lat; form.lng = lng
-  form.address = result.display_name.split(',').slice(0, 3).join(',').trim()
-  mapResults.value = []; mapSearch.value = ''
-  detectarZona(lat, lng)
+  resetZoneAndGps()
+  resetMapSearch()
 }
 
 // Inicializa/destruye el mapa según el tipo de pedido elegido
@@ -1750,11 +1364,8 @@ watch(() => form.type, async (val) => {
     await nextTick()
     initAdminMap()
   } else {
-    if (adminMap) { adminMap.remove(); adminMap = null }
-    detectedZone.value = null
-    zoneNotFound.value = false
-    form.delivery_zone_id = 0
-    gpsError.value = ''
+    destroyAdminMap()
+    resetZoneAndGps()
   }
 })
 
@@ -1840,8 +1451,6 @@ async function confirmarDespacho() {
   try {
     await api.post('/admin/despachos/solicitar', { order_id: despachoModal.order.id })
     despachoModal.show = false
-    const idx = ordersStore.orders.findIndex(o => o.id === despachoModal.order.id)
-    if (idx !== -1) ordersStore.orders[idx] = { ...ordersStore.orders[idx], despacho_solicitado: true }
   } catch (e: any) {
     despachoModal.error = e.response?.data?.message ?? 'Error al solicitar repartidor'
   } finally {
@@ -1914,7 +1523,7 @@ async function advanceOrder(o: any) {
   }
 
   const updated = await ordersStore.updateStatus(o.id, siguienteEstado)
-  if (selected.value?.id === o.id && updated) {
+  if (selected.value && selected.value.id === o.id && updated) {
     selected.value = { ...selected.value, status: updated.status }
   }
 }
@@ -1998,70 +1607,6 @@ function sendWA(o: any) {
   lines.push(`Seguimiento: ${import.meta.env.VITE_APP_URL ?? ''}/seguimiento/${o.codigo}?tel=${clientPhone}`)
 
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank')
-}
-
-// ── Helpers ───────────────────────────────────────────────
-function getStepIdx(s: string, type: string = 'delivery'): number { return flowFor(type).indexOf(s) }
-
-function nextStatusLabel(s: string, type: string = 'delivery'): string {
-  const labels: Record<string, string> = {
-    nuevo: 'Confirmar', confirmado: 'Preparando',
-    preparando: 'Listo', listo: type === 'delivery' ? 'En camino' : 'Entregado',
-    en_camino: 'Entregado',
-  }
-  return labels[s] ?? 'Completado'
-}
-
-function formatDate(d: string): string {
-  if (!d) return '—'
-  return new Date(d).toLocaleString('es-PE', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })
-}
-
-function typeLabel(t: string): string {
-  return { local: 'Local', recoger: 'Recoger', delivery: 'Delivery' }[t] ?? t
-}
-
-function statusLabel(s: string): string {
-  const m: Record<string, string> = {
-    nuevo: 'Nuevo', confirmado: 'Confirmado', preparando: 'Preparando',
-    listo: 'Listo', en_camino: 'En camino', entregado: 'Entregado', cancelado: 'Cancelado',
-  }
-  return m[s] ?? s
-}
-
-function statusCls(s: string): string {
-  const m: Record<string, string> = {
-    nuevo: 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50   text-blue-700   border border-blue-200',
-    confirmado: 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50  text-amber-700  border border-amber-200',
-    preparando: 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200',
-    listo: 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-green-50  text-green-700  border border-green-200',
-    en_camino: 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-pink-50   text-pink-700   border border-pink-200',
-    entregado: 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-green-100 text-green-800  border border-green-300',
-    cancelado: 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-gray-100  text-gray-500   border border-gray-200',
-  }
-  return m[s] ?? m.cancelado
-}
-
-function metodoPagoLabel(m: string): string {
-  return {
-    anticipado: 'Pagado',
-    contraentrega_efectivo: 'Efectivo',
-    contraentrega_yape: 'Yape/Plin',
-    efectivo: 'Efectivo',
-    yape: 'Yape/Plin',
-    tarjeta: 'Tarjeta',
-  }[m] ?? m
-}
-
-function metodoPagoCls(m: string): string {
-  return {
-    anticipado: 'bg-green-50  text-green-700  border-green-200',
-    contraentrega_efectivo: 'bg-amber-50  text-amber-700  border-amber-200',
-    contraentrega_yape: 'bg-purple-50 text-purple-700 border-purple-200',
-    efectivo: 'bg-amber-50  text-amber-700  border-amber-200',
-    yape: 'bg-purple-50 text-purple-700 border-purple-200',
-    tarjeta: 'bg-blue-50   text-blue-700   border-blue-200',
-  }[m] ?? 'bg-gray-50 text-gray-600 border-gray-200'
 }
 </script>
 

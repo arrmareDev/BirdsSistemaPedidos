@@ -135,8 +135,20 @@ class OrderController extends Controller
             'items.*.product_id'     => 'required|exists:products,id',
             'items.*.qty'            => 'required|integer|min:1',
             'items.*.unit_price'     => 'required|numeric|min:0',
-            'items.*.customization'  => 'nullable|array',
-            'items.*.extras'         => 'nullable|array',
+
+            'items.*.customization'                          => 'nullable|array',
+            'items.*.customization.*.section_id'              => 'required_with:items.*.customization|integer',
+            'items.*.customization.*.selections'              => 'nullable|array',
+            'items.*.customization.*.selections.*.option_id'  => 'required|integer',
+
+            'items.*.extras'             => 'nullable|array',
+            'items.*.extras.*.extra_id'  => 'required|integer',
+            // nullable: pedidos creados antes de este cambio no tienen
+            // 'type' guardado en su extras[]; calcularPrecioItem() lo
+            // asume 'own' cuando falta.
+            'items.*.extras.*.type'      => 'nullable|in:own,shared',
+            'items.*.extras.*.qty'       => 'nullable|integer|min:1',
+
             'items.*.custom_summary' => 'nullable|string|max:500',
         ]);
 
@@ -190,8 +202,20 @@ class OrderController extends Controller
             'items.*.product_id'     => 'required|exists:products,id',
             'items.*.qty'            => 'required|integer|min:1',
             'items.*.unit_price'     => 'required|numeric|min:0',
-            'items.*.customization'  => 'nullable|array',
-            'items.*.extras'         => 'nullable|array',
+
+            'items.*.customization'                          => 'nullable|array',
+            'items.*.customization.*.section_id'              => 'required_with:items.*.customization|integer',
+            'items.*.customization.*.selections'              => 'nullable|array',
+            'items.*.customization.*.selections.*.option_id'  => 'required|integer',
+
+            'items.*.extras'             => 'nullable|array',
+            'items.*.extras.*.extra_id'  => 'required|integer',
+            // nullable: pedidos creados antes de este cambio no tienen
+            // 'type' guardado en su extras[]; calcularPrecioItem() lo
+            // asume 'own' cuando falta.
+            'items.*.extras.*.type'      => 'nullable|in:own,shared',
+            'items.*.extras.*.qty'       => 'nullable|integer|min:1',
+
             'items.*.custom_summary' => 'nullable|string|max:500',
         ]);
 
@@ -264,8 +288,8 @@ class OrderController extends Controller
         $order = Order::where('codigo', $id)->first();
         if (!$order) return $this->notFound('Pedido no encontrado');
 
-        $phoneInput = ltrim(preg_replace('/\D/', '', $request->phone), '51');
-        $phoneOrder = ltrim(preg_replace('/\D/', '', $order->client_phone), '51');
+        $phoneInput = $this->normalizarTelefono($request->phone);
+        $phoneOrder = $this->normalizarTelefono($order->client_phone);
 
         if ($phoneInput !== $phoneOrder) {
             return $this->error('Datos incorrectos', 403);
@@ -321,9 +345,9 @@ class OrderController extends Controller
 
         $order = Order::where('codigo', $request->order_id)->first();
 
-        $phoneInput = ltrim(preg_replace('/\D/', '', $request->phone ?? ''), '51');
+        $phoneInput = $this->normalizarTelefono($request->phone ?? '');
         $phoneOrder = $order
-            ? ltrim(preg_replace('/\D/', '', $order->client_phone), '51')
+            ? $this->normalizarTelefono($order->client_phone)
             : '';
 
         if (!$order || $phoneInput !== $phoneOrder) {
@@ -375,5 +399,18 @@ class OrderController extends Controller
             $statuses,
             array_keys($statuses)
         );
+    }
+
+    // Deja solo dígitos y quita el prefijo de país "51" SI está al
+    // inicio — antes se usaba ltrim($str, '51'), que en PHP no quita un
+    // prefijo: quita cualquier '5' o '1' suelto que encuentre al
+    // comienzo, uno por uno, mientras existan. Con un celular peruano
+    // normal (empieza en 9) casi nunca se nota, pero es el mecanismo que
+    // "autentica" el acceso al pedido de un cliente — no puede depender
+    // de una coincidencia.
+    private function normalizarTelefono(string $phone): string
+    {
+        $digits = preg_replace('/\D/', '', $phone);
+        return preg_replace('/^51/', '', $digits);
     }
 }

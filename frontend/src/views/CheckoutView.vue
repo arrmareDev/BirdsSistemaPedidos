@@ -435,27 +435,13 @@ import AppIcon from '@/components/AppIcon.vue'
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon.vue'
 import { Armchair, MapPin, TriangleAlert, Truck, Store, Calendar, X } from 'lucide-vue-next'
 import api from '@/utils/api'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
-
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
-import markerIcon from 'leaflet/dist/images/marker-icon.png'
-import markerShadow from 'leaflet/dist/images/marker-shadow.png'
-delete (L.Icon.Default.prototype as any)._getIconUrl
-L.Icon.Default.mergeOptions({ iconUrl: markerIcon, iconRetinaUrl: markerIcon2x, shadowUrl: markerShadow })
+import { useDeliveryMap } from '@/composables/useDeliveryMap'
 
 // ── Stores y router ───────────────────────────────────────
 const cartStore = useCartStore()
 const orderStore = useOrderStore()
 const pedidoConfigStore = usePedidoConfigStore()
 const router = useRouter()
-
-// ── Tipos ─────────────────────────────────────────────────
-interface DeliveryZone { id: number; nombre: string; precio: number }
-
-// ── Constantes ────────────────────────────────────────────
-const CHICLAYO_LAT = -6.7741
-const CHICLAYO_LNG = -79.8409
 
 // Orden: local, recoger, delivery — coincide con App\Enums\SaleChannel
 const ORDER_TYPES = [
@@ -499,34 +485,22 @@ const form = reactive({
 const errorMsg = ref('')
 const showHelpTooltip = ref(true) // visible por defecto, se puede cerrar con el botón X
 
-// ── Zonas ────────────────────────────────────────────────
-const zones = ref<DeliveryZone[]>([])
-const loadingZones = ref(false)
-const detectedZone = ref<DeliveryZone | null>(null)
-const detectingZone = ref(false)
-const zoneNotFound = ref(false)
-
-// ── GPS ───────────────────────────────────────────────────
-const loadingGPS = ref(false)
-const gpsError = ref('')
-
-// ── Mapa ─────────────────────────────────────────────────
-let map: L.Map | null = null
-let marker: L.Marker | null = null
-const mapSearch = ref('')
-const mapResults = ref<any[]>([])
-const mapSearching = ref(false)
-let searchTimer: ReturnType<typeof setTimeout> | null = null
+// ── Mapa / GPS / zona de delivery ──────────────────────────
+// Este checkout no vive dentro de un modal (es una página normal), así
+// que a diferencia del admin no necesita invalidateSizeDelayMs.
+const {
+  zones, loadingZones, detectedZone, detectingZone, zoneNotFound,
+  loadingGPS, gpsError, mapSearch, mapResults, mapSearching,
+  selectedZone,
+  onManualZoneChange, detectarZona, usarGPS,
+  initMap, destroyMap, selectMapResult, debouncedMapSearch,
+  resetZoneAndGps,
+} = useDeliveryMap(form, { mapElementId: 'delivery-map', iconSize: 32 })
 
 // ── Fecha mínima (hoy) ───────────────────────────────────
 const fechaMinima = computed(() => new Date().toISOString().split('T')[0])
 
 // ── Computados ────────────────────────────────────────────
-const selectedZone = computed<DeliveryZone | null>(() => {
-  if (detectedZone.value) return detectedZone.value
-  return zones.value.find(z => z.id === form.delivery_zone_id) ?? null
-})
-
 const totalConDelivery = computed(() => {
   const delivery = form.type === 'delivery' && selectedZone.value
     ? selectedZone.value.precio
@@ -553,18 +527,15 @@ const canSubmit = computed(() => {
 })
 
 // ── Lifecycle ─────────────────────────────────────────────
-onUnmounted(() => { if (map) { map.remove(); map = null } })
+onUnmounted(() => destroyMap())
 
 watch(() => form.type, async (val) => {
   if (val === 'delivery') {
     await nextTick()
     initMap()
   } else {
-    if (map) { map.remove(); map = null }
-    detectedZone.value = null
-    zoneNotFound.value = false
-    form.delivery_zone_id = 0
-    gpsError.value = ''
+    destroyMap()
+    resetZoneAndGps()
   }
 
   if (val !== 'local') {
@@ -578,139 +549,6 @@ watch(() => form.entrega_programada, (val) => {
     form.hora_entrega = ''
   }
 })
-
-// ── Zonas ────────────────────────────────────────────────
-async function fetchZones() {
-  loadingZones.value = true
-  try {
-    const { data } = await api.get('/delivery-zones')
-    zones.value = data.data
-  } catch { }
-  finally { loadingZones.value = false }
-}
-
-function onManualZoneChange() { }
-
-async function detectarZona(lat: number, lng: number) {
-  detectingZone.value = true
-  zoneNotFound.value = false
-  detectedZone.value = null
-  form.delivery_zone_id = 0
-
-  try {
-    const { data } = await api.get('/delivery-zones/detectar', { params: { lat, lng } })
-    detectedZone.value = data.data
-    form.delivery_zone_id = data.data.id
-  } catch {
-    zoneNotFound.value = true
-    await fetchZones()
-  } finally {
-    detectingZone.value = false
-  }
-}
-
-// ── GPS ───────────────────────────────────────────────────
-function usarGPS() {
-  gpsError.value = ''
-  if (!navigator.geolocation) {
-    gpsError.value = 'Tu navegador no soporta geolocalización'
-    return
-  }
-  loadingGPS.value = true
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const lat = position.coords.latitude
-      const lng = position.coords.longitude
-      if (map && marker) { map.setView([lat, lng], 17); marker.setLatLng([lat, lng]) }
-      form.lat = lat
-      form.lng = lng
-      await Promise.all([reverseGeocode(lat, lng), detectarZona(lat, lng)])
-      loadingGPS.value = false
-    },
-    (error) => {
-      loadingGPS.value = false
-      const messages: Record<number, string> = {
-        1: 'Permiso de ubicación denegado. Actívalo en la configuración de tu navegador.',
-        2: 'No se pudo obtener tu ubicación. Intenta marcarla manualmente en el mapa.',
-        3: 'Tiempo de espera agotado. Intenta de nuevo.',
-      }
-      gpsError.value = messages[error.code] ?? 'Error al obtener ubicación.'
-    },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-  )
-}
-
-// ── Mapa Leaflet ──────────────────────────────────────────
-function initMap() {
-  if (map) return
-  map = L.map('delivery-map', { center: [CHICLAYO_LAT, CHICLAYO_LNG], zoom: 14 })
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap', maxZoom: 19,
-  }).addTo(map)
-
-  const redIcon = L.divIcon({
-    className: '',
-    html: `<div style="width:32px;height:32px;background:var(--color-brand-primary,#C41E1E);border:3px solid white;
-      border-radius:50% 50% 50% 0;transform:rotate(-45deg);
-      box-shadow:0 2px 8px rgba(var(--color-brand-primary-rgb,196,30,30),0.4);"></div>`,
-    iconSize: [32, 32], iconAnchor: [16, 32],
-  })
-
-  marker = L.marker([CHICLAYO_LAT, CHICLAYO_LNG], { draggable: true, icon: redIcon }).addTo(map)
-  marker.on('dragend', () => {
-    const pos = marker!.getLatLng()
-    form.lat = pos.lat; form.lng = pos.lng
-    reverseGeocode(pos.lat, pos.lng); detectarZona(pos.lat, pos.lng)
-  })
-  map.on('click', (e: L.LeafletMouseEvent) => {
-    marker!.setLatLng(e.latlng)
-    form.lat = e.latlng.lat; form.lng = e.latlng.lng
-    reverseGeocode(e.latlng.lat, e.latlng.lng); detectarZona(e.latlng.lat, e.latlng.lng)
-  })
-  form.lat = CHICLAYO_LAT; form.lng = CHICLAYO_LNG
-}
-
-async function reverseGeocode(lat: number, lng: number) {
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-      { headers: { 'Accept-Language': 'es' } }
-    )
-    const data = await res.json()
-    if (data.display_name) {
-      form.address = data.display_name.split(',').slice(0, 3).join(',').trim()
-    }
-  } catch { }
-}
-
-function debouncedMapSearch() {
-  clearTimeout(searchTimer!)
-  if (mapSearch.value.length < 3) { mapResults.value = []; return }
-  searchTimer = setTimeout(searchAddress, 500)
-}
-
-async function searchAddress() {
-  mapSearching.value = true
-  try {
-    const query = encodeURIComponent(`${mapSearch.value}, Chiclayo, Peru`)
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=5`,
-      { headers: { 'Accept-Language': 'es' } }
-    )
-    mapResults.value = await res.json()
-  } catch { mapResults.value = [] }
-  finally { mapSearching.value = false }
-}
-
-function selectMapResult(result: any) {
-  const lat = parseFloat(result.lat)
-  const lng = parseFloat(result.lon)
-  if (map && marker) { map.setView([lat, lng], 17); marker.setLatLng([lat, lng]) }
-  form.lat = lat; form.lng = lng
-  form.address = result.display_name.split(',').slice(0, 3).join(',').trim()
-  mapResults.value = []; mapSearch.value = ''
-  detectarZona(lat, lng)
-}
 
 // ── Ayuda con el pedido ────────────────────────────────────
 function contactSoporte() {

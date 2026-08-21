@@ -112,7 +112,22 @@ class Product extends Model
         ?int $orderId = null,
         ?string $motivo = null,
     ): void {
-        if (!$this->controla_stock || $this->stock < $cantidad) return;
+        if (!$this->controla_stock) return;
+
+        // Antes esto hacía "return" en silencio si el stock ya no
+        // alcanzaba — eso dejaba el OrderItem creado (la venta ya
+        // registrada) sin el descuento de stock correspondiente, dos
+        // cosas que deben ir siempre juntas. Ahora, si esto se llama
+        // después de validar con tieneStock() dentro de la misma
+        // transacción con lockForUpdate(), nunca debería llegar acá con
+        // stock insuficiente — si pasa, es una inconsistencia real y
+        // tiene que abortar la transacción, no quedar a medias.
+        if ($this->stock < $cantidad) {
+            throw new \Exception(
+                "Stock insuficiente para: {$this->name}. " .
+                    "Disponible: {$this->stock}, solicitado: {$cantidad}"
+            );
+        }
 
         $this->decrement('stock', $cantidad);
         $this->registrarMovimientoStock(-$cantidad, $tipo, $orderId, $motivo);

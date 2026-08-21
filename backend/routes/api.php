@@ -32,13 +32,24 @@ Route::prefix('v1')->group(function () {
     Route::get('products',      [ProductController::class, 'index']);
     Route::get('products/{slug}', [ProductController::class, 'show']);
 
-    Route::post('orders',        [OrderController::class, 'store']);
-    Route::post('orders/search', [OrderController::class, 'search']);
+    // Sin límite, un pedido normal puede generar varios POST seguidos
+    // (reintento de red, doble-click, etc.) — 20/min por IP es margen de
+    // sobra para uso legítimo y sigue frenando un abuso automatizado.
+    Route::post('orders', [OrderController::class, 'store'])
+        ->middleware('throttle:20,1');
+
+    // search()/track() usan el teléfono como pseudo-autenticación para ver
+    // los datos de un pedido ajeno — sin límite, son adivinables por fuerza
+    // bruta. 10/min por IP alcanza para que un cliente real revise su
+    // pedido varias veces sin problema.
+    Route::post('orders/search', [OrderController::class, 'search'])
+        ->middleware('throttle:10,1');
 
     Route::get('orders/{id}/status', [OrderController::class, 'status'])
         ->where('id', '[0-9]+');
     Route::get('orders/{id}/track',  [OrderController::class, 'track'])
-        ->where('id', '[0-9]+');
+        ->where('id', '[0-9]+')
+        ->middleware('throttle:10,1');
 
     Route::get('delivery-zones/detectar', [DeliveryZoneController::class, 'detectar']);
     Route::get('delivery-zones', [DeliveryZoneController::class, 'index']);
@@ -171,6 +182,7 @@ Route::prefix('v1/admin')
 
         Route::middleware(['role:admin,sistema,contador', 'permission:caja'])->group(function () {
             Route::get('caja/hoy', [CajaController::class, 'hoy']);
+            Route::get('caja/delivery-total', [CajaController::class, 'deliveryTotal']);
             Route::get('caja/historial', [CajaController::class, 'historial']);
             Route::get('caja/{id}/movimientos', [CajaController::class, 'movimientos'])
                 ->where('id', '[0-9]+');
