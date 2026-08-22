@@ -22,6 +22,15 @@
                             {{ message }}
                         </p>
 
+                        <Transition enter-active-class="transition-all duration-150"
+                            enter-from-class="opacity-0 -translate-y-1" leave-to-class="opacity-0">
+                            <div v-if="error" class="flex items-center gap-2 px-3.5 py-3 rounded-2xl bg-red-50
+                                     border border-red-200 text-[12.5px] text-red-600 mb-4 text-left">
+                                <AppIcon name="circle-alert" :size="16" class="shrink-0" />
+                                {{ error }}
+                            </div>
+                        </Transition>
+
                         <div class="flex gap-3">
                             <button @click="$emit('update:modelValue', false)" :disabled="loading" class="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600
                                        font-semibold text-[13.5px] cursor-pointer bg-white
@@ -58,6 +67,7 @@ const props = defineProps<{
     cancelLabel?: string
     loadingLabel?: string
     loading?: boolean
+    error?: string
 }>()
 
 defineEmits<{

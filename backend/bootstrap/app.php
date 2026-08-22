@@ -36,5 +36,19 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // El mensaje default de Laravel para 429 ("Too Many Attempts.")
+        // sale en inglés — el resto de la API responde en español con
+        // el formato {success, message}, así que este debía coincidir.
+        $exceptions->render(function (\Illuminate\Http\Exceptions\ThrottleRequestsException $e, \Illuminate\Http\Request $request) {
+            if ($request->expectsJson()) {
+                $retryAfter = $e->getHeaders()['Retry-After'] ?? null;
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $retryAfter
+                        ? "Demasiados intentos — espera {$retryAfter} segundos antes de volver a intentar."
+                        : 'Demasiados intentos — espera un momento antes de volver a intentar.',
+                ], 429, $e->getHeaders());
+            }
+        });
     })->create();

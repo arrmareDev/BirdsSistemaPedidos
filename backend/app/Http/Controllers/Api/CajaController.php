@@ -4,13 +4,20 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Caja;
 use App\Models\CajaMovimiento;
+use App\Models\Comision;
 use App\Models\Order;
 use App\Enums\SaleChannel;
+use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CajaController extends Controller
 {
+    public function __construct(
+        private OrderService $orderService,
+    ) {}
+
     public function hoy(): JsonResponse
     {
         // Si hay una caja abierta de un día anterior, esa es la que hay
@@ -187,13 +194,23 @@ class CajaController extends Controller
     // POST /admin/caja/movimiento/{id}/anular — nunca se borra ni se
     // edita un movimiento, solo se anula con motivo (queda visible,
     // tachado, y deja de contar para los totales).
+    //
+    // Anular una VENTA con pedido asociado no es solo un ajuste de caja:
+    // el pedido en sí debe reflejar que la venta se deshizo. Por eso
+    // esto también cancela el pedido (lo cual, dentro de
+    // OrderService::updateStatus(), ya se encarga de reponer el stock
+    // solo — es la misma ruta que usa cancelar un pedido a mano, no una
+    // reimplementación aparte) y elimina la comisión si todavía no se
+    // había cobrado. Dashboard y reportes no necesitan ningún paso
+    // extra — leen el estado del pedido en vivo, así que apenas cambia
+    // a "cancelado" dejan de contarlo solos.
     public function anular(Request $request, int $id): JsonResponse
     {
         $data = $request->validate([
             'motivo' => 'required|string|max:255',
         ]);
 
-        $movimiento = CajaMovimiento::with('caja')->find($id);
+        $movimiento = CajaMovimiento::with(['caja', 'order'])->find($id);
         if (!$movimiento) return $this->notFound('Movimiento no encontrado');
 
         if ($movimiento->caja->estado !== 'abierta') {
@@ -204,15 +221,32 @@ class CajaController extends Controller
             return $this->error('Este movimiento ya estaba anulado', 422);
         }
 
-        $movimiento->update([
-            'anulado'          => true,
-            'motivo_anulacion' => $data['motivo'],
-            'anulado_at'       => now(),
-            'anulado_por'      => auth()->id(),
-        ]);
+        DB::transaction(function () use ($movimiento, $data) {
+            $movimiento->update([
+                'anulado'          => true,
+                'motivo_anulacion' => $data['motivo'],
+                'anulado_at'       => now(),
+                'anulado_por'      => auth()->id(),
+            ]);
+
+            if ($movimiento->type === 'venta' && $movimiento->order_id) {
+                $order = $movimiento->order ?? Order::find($movimiento->order_id);
+
+                if ($order && $order->status !== 'cancelado') {
+                    $this->orderService->updateStatus($order, 'cancelado');
+
+                    // Si la comisión ya se había cobrado, se deja tal
+                    // cual — eso ya pasó y revertirlo en silencio sería
+                    // una decisión de negocio, no algo automático.
+                    Comision::where('order_id', $order->id)
+                        ->where('cobrado', false)
+                        ->delete();
+                }
+            }
+        });
 
         return $this->success([
-            ...$this->formatMovimiento($movimiento),
+            ...$this->formatMovimiento($movimiento->fresh()),
             'saldo' => (float) $movimiento->caja->fresh()->saldo,
         ], 'Movimiento anulado');
     }
@@ -262,10 +296,6 @@ class CajaController extends Controller
     }
 
     // ── Importar pedidos entregados hoy ───────────────────
-    // Solo los pagados en EFECTIVO — un pedido pagado por Yape,
-    // tarjeta o anticipado nunca tocó el cajón físico, meterlo aquí
-    // rompería el cuadre de raíz (se estaría comparando efectivo real
-    // contra un total que incluye dinero que nunca estuvo en la caja).
     private function importarPedidosPendientes(Caja $caja): void
     {
         // Ya no se filtra por efectivo — TODAS las ventas se ven en
@@ -298,10 +328,6 @@ class CajaController extends Controller
 
     // GET /admin/caja/delivery-total?desde=Y-m-d&hasta=Y-m-d (desde/hasta
     // opcionales — sin ellos solo trae hoy/semana/mes/total).
-    //
-    // Cuenta solo pedidos type=delivery con status=entregado, fechados por
-    // updated_at — el mismo criterio que usa importarPedidosPendientes()
-    // para decidir qué pedidos son "de hoy" en Caja.
     public function deliveryTotal(Request $request): JsonResponse
     {
         $base = fn() => Order::where('type', 'delivery')->where('status', 'entregado');
@@ -366,12 +392,6 @@ class CajaController extends Controller
             'description'       => $m->description,
             'order_id'          => $m->order_id,
             'order_type'        => $m->order?->type?->value,
-            // Solo tiene sentido mostrarlo para pedidos de tipo delivery —
-            // en los demás (local/recoger) delivery_fee siempre es 0.
-            // OJO: Order::type está casteado al enum SaleChannel, no a un
-            // string plano — comparar con === 'delivery' nunca es cierto
-            // (compara un objeto enum contra un string), así que esto
-            // devolvía null siempre, para cualquier pedido.
             'delivery_fee'      => $m->order && $m->order->type === SaleChannel::Delivery
                 ? (float) $m->order->delivery_fee
                 : null,

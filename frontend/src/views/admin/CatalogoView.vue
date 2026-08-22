@@ -2,152 +2,30 @@
   <div class="flex flex-col gap-5">
 
     <!-- ══ MODAL CATEGORÍA ══ -->
-    <Teleport to="body">
-      <Transition enter-active-class="transition-opacity duration-200"
-        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
-        <div v-if="showCatModal" class="fixed inset-0 z-[500] bg-black/50 backdrop-blur-sm
-                 flex items-center justify-center p-4" @click.self="closeCatModal">
-          <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6">
-            <div class="flex items-center justify-between mb-5">
-              <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-red-50 border border-red-100
-                            flex items-center justify-center">
-                  <FolderIcon class="w-5 h-5 text-brand-red" />
-                </div>
-                <h3 class="font-black text-[17px] text-gray-900 m-0"
-                  style="font-family:'Plus Jakarta Sans',sans-serif;">
-                  {{ editingCat ? 'Editar categoría' : 'Nueva categoría' }}
-                </h3>
-              </div>
-              <button @click="closeCatModal" class="w-8 h-8 rounded-full bg-gray-100 flex items-center
-                       justify-center cursor-pointer border-none hover:bg-gray-200 transition-colors">
-                <XMarkIcon class="w-4 h-4 text-gray-500" />
-              </button>
-            </div>
-
-            <div class="flex flex-col gap-4">
-              <div class="grid grid-cols-[1fr_auto] gap-3">
-                <div class="flex flex-col gap-1.5">
-                  <label class="field-label">Nombre *</label>
-                  <input v-model="catForm.name" placeholder="Ej: Ramos" class="modal-input w-full" />
-                </div>
-                <div class="flex flex-col gap-1.5">
-                  <label class="field-label">Ícono</label>
-                  <div class="flex items-center gap-2">
-                    <div
-                      class="w-11 h-11 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 text-gray-500">
-                      <AppIcon :name="catForm.icon" :size="20" />
-                    </div>
-                    <input v-model="catForm.icon" placeholder="flower-2"
-                      class="modal-input w-24 text-center text-[12px]" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="flex flex-col gap-1.5">
-                <label class="field-label">Categoría padre</label>
-                <select v-model="catForm.parent_id" class="modal-input w-full cursor-pointer">
-                  <option :value="null">Ninguna — es una categoría principal</option>
-                  <option v-for="root in rootCategories" :key="root.id" :value="root.id"
-                    :disabled="editingCat?.id === root.id">
-                    {{ root.name }}
-                  </option>
-                </select>
-              </div>
-
-              <div class="flex flex-col gap-1.5">
-                <label class="field-label">Orden</label>
-                <input v-model.number="catForm.sort_order" type="number" min="0" step="1" placeholder="0"
-                  class="modal-input w-28 font-bold" />
-              </div>
-
-              <button type="button" @click="catForm.active = !catForm.active" class="flex items-center justify-between p-3.5 rounded-2xl
-                       bg-gray-50 border border-gray-200 cursor-pointer">
-                <div class="flex items-center gap-2">
-                  <CheckCircleIcon class="w-4 h-4 text-gray-500" />
-                  <span class="text-[13px] font-semibold text-gray-700">Categoría activa</span>
-                </div>
-                <div class="w-10 h-6 rounded-full transition-colors duration-200 relative shrink-0"
-                  :class="catForm.active ? 'bg-brand-red' : 'bg-gray-300'">
-                  <div class="w-5 h-5 rounded-full bg-white absolute top-0.5
-                              transition-transform duration-200 shadow-sm"
-                    :class="catForm.active ? 'translate-x-[18px]' : 'translate-x-0.5'" />
-                </div>
-              </button>
-
-              <Transition enter-active-class="transition-all duration-150" enter-from-class="opacity-0 -translate-y-1"
-                leave-to-class="opacity-0">
-                <div v-if="catError" class="flex items-center gap-2.5 px-4 py-3 rounded-2xl
-                         bg-red-50 border border-red-200">
-                  <ExclamationCircleIcon class="w-4 h-4 text-red-500 shrink-0" />
-                  <p class="text-[12.5px] text-red-700 m-0">{{ catError }}</p>
-                </div>
-              </Transition>
-            </div>
-
-            <div class="flex gap-3 mt-5">
-              <button @click="closeCatModal" class="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600
-                       font-semibold text-[13.5px] cursor-pointer bg-white
-                       hover:border-gray-300 transition-all duration-150">
-                Cancelar
-              </button>
-              <button @click="saveCat" :disabled="savingCat" class="flex-1 py-3 rounded-2xl bg-brand-red text-white font-bold
-                       text-[13.5px] cursor-pointer border-none hover:bg-red-700
-                       transition-all duration-150 disabled:opacity-50
-                       flex items-center justify-center gap-2">
-                <span v-if="savingCat" class="w-4 h-4 border-2 border-white/30 border-t-white
-                         rounded-full animate-spin" />
-                <CheckCircleIcon v-else class="w-4 h-4" />
-                {{ savingCat ? 'Guardando...' : (editingCat ? 'Guardar' : 'Crear') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <CategoriaModal
+      :show="showCatModal"
+      :editing-cat="editingCat"
+      :cat-form="catForm"
+      :cat-error="catError"
+      :saving-cat="savingCat"
+      :root-categories="rootCategories"
+      @close="closeCatModal"
+      @save="saveCat"
+    />
 
     <!-- ══ MODAL ELIMINAR CATEGORÍA ══ -->
-    <Teleport to="body">
-      <Transition enter-active-class="transition-opacity duration-200"
-        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
-        <div v-if="deleteCatTarget" class="fixed inset-0 z-[500] bg-black/50 backdrop-blur-sm
-                 flex items-center justify-center p-4" @click.self="deleteCatTarget = null">
-          <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-7 text-center">
-            <div class="w-14 h-14 rounded-2xl bg-red-50 mx-auto mb-5 flex items-center justify-center">
-              <TrashIcon class="w-7 h-7 text-red-500" />
-            </div>
-            <h3 class="font-black text-[19px] text-gray-900 m-0 mb-2"
-              style="font-family:'Plus Jakarta Sans',sans-serif;">
-              ¿Eliminar categoría?
-            </h3>
-            <p class="text-[13.5px] text-gray-400 m-0 mb-6 leading-relaxed">
-              <strong class="text-gray-700">{{ deleteCatTarget.name }}</strong>
-              será eliminada permanentemente.
-            </p>
-            <div v-if="deleteCatError" class="flex items-center gap-2 px-3.5 py-3 rounded-2xl bg-red-50
-                     border border-red-200 text-[12.5px] text-red-600 mb-4 text-left">
-              <ExclamationCircleIcon class="w-4 h-4 shrink-0" />
-              {{ deleteCatError }}
-            </div>
-            <div class="flex gap-3">
-              <button @click="deleteCatTarget = null" class="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600
-                       font-semibold text-[13.5px] cursor-pointer bg-white
-                       hover:border-gray-300 transition-all duration-150">
-                Cancelar
-              </button>
-              <button @click="confirmDeleteCat" :disabled="deletingCat" class="flex-1 py-3 rounded-2xl bg-red-600 text-white font-bold
-                       text-[13.5px] cursor-pointer border-none hover:bg-red-700
-                       transition-all duration-150 disabled:opacity-50
-                       flex items-center justify-center gap-2">
-                <span v-if="deletingCat" class="w-4 h-4 border-2 border-white/30 border-t-white
-                         rounded-full animate-spin" />
-                {{ deletingCat ? 'Eliminando...' : 'Sí, eliminar' }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <ConfirmModal
+      :model-value="!!deleteCatTarget"
+      @update:model-value="deleteCatTarget = null"
+      title="¿Eliminar categoría?"
+      :message="`«${deleteCatTarget?.name}» será eliminada permanentemente.`"
+      variant="danger"
+      confirm-label="Sí, eliminar"
+      loading-label="Eliminando..."
+      :loading="deletingCat"
+      :error="deleteCatError"
+      @confirm="confirmDeleteCat"
+    />
 
     <!-- ══ MODAL PRODUCTO ══ -->
     <Teleport to="body">
@@ -197,382 +75,26 @@
                 </div>
 
                 <!-- ── Tab Info ── -->
-                <div v-show="modalTab === 'info'" class="flex flex-col gap-4">
-                  <div class="grid grid-cols-[1fr_auto] gap-3">
-                    <div class="flex flex-col gap-1.5">
-                      <label class="field-label">Nombre *</label>
-                      <input v-model="form.name" placeholder="Ej: Ramo de 12 Rosas Rojas" class="modal-input w-full" />
-                    </div>
-                    <div class="flex flex-col gap-1.5">
-                      <label class="field-label">Ícono</label>
-                      <div class="flex items-center gap-1.5">
-                        <div
-                          class="w-9 h-9 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 text-gray-500">
-                          <AppIcon :name="form.icon" :size="16" />
-                        </div>
-                        <input v-model="form.icon" placeholder="flower-2"
-                          class="modal-input w-24 text-center text-[11px]" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="flex flex-col gap-1.5">
-                    <label class="field-label">Descripción</label>
-                    <textarea v-model="form.description" placeholder="Breve descripción..." rows="2"
-                      class="modal-input w-full resize-none" />
-                  </div>
-
-                  <div class="flex flex-col gap-1.5">
-                    <label class="field-label">Categoría *</label>
-                    <select v-model="form.category_id" class="modal-input w-full">
-                      <option value="">Seleccionar categoría...</option>
-                      <option v-for="cat in categoryOptionsTree" :key="cat.id" :value="cat.id">
-                        {{ cat.parent_id ? '— ' : '' }}{{ cat.name }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="flex flex-col gap-1.5">
-                    <label class="field-label">Precio (S/) *</label>
-                    <input v-model.number="form.price" type="number" step="0.50" min="0" placeholder="0.00"
-                      class="modal-input w-full font-bold" />
-                  </div>
-
-                  <div class="flex flex-col gap-2 p-4 rounded-2xl bg-gray-50 border border-gray-200">
-                    <button type="button" @click="form.tieneDescuento = !form.tieneDescuento"
-                      class="flex items-center justify-between cursor-pointer border-none bg-transparent p-0 w-full text-left">
-                      <div class="flex items-center gap-2">
-                        <TagIcon class="w-4 h-4 text-gray-500" />
-                        <span class="text-[13px] font-semibold text-gray-700">Producto en promoción</span>
-                      </div>
-                      <div class="w-10 h-6 rounded-full transition-colors duration-200 relative shrink-0"
-                        :class="form.tieneDescuento ? 'bg-brand-red' : 'bg-gray-300'">
-                        <div
-                          class="w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform duration-200 shadow-sm"
-                          :class="form.tieneDescuento ? 'translate-x-[18px]' : 'translate-x-0.5'" />
-                      </div>
-                    </button>
-                    <Transition enter-active-class="transition-all duration-200"
-                      enter-from-class="opacity-0 -translate-y-1" leave-to-class="opacity-0">
-                      <div v-if="form.tieneDescuento" class="flex flex-col gap-3 pt-1">
-
-                        <div class="flex gap-2">
-                          <button type="button" @click="form.descuento_tipo = 'porcentaje'"
-                            class="flex-1 py-2 rounded-xl text-[12.5px] font-bold border-2 cursor-pointer transition-all duration-150"
-                            :class="form.descuento_tipo === 'porcentaje'
-                              ? 'border-brand-red bg-red-50 text-brand-red'
-                              : 'border-gray-200 bg-white text-gray-500'">
-                            % Porcentaje
-                          </button>
-                          <button type="button" @click="form.descuento_tipo = 'monto_fijo'"
-                            class="flex-1 py-2 rounded-xl text-[12.5px] font-bold border-2 cursor-pointer transition-all duration-150"
-                            :class="form.descuento_tipo === 'monto_fijo'
-                              ? 'border-brand-red bg-red-50 text-brand-red'
-                              : 'border-gray-200 bg-white text-gray-500'">
-                            S/ Monto fijo
-                          </button>
-                        </div>
-
-                        <div class="flex flex-col gap-1.5">
-                          <label class="field-label">
-                            {{ form.descuento_tipo === 'monto_fijo' ? 'Descuento (S/)' : 'Descuento (%)' }}
-                          </label>
-                          <input v-model.number="form.descuento_valor" type="number" min="0"
-                            :max="form.descuento_tipo === 'porcentaje' ? 100 : undefined" step="0.50" placeholder="0"
-                            class="modal-input font-bold w-32" />
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                          <div class="flex flex-col gap-1.5">
-                            <label class="field-label">Desde (opcional)</label>
-                            <input v-model="form.descuento_desde" type="date" class="modal-input" />
-                          </div>
-                          <div class="flex flex-col gap-1.5">
-                            <label class="field-label">Hasta (opcional)</label>
-                            <input v-model="form.descuento_hasta" type="date" class="modal-input" />
-                          </div>
-                        </div>
-                        <p class="text-[11px] text-gray-400 m-0">
-                          Sin fechas, la promoción queda activa hasta que la apagues a mano.
-                          {{ previewPrecioFinal }}
-                        </p>
-                      </div>
-                    </Transition>
-                  </div>
-
-                  <div class="flex flex-col gap-2 p-4 rounded-2xl bg-gray-50 border border-gray-200">
-                    <button type="button" @click="form.controla_stock = !form.controla_stock"
-                      class="flex items-center justify-between cursor-pointer border-none bg-transparent p-0 w-full text-left">
-                      <div class="flex items-center gap-2">
-                        <ArchiveBoxIcon class="w-4 h-4 text-gray-500" />
-                        <span class="text-[13px] font-semibold text-gray-700">Controlar inventario</span>
-                      </div>
-                      <div class="w-10 h-6 rounded-full transition-colors duration-200 relative shrink-0"
-                        :class="form.controla_stock ? 'bg-brand-red' : 'bg-gray-300'">
-                        <div
-                          class="w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform duration-200 shadow-sm"
-                          :class="form.controla_stock ? 'translate-x-[18px]' : 'translate-x-0.5'" />
-                      </div>
-                    </button>
-                    <Transition enter-active-class="transition-all duration-200"
-                      enter-from-class="opacity-0 -translate-y-1" leave-to-class="opacity-0">
-                      <div v-if="form.controla_stock" class="flex flex-col gap-3 pt-1">
-                        <div class="flex flex-col gap-1.5">
-                          <label class="field-label">Stock disponible</label>
-                          <input v-model.number="form.stock" type="number" min="0" step="1" placeholder="0"
-                            class="modal-input font-bold w-32" />
-                          <p class="text-[11px] text-gray-400 m-0">
-                            Cuando llegue a 0, el producto se mostrará como agotado.
-                          </p>
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                          <label class="field-label">Avisarme cuando quede (opcional)</label>
-                          <input v-model.number="form.stock_minimo" type="number" min="0" step="1" placeholder="Ej: 3"
-                            class="modal-input font-bold w-32" />
-                          <p class="text-[11px] text-gray-400 m-0">
-                            Aparece marcado como "stock bajo" en Inventario a partir de este número.
-                          </p>
-                        </div>
-                      </div>
-                    </Transition>
-                  </div>
-
-                  <div class="flex flex-col gap-1.5">
-                    <label class="field-label">Imagen</label>
-                    <label class="flex items-center gap-3 px-4 py-3 rounded-2xl border-2 border-dashed
-                                  border-gray-200 cursor-pointer hover:border-red-300 hover:bg-red-50/20
-                                  transition-all duration-150">
-                      <PhotoIcon class="w-5 h-5 text-gray-400 shrink-0" />
-                      <span class="text-[13px] text-gray-500">
-                        {{ imageFile ? imageFile.name : 'Seleccionar imagen...' }}
-                      </span>
-                      <input type="file" accept="image/*" class="hidden" @change="handleImageChange" />
-                    </label>
-                    <img v-if="imagePreview || editingProduct?.image_url"
-                      :src="imagePreview ?? editingProduct?.image_url ?? ''"
-                      class="h-24 rounded-2xl object-cover border border-gray-100" />
-                  </div>
-
-                  <div class="flex flex-col gap-1.5">
-                    <label class="field-label">Galería de fotos (opcional)</label>
-                    <p v-if="!editingProduct" class="text-[11.5px] text-gray-400 m-0">
-                      Guarda el producto primero para poder agregarle fotos a la galería
-                    </p>
-                    <div v-else class="flex flex-wrap gap-2">
-                      <div v-for="img in galleryImages" :key="img.id"
-                        class="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-200 group shrink-0">
-                        <img :src="img.image_url" class="w-full h-full object-cover" />
-                        <button @click="deleteGalleryImage(img.id)" type="button" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100
-                                 flex items-center justify-center border-none cursor-pointer
-                                 transition-opacity duration-150">
-                          <TrashIcon class="w-4 h-4 text-white" />
-                        </button>
-                      </div>
-                      <label class="w-16 h-16 rounded-xl border-2 border-dashed border-gray-300 shrink-0
-                               flex items-center justify-center cursor-pointer
-                               hover:border-brand-red/40 transition-all duration-150 relative">
-                        <span v-if="uploadingGallery"
-                          class="w-4 h-4 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
-                        <PlusIcon v-else class="w-5 h-5 text-gray-400" />
-                        <input type="file" accept="image/*" multiple class="hidden" @change="onGalleryFilesSelected" />
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="flex flex-col gap-1.5">
-                    <label class="field-label">Etiquetas</label>
-                    <div class="grid grid-cols-2 gap-2">
-                      <button type="button" @click="form.available = !form.available" class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border-2 cursor-pointer
-                               text-[13px] font-semibold transition-all duration-150" :class="form.available
-                                ? 'border-green-400 bg-green-50 text-green-700'
-                                : 'border-gray-200 bg-gray-50 text-gray-400'">
-                        <div class="w-4 h-4 rounded-full flex items-center justify-center"
-                          :class="form.available ? 'bg-green-500' : 'bg-gray-300'">
-                          <CheckIcon v-if="form.available" class="w-2.5 h-2.5 text-white" />
-                        </div>
-                        Disponible
-                      </button>
-                      <button type="button" @click="form.popular = !form.popular" class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border-2 cursor-pointer
-                               text-[13px] font-semibold transition-all duration-150" :class="form.popular
-                                ? 'border-yellow-400 bg-yellow-50 text-yellow-700'
-                                : 'border-gray-200 bg-gray-50 text-gray-400'">
-                        <Star :size="14" :fill="form.popular ? 'currentColor' : 'none'" />
-                        Popular
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <ProductFormTabInfo v-show="modalTab === 'info'" :form="form" :category-options-tree="categoryOptionsTree"
+                  :editing-product="editingProduct" :image-file="imageFile" :image-preview="imagePreview"
+                  :gallery-images="galleryImages" :uploading-gallery="uploadingGallery"
+                  :preview-precio-final="previewPrecioFinal" @image-change="handleImageChange"
+                  @gallery-files-selected="onGalleryFilesSelected" @delete-gallery-image="deleteGalleryImage" />
 
                 <!-- ── Tab Personalización ── -->
-                <div v-show="modalTab === 'personalizacion'" class="flex flex-col gap-4">
-                  <div class="flex items-center justify-between">
-                    <p class="text-[13px] text-gray-500 m-0">Preferencias del cliente — sin costo adicional</p>
-                    <button @click="showAddSection = !showAddSection" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-red text-white
-                             font-bold text-[12.5px] border-none cursor-pointer hover:bg-red-700
-                             transition-all duration-150">
-                      <PlusIcon class="w-3.5 h-3.5" />
-                      Agregar
-                    </button>
-                  </div>
-
-                  <Transition enter-active-class="transition-all duration-200"
-                    enter-from-class="opacity-0 -translate-y-2" leave-to-class="opacity-0">
-                    <div v-if="showAddSection"
-                      class="grid grid-cols-2 gap-2 p-4 rounded-2xl bg-gray-50 border border-gray-200">
-                      <button v-for="tipo in seccionTiposActivos" :key="tipo.id" @click="addSection(tipo)"
-                        :disabled="form.sections.some(s => s.seccion === tipo.nombre)" class="flex items-center gap-2.5 px-3.5 py-3 rounded-xl border-2 cursor-pointer
-                               text-[13px] font-semibold transition-all duration-150"
-                        :class="form.sections.some(s => s.seccion === tipo.nombre)
-                          ? 'border-gray-100 bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-brand-red hover:text-brand-red'">
-                        <AppIcon :name="tipo.icono" :size="18" />
-                        {{ tipo.nombre }}
-                        <CheckIcon v-if="form.sections.some(s => s.seccion === tipo.nombre)"
-                          class="w-3.5 h-3.5 ml-auto text-gray-400" />
-                      </button>
-                      <p v-if="seccionTiposActivos.length === 0"
-                        class="col-span-2 text-[12.5px] text-gray-400 text-center py-2 m-0">
-                        No hay tipos de sección activos — créalos en el panel de arriba
-                      </p>
-                    </div>
-                  </Transition>
-
-                  <div v-if="form.sections.length === 0"
-                    class="flex items-center gap-2 px-4 py-3.5 rounded-2xl bg-gray-50 border border-dashed border-gray-200">
-                    <p class="text-[13px] text-gray-400 m-0">Sin secciones de personalización</p>
-                  </div>
-
-                  <div v-for="(section, si) in form.sections" :key="si"
-                    class="bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
-                    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
-                      <div class="flex items-center gap-2">
-                        <AppIcon :name="seccionTipos.find(t => t.nombre === section.seccion)?.icono ?? 'sparkles'"
-                          :size="18" />
-                        <div>
-                          <input v-model="section.label"
-                            class="font-bold text-[14px] text-gray-900 bg-transparent border-none outline-none p-0 w-full" />
-                          <div class="flex items-center gap-3 mt-0.5">
-                            <label class="flex items-center gap-1.5 text-[11px] text-gray-500 cursor-pointer">
-                              <input type="checkbox" v-model="section.required" />
-                              Requerido
-                            </label>
-                            <label class="flex items-center gap-1.5 text-[11px] text-gray-500 cursor-pointer">
-                              <input type="checkbox" v-model="section.multiple" />
-                              Múltiple
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                      <button @click="removeSection(si)" class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400
-                               cursor-pointer border-none bg-transparent hover:bg-red-50 hover:text-red-500
-                               transition-all duration-150">
-                        <TrashIcon class="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    <div class="p-4 flex flex-col gap-2">
-                      <div v-for="(opt, oi) in section.options" :key="oi" class="flex items-center gap-2">
-                        <button v-if="opt.id" @click="openOptionImagePicker(opt)" type="button"
-                          class="w-9 h-9 rounded-lg overflow-hidden border border-gray-200 shrink-0 cursor-pointer
-                                 bg-white flex items-center justify-center text-gray-300 hover:border-brand-red/40 relative group" title="Subir/cambiar foto">
-                          <img v-if="opt.image_url" :src="opt.image_url" class="w-full h-full object-cover" />
-                          <PhotoIcon v-else class="w-4 h-4" />
-                          <span v-if="uploadingOptionId === opt.id"
-                            class="absolute inset-0 bg-white/70 flex items-center justify-center">
-                            <span
-                              class="w-3.5 h-3.5 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
-                          </span>
-                        </button>
-                        <div v-else class="w-9 h-9 rounded-lg border border-dashed border-gray-200 shrink-0
-                                 flex items-center justify-center text-gray-300"
-                          title="Guarda el producto primero para poder subirle foto">
-                          <PhotoIcon class="w-4 h-4" />
-                        </div>
-                        <input v-model="opt.name" placeholder="Ej: Grande" class="modal-input flex-1 py-2" />
-                        <input v-model.number="opt.price_modifier" type="number" step="0.5" placeholder="0.00"
-                          title="Modificador de precio (+/-)" class="modal-input w-24 py-2 text-right" />
-                        <button @click="removeOption(si, oi)" class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400
-                                 cursor-pointer border-none bg-white hover:bg-red-50 hover:text-red-500
-                                 transition-all duration-150 shrink-0">
-                          <XMarkIcon class="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      <button @click="addOption(si)" class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-dashed border-gray-300
-                               bg-white text-[12px] font-semibold text-gray-500 cursor-pointer
-                               hover:border-brand-red hover:text-brand-red transition-all duration-150 w-fit">
-                        <PlusIcon class="w-3.5 h-3.5" />
-                        Agregar opción
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <ProductFormTabPersonalizacion v-show="modalTab === 'personalizacion'" :form="form"
+                  :seccion-tipos="seccionTipos" :seccion-tipos-activos="seccionTiposActivos"
+                  :show-add-section="showAddSection" :uploading-option-id="uploadingOptionId"
+                  @update:show-add-section="showAddSection = $event" @add-section="addSection"
+                  @remove-section="removeSection" @add-option="addOption" @remove-option="removeOption"
+                  @open-option-image-picker="openOptionImagePicker" />
 
                 <input ref="optionImageInputRef" type="file" accept="image/*" class="hidden"
                   @change="onOptionImageSelected" />
 
                 <!-- ── Tab Extras ── -->
-                <div v-show="modalTab === 'extras'" class="flex flex-col gap-4">
-                  <div class="flex items-center justify-between">
-                    <p class="text-[13px] text-gray-500 m-0">
-                      Productos adicionales que el cliente puede agregar con costo
-                    </p>
-                    <button @click="addExtra" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-red text-white
-                             font-bold text-[12.5px] border-none cursor-pointer hover:bg-red-700
-                             transition-all duration-150">
-                      <PlusIcon class="w-3.5 h-3.5" />
-                      Agregar extra
-                    </button>
-                  </div>
-
-                  <div v-if="form.extras.length === 0"
-                    class="flex items-center gap-2 px-4 py-3.5 rounded-2xl bg-gray-50 border border-dashed border-gray-200">
-                    <p class="text-[13px] text-gray-400 m-0">Sin extras — ej: Peluche, Chocolates, Globo metálico</p>
-                  </div>
-
-                  <div v-for="(extra, i) in form.extras" :key="i"
-                    class="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100">
-                    <input v-model="extra.name" placeholder="Ej: Caja de chocolates"
-                      class="modal-input flex-1 font-semibold" />
-                    <div class="flex flex-col gap-0.5 shrink-0 w-32">
-                      <span class="text-[10px] font-black uppercase tracking-wider text-gray-400">Precio S/</span>
-                      <input v-model.number="extra.price" type="number" step="0.50" min="0" placeholder="0.00"
-                        class="modal-input font-bold py-2 w-full" />
-                    </div>
-                    <button @click="removeExtra(i)" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400
-                             cursor-pointer border-none bg-white hover:bg-red-50 hover:text-red-500
-                             transition-all duration-150 shrink-0 mt-4">
-                      <TrashIcon class="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <p v-if="form.extras.length > 0" class="text-[11px] text-gray-400 m-0">
-                    El cliente verá estos extras en el modal y puede agregarlos al pedido.
-                  </p>
-
-                  <div class="flex flex-col gap-2 mt-2 pt-4 border-t border-gray-100">
-                    <div class="flex items-center justify-between">
-                      <p class="field-label m-0">Extras compartidos (reutilizables entre productos)</p>
-                      <button type="button" @click="openExtrasManager" class="flex items-center gap-1.5 text-[11.5px] font-bold text-brand-red
-                               cursor-pointer border-none bg-transparent hover:underline">
-                        <PencilSquareIcon class="w-3.5 h-3.5" />
-                        Gestionar
-                      </button>
-                    </div>
-                    <div v-if="availableExtras.length === 0" class="text-[12px] text-gray-400">
-                      Sin extras compartidos creados aún.
-                    </div>
-                    <div v-else class="grid grid-cols-2 gap-2">
-                      <label v-for="extra in availableExtras" :key="extra.id"
-                        class="flex items-center gap-2 px-3 py-2 rounded-xl border-2 cursor-pointer transition-all"
-                        :class="form.extra_ids.includes(extra.id) ? 'border-brand-red bg-red-50' : 'border-gray-200'">
-                        <input type="checkbox" :value="extra.id" v-model="form.extra_ids" class="accent-brand-red" />
-                        <span class="text-[12.5px] font-semibold text-gray-700 truncate">{{ extra.name }}</span>
-                        <span class="text-[11px] text-green-600 font-bold ml-auto shrink-0">
-                          +S/{{ extra.price.toFixed(2) }}
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
+                <ProductFormTabExtras v-show="modalTab === 'extras'" :form="form" :available-extras="availableExtras"
+                  @add-extra="addExtra" @remove-extra="removeExtra" @open-extras-manager="openExtrasManager" />
 
                 <!-- Error -->
                 <Transition enter-active-class="transition-all duration-150" enter-from-class="opacity-0 -translate-y-1"
@@ -609,40 +131,18 @@
     </Teleport>
 
     <!-- ══ MODAL ELIMINAR PRODUCTO ══ -->
-    <Teleport to="body">
-      <Transition enter-active-class="transition-opacity duration-200"
-        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
-        <div v-if="deleteTarget" class="fixed inset-0 z-[400] bg-black/50 backdrop-blur-sm
-                 flex items-center justify-center p-4" @click.self="deleteTarget = null">
-          <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-7 text-center">
-            <div class="w-14 h-14 rounded-2xl bg-red-50 mx-auto mb-5 flex items-center justify-center">
-              <TrashIcon class="w-7 h-7 text-red-500" />
-            </div>
-            <h3 class="font-black text-[19px] text-gray-900 m-0 mb-2"
-              style="font-family:'Plus Jakarta Sans',sans-serif;">
-              ¿Eliminar producto?
-            </h3>
-            <p class="text-[13.5px] text-gray-400 m-0 mb-6 leading-relaxed">
-              <strong class="text-gray-700">{{ deleteTarget.name }}</strong> será eliminado permanentemente.
-            </p>
-            <div class="flex gap-3">
-              <button @click="deleteTarget = null"
-                class="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600
-                       font-semibold text-[13.5px] cursor-pointer bg-white hover:border-gray-300 transition-all duration-150">
-                Cancelar
-              </button>
-              <button @click="confirmDelete" :disabled="deleting" class="flex-1 py-3 rounded-2xl bg-red-600 text-white font-bold
-                       text-[13.5px] cursor-pointer border-none hover:bg-red-700
-                       transition-all duration-150 disabled:opacity-50 flex items-center justify-center gap-2">
-                <span v-if="deleting"
-                  class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                {{ deleting ? 'Eliminando...' : 'Sí, eliminar' }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <ConfirmModal
+      :model-value="!!deleteTarget"
+      @update:model-value="deleteTarget = null"
+      title="¿Eliminar producto?"
+      :message="`«${deleteTarget?.name}» será eliminado permanentemente.`"
+      variant="danger"
+      confirm-label="Sí, eliminar"
+      loading-label="Eliminando..."
+      :loading="deleting"
+      :error="deleteError"
+      @confirm="confirmDelete"
+    />
 
     <!-- ══ PANEL CATEGORÍAS ══ -->
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -845,79 +345,15 @@
     </div>
 
     <!-- ══ MODAL TIPO DE SECCIÓN ══ -->
-    <Teleport to="body">
-      <Transition enter-active-class="transition-opacity duration-200"
-        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
-        <div v-if="showSeccionTipoModal" class="fixed inset-0 z-[500] bg-black/50 backdrop-blur-sm
-                 flex items-center justify-center p-4" @click.self="closeSeccionTipoModal">
-          <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6">
-            <div class="flex items-center justify-between mb-5">
-              <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100
-                            flex items-center justify-center">
-                  <CheckCircleIcon class="w-5 h-5 text-purple-600" />
-                </div>
-                <h3 class="font-black text-[17px] text-gray-900 m-0"
-                  style="font-family:'Plus Jakarta Sans',sans-serif;">
-                  {{ editingSeccionTipo ? 'Editar tipo de sección' : 'Nuevo tipo de sección' }}
-                </h3>
-              </div>
-              <button @click="closeSeccionTipoModal" class="w-8 h-8 rounded-full bg-gray-100 flex items-center
-                       justify-center cursor-pointer border-none hover:bg-gray-200 transition-colors">
-                <XMarkIcon class="w-4 h-4 text-gray-500" />
-              </button>
-            </div>
-
-            <div class="flex flex-col gap-4">
-              <div class="grid grid-cols-[1fr_auto] gap-3">
-                <div class="flex flex-col gap-1.5">
-                  <label class="field-label">Nombre *</label>
-                  <input v-model="seccionTipoForm.nombre" placeholder="Ej: Término de cocción"
-                    class="modal-input w-full" />
-                </div>
-                <div class="flex flex-col gap-1.5">
-                  <label class="field-label">Ícono</label>
-                  <div class="flex items-center gap-2">
-                    <div
-                      class="w-11 h-11 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 text-gray-500">
-                      <AppIcon :name="seccionTipoForm.icono" :size="20" />
-                    </div>
-                    <input v-model="seccionTipoForm.icono" placeholder="sparkles"
-                      class="modal-input w-24 text-center text-[12px]" />
-                  </div>
-                </div>
-              </div>
-
-              <Transition enter-active-class="transition-all duration-150" enter-from-class="opacity-0 -translate-y-1"
-                leave-to-class="opacity-0">
-                <div v-if="seccionTipoError" class="flex items-center gap-2.5 px-4 py-3 rounded-2xl
-                         bg-red-50 border border-red-200">
-                  <ExclamationCircleIcon class="w-4 h-4 text-red-500 shrink-0" />
-                  <p class="text-[12.5px] text-red-700 m-0">{{ seccionTipoError }}</p>
-                </div>
-              </Transition>
-            </div>
-
-            <div class="flex gap-3 mt-5">
-              <button @click="closeSeccionTipoModal" class="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600
-                       font-semibold text-[13.5px] cursor-pointer bg-white
-                       hover:border-gray-300 transition-all duration-150">
-                Cancelar
-              </button>
-              <button @click="saveSeccionTipo" :disabled="savingSeccionTipo" class="flex-1 py-3 rounded-2xl bg-brand-red text-white font-bold
-                       text-[13.5px] cursor-pointer border-none hover:bg-red-700
-                       transition-all duration-150 disabled:opacity-50
-                       flex items-center justify-center gap-2">
-                <span v-if="savingSeccionTipo" class="w-4 h-4 border-2 border-white/30 border-t-white
-                         rounded-full animate-spin" />
-                <CheckCircleIcon v-else class="w-4 h-4" />
-                {{ savingSeccionTipo ? 'Guardando...' : (editingSeccionTipo ? 'Guardar' : 'Crear') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <SeccionTipoModal
+      :show="showSeccionTipoModal"
+      :editing-seccion-tipo="editingSeccionTipo"
+      :seccion-tipo-form="seccionTipoForm"
+      :seccion-tipo-error="seccionTipoError"
+      :saving-seccion-tipo="savingSeccionTipo"
+      @close="closeSeccionTipoModal"
+      @save="saveSeccionTipo"
+    />
 
     <!-- ══ CONFIRMAR ELIMINAR TIPO DE SECCIÓN ══ -->
     <ConfirmModal v-model="deleteSeccionTipoConfirm.show" title="¿Eliminar este tipo de sección?"
@@ -1058,7 +494,7 @@
             Editar
           </button>
           <div class="w-px bg-gray-100" />
-          <button @click="deleteTarget = product" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-semibold
+          <button @click="deleteTarget = product; deleteError = ''" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-semibold
                    text-gray-400 cursor-pointer border-none bg-transparent hover:bg-red-50
                    hover:text-red-600 transition-all duration-150">
             <TrashIcon class="w-3.5 h-3.5" />
@@ -1095,79 +531,17 @@
     </div>
 
     <!-- ══ MODAL: GESTIONAR EXTRAS COMPARTIDOS ══ -->
-    <Teleport to="body">
-      <Transition enter-active-class="transition-opacity duration-200"
-        leave-active-class="transition-opacity duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
-        <div v-if="showExtrasManager" class="fixed inset-0 z-[500] bg-black/50 backdrop-blur-sm
-                 flex items-center justify-center p-4" @click.self="showExtrasManager = false">
-          <Transition appear enter-active-class="transition-all duration-200" enter-from-class="opacity-0 scale-95"
-            leave-active-class="transition-all duration-150" leave-to-class="opacity-0 scale-95">
-            <div v-if="showExtrasManager" class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh]
-                     flex flex-col overflow-hidden">
-
-              <!-- Header -->
-              <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0">
-                <div>
-                  <h2 class="font-black text-[17px] text-gray-900 m-0">Extras compartidos</h2>
-                  <p class="text-[12px] text-gray-400 m-0 mt-0.5">Crea, edita o elimina extras reutilizables</p>
-                </div>
-                <button @click="showExtrasManager = false" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400
-                         cursor-pointer border-none bg-gray-50 hover:bg-gray-100 transition-all">
-                  <XMarkIcon class="w-4 h-4" />
-                </button>
-              </div>
-
-              <!-- Nuevo extra -->
-              <div class="px-6 py-4 border-b border-gray-100 shrink-0 bg-gray-50/50">
-                <div class="grid grid-cols-[1fr_110px_auto] gap-2 items-end">
-                  <div>
-                    <label class="field-label">Nombre</label>
-                    <input v-model="newExtra.name" placeholder="Ej: Leche de almendra" class="modal-input w-full" />
-                  </div>
-                  <div>
-                    <label class="field-label">Precio</label>
-                    <input v-model.number="newExtra.price" type="number" step="0.5" placeholder="0.00"
-                      class="modal-input w-full" />
-                  </div>
-                  <button @click="createExtra" :disabled="!newExtra.name.trim() || savingExtra" class="h-[42px] px-4 rounded-xl bg-brand-red text-white font-bold text-[13px]
-                           cursor-pointer border-none hover:bg-red-700 transition-all
-                           disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5">
-                    <PlusIcon class="w-4 h-4" />
-                    Crear
-                  </button>
-                </div>
-                <p v-if="extrasError" class="text-[11.5px] text-red-600 mt-2 m-0">{{ extrasError }}</p>
-              </div>
-
-              <!-- Lista editable -->
-              <div class="flex-1 overflow-y-auto px-6 py-4">
-                <div v-if="availableExtras.length === 0" class="text-center py-10 text-[13px] text-gray-400">
-                  Aún no has creado ningún extra compartido.
-                </div>
-                <div v-else class="flex flex-col gap-2.5">
-                  <div v-for="extra in availableExtras" :key="extra.id" class="grid grid-cols-[1fr_110px_auto] gap-2 items-center
-                           px-3 py-2.5 rounded-xl border border-gray-100 bg-white">
-                    <input v-model="extra.name" class="modal-input w-full py-1.5" />
-                    <input v-model.number="extra.price" type="number" step="0.5" class="modal-input w-full py-1.5" />
-                    <div class="flex items-center gap-1.5">
-                      <button @click="saveExtra(extra)" title="Guardar cambios" class="w-8 h-8 rounded-lg flex items-center justify-center text-green-600
-                               cursor-pointer border-none bg-green-50 hover:bg-green-100 transition-all shrink-0">
-                        <CheckIcon class="w-4 h-4" />
-                      </button>
-                      <button @click="deleteExtra(extra.id)" title="Eliminar" class="w-8 h-8 rounded-lg flex items-center justify-center text-red-500
-                               cursor-pointer border-none bg-red-50 hover:bg-red-100 transition-all shrink-0">
-                        <TrashIcon class="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </Transition>
-        </div>
-      </Transition>
-    </Teleport>
+    <ExtrasManagerModal
+      :show="showExtrasManager"
+      :available-extras="availableExtras"
+      :new-extra="newExtra"
+      :extras-error="extrasError"
+      :saving-extra="savingExtra"
+      @close="showExtrasManager = false"
+      @create-extra="createExtra"
+      @save-extra="saveExtra"
+      @delete-extra="deleteExtra"
+    />
   </div>
 </template>
 
@@ -1175,16 +549,25 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import {
   PlusIcon, PencilIcon, TrashIcon, XMarkIcon,
-  MagnifyingGlassIcon, PhotoIcon, CheckIcon,
+  MagnifyingGlassIcon,
   CheckCircleIcon, ExclamationCircleIcon, TagIcon,
-  PlusCircleIcon, ArchiveBoxIcon, FolderIcon, ChevronDownIcon,
-  PencilSquareIcon,
+  PlusCircleIcon, FolderIcon, ChevronDownIcon,
 } from '@heroicons/vue/24/outline'
 import { Star, Check, X } from 'lucide-vue-next'
 import AppIcon from '@/components/AppIcon.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import { useProductsStore } from '@/stores/products'
 import type { Product, Category } from '@/stores/products'
+import type {
+  FormOption, FormSection, FormExtra, AvailableExtra, SeccionTipo, GalleryImage, ProductForm,
+  CategoriaForm, SeccionTipoForm,
+} from '@/types/product-form'
+import ProductFormTabInfo from '@/components/admin/ProductFormTabInfo.vue'
+import ProductFormTabPersonalizacion from '@/components/admin/ProductFormTabPersonalizacion.vue'
+import ProductFormTabExtras from '@/components/admin/ProductFormTabExtras.vue'
+import ExtrasManagerModal from '@/components/admin/ExtrasManagerModal.vue'
+import CategoriaModal from '@/components/admin/CategoriaModal.vue'
+import SeccionTipoModal from '@/components/admin/SeccionTipoModal.vue'
 import api from '@/utils/api'
 
 // ── Store ─────────────────────────────────────────────────
@@ -1201,6 +584,7 @@ const editingProduct = ref<Product | null>(null)
 const deleteTarget = ref<Product | null>(null)
 const saving = ref(false)
 const deleting = ref(false)
+const deleteError = ref('')
 const formError = ref('')
 const imageFile = ref<File | null>(null)
 const imagePreview = ref<string | null>(null)
@@ -1227,10 +611,10 @@ const savingCat = ref(false)
 const deletingCat = ref(false)
 const catError = ref('')
 
-const catForm = reactive({
+const catForm = reactive<CategoriaForm>({
   name: '',
   icon: '',
-  parent_id: null as number | null,
+  parent_id: null,
   sort_order: 0,
   active: true,
 })
@@ -1243,7 +627,6 @@ const MODAL_TABS = [
 ]
 
 // ── Tipos de sección de personalización (lista real, con CRUD) ──
-interface SeccionTipo { id: number; nombre: string; icono: string; activo: boolean; sort_order: number }
 const seccionTipos = ref<SeccionTipo[]>([])
 const seccionTiposActivos = computed(() => seccionTipos.value.filter(t => t.activo))
 const showSeccionTiposPanel = ref(false)
@@ -1259,7 +642,7 @@ const showSeccionTipoModal = ref(false)
 const editingSeccionTipo = ref<SeccionTipo | null>(null)
 const savingSeccionTipo = ref(false)
 const seccionTipoError = ref('')
-const seccionTipoForm = reactive({ nombre: '', icono: 'sparkles' })
+const seccionTipoForm = reactive<SeccionTipoForm>({ nombre: '', icono: 'sparkles' })
 
 function openCreateSeccionTipo() {
   editingSeccionTipo.value = null
@@ -1332,15 +715,7 @@ async function confirmDeleteSeccionTipo() {
 }
 
 // ── Form producto ─────────────────────────────────────────
-interface FormOption { id?: number; name: string; price_modifier: number; image_url?: string }
-interface FormSection {
-  id?: number; seccion: string; label: string; required: boolean
-  multiple: boolean; sort_order: number; options: FormOption[]
-}
-interface FormExtra { name: string; price: number }
-interface AvailableExtra { id: number; name: string; price: number }
-
-const form = reactive({
+const form = reactive<ProductForm>({
   name: '', description: '', icon: '',
   category_id: '' as number | '',
   price: 0,
@@ -1692,7 +1067,6 @@ const optionImageInputRef = ref<HTMLInputElement | null>(null)
 const uploadingOptionId = ref<number | null>(null)
 
 // ── Galería de fotos generales del producto ────────────────
-interface GalleryImage { id: number; image_url: string; sort_order: number }
 const galleryImages = ref<GalleryImage[]>([])
 const uploadingGallery = ref(false)
 
@@ -1841,11 +1215,16 @@ async function toggleAvailable(product: Product) {
 async function confirmDelete() {
   if (!deleteTarget.value) return
   deleting.value = true
+  deleteError.value = ''
   try {
     await api.delete(`/admin/products/${deleteTarget.value.id}`)
     await refreshCurrentPage()
     deleteTarget.value = null
-  } catch { deleteTarget.value = null } finally { deleting.value = false }
+  } catch (e: any) {
+    deleteError.value = e.response?.data?.message ?? 'No se pudo eliminar el producto'
+  } finally {
+    deleting.value = false
+  }
 }
 </script>
 
