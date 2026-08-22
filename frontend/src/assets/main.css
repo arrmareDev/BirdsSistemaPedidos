@@ -46,3 +46,53 @@ body {
     transform: translateX(-50%);
   }
 }
+
+/* ── Inputs de modales admin ──────────────────────────────
+   Antes vivían duplicadas (con valores levemente distintos) dentro de
+   <style scoped> de CatalogoView.vue y PedidosView.vue. Al extraer
+   componentes hijos de esos archivos durante el refactor, los hijos
+   dejaron de recibir el estilo — scoped en Vue solo aplica al propio
+   archivo, no a los componentes que importa. Unificadas acá para que
+   apliquen sin importar en qué archivo viva el input.
+
+   @layer components (no una regla suelta): así, cuando un input
+   combina "modal-input" con una utilidad de ancho de Tailwind (ej.
+   "w-24" en el precio de una opción, al lado de "flex-1" en el
+   nombre), la utilidad de Tailwind sigue ganando — que es lo que se
+   espera de una utilidad. Con una regla suelta (fuera de @layer),
+   quedaba después de las utilidades en el CSS compilado y el
+   width:100% de acá le ganaba a w-24, dejando el campo de precio
+   enorme y el de nombre angosto. */
+@layer components {
+  .modal-input {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    border-radius: 0.875rem;
+    border: 2px solid #f3f4f6;
+    background: #f9fafb;
+    font-size: 13px;
+    color: #111827;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .modal-input::placeholder {
+    color: #d1d5db;
+  }
+
+  .modal-input:focus {
+    border-color: var(--color-brand-primary, #C41E1E);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.08);
+  }
+
+  .field-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+    margin-bottom: 6px;
+  }
+}

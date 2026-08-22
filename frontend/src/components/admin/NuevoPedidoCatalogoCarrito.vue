@@ -203,3 +203,23 @@ defineEmits<{
   openProduct: [product: Product]
 }>()
 </script>
+
+<style scoped>
+.cart-item-enter-active {
+  transition: all 0.2s ease;
+}
+
+.cart-item-leave-active {
+  transition: all 0.15s ease;
+}
+
+.cart-item-enter-from {
+  opacity: 0;
+  transform: translateX(-8px);
+}
+
+.cart-item-leave-to {
+  opacity: 0;
+  transform: translateX(8px);
+}
+</style>

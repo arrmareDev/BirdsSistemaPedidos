@@ -123,7 +123,8 @@
                         <div class="relative">
                           <input v-model="mapSearch" @input="debouncedMapSearch" placeholder="Buscar dirección..."
                             class="modal-input w-full pr-8" />
-                          <div v-if="mapSearching" class="absolute right-2.5 top-1/2 -translate-y-1/2
+                          <div v-if="mapSearching"
+                            class="absolute right-2.5 top-1/2 -translate-y-1/2
                                    w-3.5 h-3.5 border-2 border-gray-200 border-t-brand-red rounded-full animate-spin" />
                         </div>
 
@@ -138,13 +139,15 @@
                         </div>
 
                         <!-- Mapa Leaflet -->
-                        <div id="admin-delivery-map" class="w-full h-48 rounded-xl overflow-hidden border-2 border-gray-100" />
+                        <div id="admin-delivery-map"
+                          class="w-full h-48 rounded-xl overflow-hidden border-2 border-gray-100" />
 
                         <div>
                           <label class="block text-[10.5px] font-black uppercase tracking-widest text-gray-400 mb-1.5">
                             Dirección
                           </label>
-                          <input v-model="form.address" placeholder="Se completa al marcar el mapa" class="modal-input" />
+                          <input v-model="form.address" placeholder="Se completa al marcar el mapa"
+                            class="modal-input" />
                         </div>
                         <div>
                           <label class="block text-[10.5px] font-black uppercase tracking-widest text-gray-400 mb-1.5">
@@ -155,17 +158,21 @@
                         </div>
 
                         <!-- Zona detectada -->
-                        <div v-if="detectingZone" class="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200">
-                          <div class="w-3.5 h-3.5 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
+                        <div v-if="detectingZone"
+                          class="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200">
+                          <div
+                            class="w-3.5 h-3.5 border-2 border-gray-300 border-t-brand-red rounded-full animate-spin" />
                           <span class="text-[11px] text-gray-500 font-medium">Detectando zona...</span>
                         </div>
                         <div v-else-if="selectedZone"
                           class="flex items-center justify-between px-3 py-2 rounded-xl bg-pink-50 border border-pink-200">
                           <span class="text-[11px] font-black text-pink-700">{{ selectedZone.nombre }}</span>
-                          <span class="text-[13px] font-black text-pink-700">S/ {{ selectedZone.precio.toFixed(2) }}</span>
+                          <span class="text-[13px] font-black text-pink-700">S/ {{ selectedZone.precio.toFixed(2)
+                          }}</span>
                         </div>
                         <div v-else-if="zoneNotFound" class="flex flex-col gap-1.5">
-                          <div class="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-700">
+                          <div
+                            class="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-700">
                             Fuera de cobertura — elige la tarifa más cercana
                           </div>
                           <select v-model="form.delivery_zone_id" @change="onManualZoneChange" class="modal-input">
@@ -181,7 +188,8 @@
                     </Transition>
 
                     <!-- Entrega programada -->
-                    <div v-if="pedidoConfigStore.config.entrega_programada_activo" class="border border-gray-100 rounded-2xl p-3 flex flex-col gap-3">
+                    <div v-if="pedidoConfigStore.config.entrega_programada_activo"
+                      class="border border-gray-100 rounded-2xl p-3 flex flex-col gap-3">
                       <div class="flex items-center justify-between">
                         <label class="text-[10.5px] font-black uppercase tracking-widest text-gray-400">
                           {{ pedidoConfigStore.config.entrega_programada_label }}
@@ -244,7 +252,8 @@
                         <span>{{ cartItems.length }} producto{{ cartItems.length !== 1 ? 's' : '' }}</span>
                         <span>S/ {{ orderTotal.toFixed(2) }}</span>
                       </div>
-                      <div v-if="form.type === 'delivery' && deliveryFeeAmount > 0" class="flex justify-between text-[12px] text-gray-400 mb-2">
+                      <div v-if="form.type === 'delivery' && deliveryFeeAmount > 0"
+                        class="flex justify-between text-[12px] text-gray-400 mb-2">
                         <span>Delivery{{ selectedZone ? ` (${selectedZone.nombre})` : '' }}</span>
                         <span>+ S/ {{ deliveryFeeAmount.toFixed(2) }}</span>
                       </div>
@@ -287,10 +296,12 @@
                     </button>
                   </div>
                 </div>
-                <div v-if="isEditMode" class="lg:w-72 xl:w-80 shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-100 bg-white">
+                <div v-if="isEditMode"
+                  class="lg:w-72 xl:w-80 shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-100 bg-white">
                   <div class="flex-1 overflow-y-auto p-4 sm:p-5">
                     <p class="text-[13px] text-gray-500 leading-relaxed">
-                      Estás editando los productos del pedido <strong class="text-gray-900">#{{ editingOrderCodigo }}</strong>.
+                      Estás editando los productos del pedido <strong class="text-gray-900">#{{ editingOrderCodigo
+                      }}</strong>.
                       Los datos del cliente y entrega no se modifican aquí.
                     </p>
                   </div>
@@ -330,20 +341,11 @@
                 </div>
 
                 <!-- Col derecha: catálogo + carrito -->
-                <NuevoPedidoCatalogoCarrito
-                  :right-tab="rightTab"
-                  :active-cat="activeCat"
-                  :filtered-catalog="filteredCatalog"
-                  :cart-items="cartItems"
-                  :order-total="orderTotal"
-                  :delivery-fee-amount="deliveryFeeAmount"
-                  :total-con-delivery="totalConDelivery"
-                  :is-edit-mode="isEditMode"
-                  :form-type="form.type"
-                  @update:right-tab="rightTab = $event"
-                  @update:active-cat="activeCat = $event"
-                  @open-product="openProduct"
-                />
+                <NuevoPedidoCatalogoCarrito :right-tab="rightTab" :active-cat="activeCat"
+                  :filtered-catalog="filteredCatalog" :cart-items="cartItems" :order-total="orderTotal"
+                  :delivery-fee-amount="deliveryFeeAmount" :total-con-delivery="totalConDelivery"
+                  :is-edit-mode="isEditMode" :form-type="form.type" @update:right-tab="rightTab = $event"
+                  @update:active-cat="activeCat = $event" @open-product="openProduct" />
               </div>
             </div>
           </Transition>
@@ -352,65 +354,34 @@
     </Teleport>
 
     <!-- ══ MODAL CONFIRMAR CANCELAR/ELIMINAR/FORZAR ══ -->
-    <OrderConfirmModal
-      :show="confirmModal.show"
-      :type="confirmModal.type"
-      :order="confirmModal.order"
-      :loading="confirmModal.loading"
-      @close="confirmModal.show = false"
-      @confirm="executeConfirm"
-    />
+    <OrderConfirmModal :show="confirmModal.show" :type="confirmModal.type" :order="confirmModal.order"
+      :loading="confirmModal.loading" @close="confirmModal.show = false" @confirm="executeConfirm" />
 
     <!-- ══ MODAL SOLICITAR REPARTIDOR ══ -->
-    <SolicitarDespachoModal
-      :show="despachoModal.show"
-      :order="despachoModal.order"
-      :loading="despachoModal.loading"
-      :error="despachoModal.error"
-      :checking-estado="despachoModal.checkingEstado"
-      :estado-actual="despachoModal.estadoActual"
-      @close="despachoModal.show = false"
-      @confirm="confirmarDespacho"
-      @cancelar-despacho="cancelarDespachoActivo"
-    />
+    <SolicitarDespachoModal :show="despachoModal.show" :order="despachoModal.order" :loading="despachoModal.loading"
+      :error="despachoModal.error" :checking-estado="despachoModal.checkingEstado"
+      :estado-actual="despachoModal.estadoActual" @close="despachoModal.show = false" @confirm="confirmarDespacho"
+      @cancelar-despacho="cancelarDespachoActivo" />
 
     <!-- ══ MODAL "YA TENGO REPARTIDOR" ══ -->
-    <YaTengoRepartidorModal
-      :show="yaTengoModal.show"
-      :order="yaTengoModal.order"
-      :loading="yaTengoModal.loading"
-      @close="yaTengoModal.show = false"
-      @confirm="confirmarYaTengo"
-    />
+    <YaTengoRepartidorModal :show="yaTengoModal.show" :order="yaTengoModal.order" :loading="yaTengoModal.loading"
+      @close="yaTengoModal.show = false" @confirm="confirmarYaTengo" />
 
     <!-- ══ MODAL COBRAR (solo Local) ══ -->
-    <CobrarPedidoModal
-      :show="cobroModal.show"
-      :order="cobroModal.order"
-      :loading="cobroModal.loading"
-      :error="cobroModal.error"
-      :metodo-pago="cobroModal.metodoPago"
-      @update:metodo-pago="cobroModal.metodoPago = $event"
-      @close="cobroModal.show = false"
-      @confirm="confirmarCobro"
-    />
+    <CobrarPedidoModal :show="cobroModal.show" :order="cobroModal.order" :loading="cobroModal.loading"
+      :error="cobroModal.error" :metodo-pago="cobroModal.metodoPago"
+      @update:metodo-pago="cobroModal.metodoPago = $event" @close="cobroModal.show = false" @confirm="confirmarCobro" />
 
     <!-- Modal confirmar pago (paso a "Confirmado") -->
-    <ConfirmarPagoModal
-      :show="confirmarPagoModal.show"
-      :order="confirmarPagoModal.order"
-      :loading="confirmarPagoModal.loading"
-      @close="confirmarPagoModal.show = false"
-      @confirm="confirmarPagoYAvanzar"
-    />
+    <ConfirmarPagoModal :show="confirmarPagoModal.show" :order="confirmarPagoModal.order"
+      :loading="confirmarPagoModal.loading" @close="confirmarPagoModal.show = false" @confirm="confirmarPagoYAvanzar" />
 
     <!-- ══ LISTA PEDIDOS ══ -->
     <div class="flex-1 overflow-y-auto flex flex-col min-w-0">
 
       <!-- Filtros -->
       <div class="flex items-center gap-2 mb-4 flex-wrap">
-        <select v-model="filter" @change="setFilter(filter)" :disabled="showTrashed"
-          class="px-3.5 py-1.5 rounded-xl border border-gray-200 bg-white text-[13px] text-gray-900
+        <select v-model="filter" @change="setFilter(filter)" :disabled="showTrashed" class="px-3.5 py-1.5 rounded-xl border border-gray-200 bg-white text-[13px] text-gray-900
                  outline-none cursor-pointer focus:border-brand-red transition-all duration-200 font-semibold text-gray-600
                  disabled:opacity-40 disabled:cursor-not-allowed">
           <option v-for="s in STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
@@ -466,7 +437,8 @@
             {{ showTrashed ? 'Papelera vacía' : search ? 'Sin resultados' : 'Sin pedidos' }}
           </p>
           <p class="m-0 text-[13px] mt-1">
-            {{ showTrashed ? 'No hay pedidos eliminados' : search ? `No encontramos pedidos para "${search}"` : filter ? 'No hay pedidos con este estado' : 'Aún no hay pedidos registrados' }}
+            {{ showTrashed ? 'No hay pedidos eliminados' : search ? `No encontramos pedidos para "${search}"` : filter ?
+              'No hay pedidos con este estado' : 'Aún no hay pedidos registrados' }}
           </p>
         </div>
         <button v-if="!showTrashed && !search && !filter && can.writeOrders" @click="openModal" class="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-brand-red text-white font-bold
@@ -559,13 +531,15 @@
               <div class="flex gap-1.5 ml-auto">
 
                 <template v-if="showTrashed">
-                  <button @click.stop="handleRestore(o)" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border
+                  <button @click.stop="handleRestore(o)"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border
                            cursor-pointer bg-green-50 border-green-300 text-green-700 hover:bg-green-100 transition-all duration-150">
                     <ArrowUturnLeftIcon class="w-3.5 h-3.5" />
                     Restaurar
                   </button>
                   <button v-if="can.delete" @click.stop="askForceDelete(o)" class="w-8 h-8 rounded-xl flex items-center justify-center border border-red-200
-                           bg-white text-red-500 cursor-pointer hover:bg-red-50 transition-all duration-150" title="Eliminar definitivamente">
+                           bg-white text-red-500 cursor-pointer hover:bg-red-50 transition-all duration-150"
+                    title="Eliminar definitivamente">
                     <TrashIcon class="w-4 h-4" />
                   </button>
                 </template>
@@ -594,13 +568,15 @@
                       Cobrar
                     </button>
 
-                    <button v-else-if="o.status !== 'entregado' && o.status !== 'cancelado'" @click.stop="advanceOrder(o)"
+                    <button v-else-if="o.status !== 'entregado' && o.status !== 'cancelado'"
+                      @click.stop="advanceOrder(o)"
                       class="px-3 py-1.5 rounded-xl text-[12px] font-bold border border-gray-200 bg-white
                              text-gray-600 cursor-pointer hover:border-brand-red hover:text-brand-red transition-all duration-150">
                       {{ nextStatusLabel(o.status, o.type) }} →
                     </button>
 
-                    <button v-if="o.status !== 'entregado' && o.status !== 'cancelado'" @click.stop="askCancel(o)" class="w-8 h-8 rounded-xl flex items-center justify-center border border-gray-200
+                    <button v-if="o.status !== 'entregado' && o.status !== 'cancelado'" @click.stop="askCancel(o)"
+                      class="w-8 h-8 rounded-xl flex items-center justify-center border border-gray-200
                              bg-white text-gray-400 cursor-pointer hover:border-amber-300 hover:text-amber-500
                              transition-all duration-150" title="Cancelar pedido">
                       <XCircleIcon class="w-4 h-4" />
@@ -677,7 +653,8 @@
               <span v-if="selected.district" class="text-gray-300">·</span>
               {{ selected.district }}
             </p>
-            <p v-if="selected.type === 'local' && selected.mesa" class="text-[11.5px] text-blue-700 m-0 flex items-center gap-1.5 font-semibold">
+            <p v-if="selected.type === 'local' && selected.mesa"
+              class="text-[11.5px] text-blue-700 m-0 flex items-center gap-1.5 font-semibold">
               <BuildingStorefrontIcon class="w-3.5 h-3.5 shrink-0" />
               Mesa {{ selected.mesa }}
             </p>
@@ -752,7 +729,8 @@
           </div>
         </div>
 
-        <div v-if="selected.note" class="mx-4 mb-3 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-100 flex items-start gap-1.5">
+        <div v-if="selected.note"
+          class="mx-4 mb-3 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-100 flex items-start gap-1.5">
           <StickyNote :size="13" class="text-amber-600 shrink-0 mt-0.5" />
           <p class="text-[12px] text-amber-800 m-0 font-medium">{{ selected.note }}</p>
         </div>
@@ -778,8 +756,7 @@
               <ArrowUturnLeftIcon class="w-4 h-4" />
               Restaurar pedido
             </button>
-            <button v-if="can.delete" @click="askForceDelete(selected)"
-              class="w-full py-2.5 rounded-xl font-semibold text-[12px] text-red-600 bg-transparent
+            <button v-if="can.delete" @click="askForceDelete(selected)" class="w-full py-2.5 rounded-xl font-semibold text-[12px] text-red-600 bg-transparent
                      border border-red-200 cursor-pointer hover:bg-red-50 hover:border-red-300
                      transition-all duration-150 flex items-center justify-center gap-1.5">
               <TrashIcon class="w-3.5 h-3.5" />
@@ -805,8 +782,8 @@
                 </button>
               </template>
 
-              <button v-else-if="selected.type === 'local' && selected.status === 'listo'" @click="abrirCobroModal(selected)"
-                class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-green-600 border-none
+              <button v-else-if="selected.type === 'local' && selected.status === 'listo'"
+                @click="abrirCobroModal(selected)" class="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-green-600 border-none
                        cursor-pointer shadow-sm hover:bg-green-700 transition-all duration-150
                        flex items-center justify-center gap-2">
                 <Banknote :size="16" />
@@ -823,9 +800,9 @@
             </template>
 
             <template v-if="can.writeOrders">
-              <button v-if="selected.status !== 'entregado' && selected.status !== 'cancelado' && selected.status !== 'en_camino'"
-                @click="openEditItemsModal(selected)"
-                class="w-full py-2.5 rounded-xl font-semibold text-[13px] text-gray-700 bg-white
+              <button
+                v-if="selected.status !== 'entregado' && selected.status !== 'cancelado' && selected.status !== 'en_camino'"
+                @click="openEditItemsModal(selected)" class="w-full py-2.5 rounded-xl font-semibold text-[13px] text-gray-700 bg-white
                        border border-gray-200 cursor-pointer hover:border-brand-red hover:text-brand-red
                        transition-all duration-150 flex items-center justify-center gap-2">
                 <TagIcon class="w-4 h-4" />
@@ -841,15 +818,16 @@
             </button>
 
             <template v-if="can.writeOrders">
-              <button v-if="selected.status !== 'entregado' && selected.status !== 'cancelado'" @click="askCancel(selected)"
-                class="w-full py-2 rounded-xl font-semibold text-[12px] text-amber-600 bg-transparent
+              <button v-if="selected.status !== 'entregado' && selected.status !== 'cancelado'"
+                @click="askCancel(selected)" class="w-full py-2 rounded-xl font-semibold text-[12px] text-amber-600 bg-transparent
                        border border-amber-200 cursor-pointer hover:bg-amber-50 hover:border-amber-300
                        transition-all duration-150 flex items-center justify-center gap-1.5">
                 <XCircleIcon class="w-3.5 h-3.5" />
                 Cancelar pedido
               </button>
 
-              <button v-if="selected.status === 'cancelado' || selected.status === 'entregado'" @click="askDelete(selected)" class="w-full py-2 rounded-xl font-semibold text-[12px] text-gray-400 bg-transparent
+              <button v-if="selected.status === 'cancelado' || selected.status === 'entregado'"
+                @click="askDelete(selected)" class="w-full py-2 rounded-xl font-semibold text-[12px] text-gray-400 bg-transparent
                        border border-gray-100 cursor-pointer hover:bg-red-50 hover:text-red-500
                        hover:border-red-200 transition-all duration-150 flex items-center justify-center gap-1.5">
                 <TrashIcon class="w-3.5 h-3.5" />
@@ -1484,50 +1462,8 @@ function sendWA(o: any) {
   if (o.entrega_programada && o.fecha_entrega) lines.push(`Entrega: ${o.fecha_entrega}${o.hora_entrega ? ' · ' + o.hora_entrega : ''}`)
   if (o.mensaje_tarjeta) lines.push(`Tarjeta: "${o.mensaje_tarjeta}"`)
   lines.push(`Total: *S/ ${parseFloat(o.total).toFixed(2)}*`, ``)
-  lines.push(`Seguimiento: ${import.meta.env.VITE_APP_URL ?? ''}/seguimiento/${o.codigo}?tel=${clientPhone}`)
+  lines.push(`Seguimiento: ${window.location.origin}/seguimiento/${o.codigo}?tel=${clientPhone}`)
 
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank')
 }
 </script>
-
-<style scoped>
-.modal-input {
-  width: 100%;
-  padding: 0.625rem 0.875rem;
-  border-radius: 0.875rem;
-  border: 2px solid #f3f4f6;
-  background: #f9fafb;
-  font-size: 13px;
-  color: #111827;
-  outline: none;
-  transition: all 0.2s;
-}
-
-.modal-input::placeholder {
-  color: #d1d5db;
-}
-
-.modal-input:focus {
-  border-color: var(--color-brand-primary, #C41E1E);
-  background: white;
-  box-shadow: 0 0 0 3px rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.08);
-}
-
-.cart-item-enter-active {
-  transition: all 0.2s ease;
-}
-
-.cart-item-leave-active {
-  transition: all 0.15s ease;
-}
-
-.cart-item-enter-from {
-  opacity: 0;
-  transform: translateX(-8px);
-}
-
-.cart-item-leave-to {
-  opacity: 0;
-  transform: translateX(8px);
-}
-</style>

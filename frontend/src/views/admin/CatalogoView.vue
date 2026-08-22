@@ -2,30 +2,14 @@
   <div class="flex flex-col gap-5">
 
     <!-- ══ MODAL CATEGORÍA ══ -->
-    <CategoriaModal
-      :show="showCatModal"
-      :editing-cat="editingCat"
-      :cat-form="catForm"
-      :cat-error="catError"
-      :saving-cat="savingCat"
-      :root-categories="rootCategories"
-      @close="closeCatModal"
-      @save="saveCat"
-    />
+    <CategoriaModal :show="showCatModal" :editing-cat="editingCat" :cat-form="catForm" :cat-error="catError"
+      :saving-cat="savingCat" :root-categories="rootCategories" @close="closeCatModal" @save="saveCat" />
 
     <!-- ══ MODAL ELIMINAR CATEGORÍA ══ -->
-    <ConfirmModal
-      :model-value="!!deleteCatTarget"
-      @update:model-value="deleteCatTarget = null"
-      title="¿Eliminar categoría?"
-      :message="`«${deleteCatTarget?.name}» será eliminada permanentemente.`"
-      variant="danger"
-      confirm-label="Sí, eliminar"
-      loading-label="Eliminando..."
-      :loading="deletingCat"
-      :error="deleteCatError"
-      @confirm="confirmDeleteCat"
-    />
+    <ConfirmModal :model-value="!!deleteCatTarget" @update:model-value="deleteCatTarget = null"
+      title="¿Eliminar categoría?" :message="`«${deleteCatTarget?.name}» será eliminada permanentemente.`"
+      variant="danger" confirm-label="Sí, eliminar" loading-label="Eliminando..." :loading="deletingCat"
+      :error="deleteCatError" @confirm="confirmDeleteCat" />
 
     <!-- ══ MODAL PRODUCTO ══ -->
     <Teleport to="body">
@@ -75,9 +59,9 @@
                 </div>
 
                 <!-- ── Tab Info ── -->
-                <ProductFormTabInfo v-show="modalTab === 'info'" :form="form" :category-options-tree="categoryOptionsTree"
-                  :editing-product="editingProduct" :image-file="imageFile" :image-preview="imagePreview"
-                  :gallery-images="galleryImages" :uploading-gallery="uploadingGallery"
+                <ProductFormTabInfo v-show="modalTab === 'info'" :form="form"
+                  :category-options-tree="categoryOptionsTree" :editing-product="editingProduct" :image-file="imageFile"
+                  :image-preview="imagePreview" :gallery-images="galleryImages" :uploading-gallery="uploadingGallery"
                   :preview-precio-final="previewPrecioFinal" @image-change="handleImageChange"
                   @gallery-files-selected="onGalleryFilesSelected" @delete-gallery-image="deleteGalleryImage" />
 
@@ -131,18 +115,9 @@
     </Teleport>
 
     <!-- ══ MODAL ELIMINAR PRODUCTO ══ -->
-    <ConfirmModal
-      :model-value="!!deleteTarget"
-      @update:model-value="deleteTarget = null"
-      title="¿Eliminar producto?"
-      :message="`«${deleteTarget?.name}» será eliminado permanentemente.`"
-      variant="danger"
-      confirm-label="Sí, eliminar"
-      loading-label="Eliminando..."
-      :loading="deleting"
-      :error="deleteError"
-      @confirm="confirmDelete"
-    />
+    <ConfirmModal :model-value="!!deleteTarget" @update:model-value="deleteTarget = null" title="¿Eliminar producto?"
+      :message="`«${deleteTarget?.name}» será eliminado permanentemente.`" variant="danger" confirm-label="Sí, eliminar"
+      loading-label="Eliminando..." :loading="deleting" :error="deleteError" @confirm="confirmDelete" />
 
     <!-- ══ PANEL CATEGORÍAS ══ -->
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -345,15 +320,9 @@
     </div>
 
     <!-- ══ MODAL TIPO DE SECCIÓN ══ -->
-    <SeccionTipoModal
-      :show="showSeccionTipoModal"
-      :editing-seccion-tipo="editingSeccionTipo"
-      :seccion-tipo-form="seccionTipoForm"
-      :seccion-tipo-error="seccionTipoError"
-      :saving-seccion-tipo="savingSeccionTipo"
-      @close="closeSeccionTipoModal"
-      @save="saveSeccionTipo"
-    />
+    <SeccionTipoModal :show="showSeccionTipoModal" :editing-seccion-tipo="editingSeccionTipo"
+      :seccion-tipo-form="seccionTipoForm" :seccion-tipo-error="seccionTipoError"
+      :saving-seccion-tipo="savingSeccionTipo" @close="closeSeccionTipoModal" @save="saveSeccionTipo" />
 
     <!-- ══ CONFIRMAR ELIMINAR TIPO DE SECCIÓN ══ -->
     <ConfirmModal v-model="deleteSeccionTipoConfirm.show" title="¿Eliminar este tipo de sección?"
@@ -531,17 +500,9 @@
     </div>
 
     <!-- ══ MODAL: GESTIONAR EXTRAS COMPARTIDOS ══ -->
-    <ExtrasManagerModal
-      :show="showExtrasManager"
-      :available-extras="availableExtras"
-      :new-extra="newExtra"
-      :extras-error="extrasError"
-      :saving-extra="savingExtra"
-      @close="showExtrasManager = false"
-      @create-extra="createExtra"
-      @save-extra="saveExtra"
-      @delete-extra="deleteExtra"
-    />
+    <ExtrasManagerModal :show="showExtrasManager" :available-extras="availableExtras" :new-extra="newExtra"
+      :extras-error="extrasError" :saving-extra="savingExtra" @close="showExtrasManager = false"
+      @create-extra="createExtra" @save-extra="saveExtra" @delete-extra="deleteExtra" />
   </div>
 </template>
 
@@ -1227,36 +1188,3 @@ async function confirmDelete() {
   }
 }
 </script>
-
-<style scoped>
-.modal-input {
-  padding: 0.55rem 0.875rem;
-  border-radius: 0.75rem;
-  border: 2px solid #f3f4f6;
-  background: #f9fafb;
-  font-size: 13.5px;
-  color: #111827;
-  outline: none;
-  transition: all 0.2s;
-}
-
-.modal-input::placeholder {
-  color: #d1d5db;
-}
-
-.modal-input:focus {
-  border-color: var(--color-brand-primary, #C41E1E);
-  background: white;
-  box-shadow: 0 0 0 3px rgba(var(--color-brand-primary-rgb, 196, 30, 30), 0.08);
-}
-
-.field-label {
-  display: block;
-  font-size: 10.5px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #6b7280;
-  margin-bottom: 6px;
-}
-</style>
